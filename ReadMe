@@ -1,0 +1,759 @@
+Subject: Full Wasta-Offline Mirror for Precise and Trusty
+Author:  Bill Martin
+Date:    17 November 2014
+
+This external hard drive contains the full wasta-offline software mirrors for the 
+Ubuntu, Linux Mint, SIL, LibreOffice, and Wasta-Linux distributions. The Ubuntu 
+mirrors include all LTS packages for both Precise and Trusty. The Linux Mint mirrors 
+include the LTS packages for both Maya and Qiana. Both 32-bit and 64-bit packages are 
+included for all repos. All together this represents approximately 285GB of data on 
+this USB hard drive.
+
+As of November 2014, the mirrors and repositories contained on this hard drive are:
+   Mirror                                        Repos
+   --------------------------------------------------------------------------------
+   archive.canonical.com                         partner
+   archive.ubuntu.com                            main multiverse restricted universe
+   extras.ubuntu.com                             main
+   packages.linuxmint.com                        backport import main upstream
+   packages.sil.org                              main
+   ppa.launchpad.net/libreoffice/libreoffice-4-1 main
+   ppa.launchpad.net/libreoffice/libreoffice-4-2 main
+   ppa.launchpad.net/libreoffice/libreoffice-4-3 main
+   ppa.launchpad.net/wasta-linux/wasta           main
+   ppa.launchpad.net/wasta-linux/wasta-apps      main
+   security.ubuntu.com                           main multiverse restricted universe
+
+Note: The packages.palaso.org repository no longer exists. According to Cambell Prince
+Linux versions of palaso software that get released will be released via the 
+packages.sil.org repository.
+
+This ReadMe file outlines the following How To topics (see detail below):
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+How to update your Linux computer's software with this "Full Wasta-Offline Mirror for 
+   Precise & Trusty"
+How to update a USB external Drive and bring it up to date - synchronizing it with
+   a master mirror
+How to update the "Full Wasta-Offline Mirror for Precise & Trusty" with the latest 
+   software updates from the Internet or from the Ukarumpa FTP site
+How to Make a Master or Backup Wasta-Offline Mirror by Copying all of the data from 
+   the Existing Mirror on the External USB Drive to the local computer
+How to clone a new Wasta-Offline Mirror to a New External USB Hard Drive, Copying 
+   from a Master Wasta-Offline Mirror
+How to Fix "Hash Sum mismatch" Errors that Appear When Trying to Use the "Full 
+   Wasta-Offline Mirror for Precise & Trusty" external USB Drive
+How to Set Up a Computer to Get Software Updates from the Internet or from the 
+   Ukarumpa FTP Site On a Scheduled Daily or Periodic Basis
+How to Tweak the update-mirror.sh Script to Add or Remove a Repository from the 
+   apt-mirror Updating Process
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+How to update your Linux computer's software with this "Full Wasta-Offline Mirror for 
+   Precise & Trusty"
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+This "How to" tells how to use a "Full Wasta-Offline Mirror" hard drive together with 
+the wasta-offline program to update the software of a Wasta-Linux computer
+See: http://tiki.lingtransoft.info/tiki-index.php?page_ref_id=253#Consultant-SoftwareImprovements:HowtoUpdateSoftwareeasilybyMemoryStick 
+for an illustrated tutorial for using the Wasta-Offline program. 
+Here is a basic outline of the steps:
+1. Simply plug this drive into any Wasta-Linux computer. The wasta-offline program 
+   should start automatically in about 10 seconds.
+2. Enter the computer user's password and click OK.
+3. When the initial "wasta[Offline]" dialog appears leave the default selection 
+   "OFFLINE ONLY" selected and click OK.
+4. Two successive progress dialogs will appear while wasta-offline is "Adding 
+   wasta [Offline] apt-mirror repositories..." and "Updating software lists..." 
+   They will work from 30 seconds to 2 minutes, and close automatically when 
+   finished.
+5. The "wasta [Offline]: Ready" dialog will appear. You will leave this window open 
+   while using other programs such as "Update Manager" or "Synaptic Package Manager" 
+   to complete any software updates or installs. No Internet connection will be used 
+   as this is an entirely "offline" process.
+6. Start up the Update Manager by clicking on the Update Manager's icon in the panel 
+   or by selecting it from the Administration menu.
+7. Enter the computer user's password and click OK. The Update Manager's main window 
+   appears.
+8. If Update Manager's main window shows that software updates are available, click 
+   on the "Install Updates" button on the tool bar. The updates will then be 
+   downloaded (from the external hard drive to the computer - not from the Internet), 
+   and then they will be installed. The process may take a few minutes depending on 
+   the number of updates.
+9. When the "Update is complete" message appears, click on the "Close" button. The 
+   Update Manager automatically closes.
+10. If you are not going to install any new software, you can click on the "Finished" 
+    button back on the "wasta [Offline]: Ready" message window. Before wasta-offline 
+    ends, it will silently point your software sources back to their previous 
+    repositories.
+11. If you want to install new software from the external hard drive mirror, leave 
+    the "wasta [Offline]: Ready" window open.
+12. To install new software from the external hard drive, start up the Synaptic 
+    Package Manager by selecting it from the Administration menu.
+13. Enter the computer user's password and click OK. The Synaptic Package Manager's 
+    main window appears.
+14. Click on the "Search" button on the tool bar, and enter the name (or part of a 
+    name) of the software you want to install. After a few seconds you should see a 
+    list of software packages that were found matching your search criteria.
+15. If the software you want to install is listed, click in the check box next to 
+    the software package, and select the "Mark for Installation" option. A tick mark 
+    will appear in the check box. If a dialog appears asking "Mark additional 
+    required changes?" click on the "Mark" button.
+16. Click on the "Apply" button in the main tool bar. Another dialog may open asking 
+    "Apply the following changes?". Click on the "Apply" button on this dialog. The 
+    package manager then downloads the software program from the external hard drive 
+    to the computer - not the Internet, and the new software will be installed. After 
+    the installation has finished the package manager will show the program in its 
+    main window listed with the check box showing it as installed (green filled check 
+    box).
+17. Close the Synaptic Package Manager.
+18. When all updates and installs are finished, remember to click on the "Finished" 
+    button on the "wasta [Offline]: Ready" message window, to close it. Before 
+    wasta-offline ends, it will silently point your software sources back to their 
+    previous repositories.
+
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+How to update a Wasta-Offline Mirror on a USB external Drive and bring it up to date 
+   - synchronizing it with a master mirror (using the sync_Wasta-Offline_to_Ext_Drive.sh
+    script):
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+This "How to" tells how to synchronize a slightly out-of-date Wasta-Offline Mirror that 
+resides on an external USB drive up-to-date against an up-to-date master mirror that
+resides on a local computer
+1. Plug the slightly out-of-date Full Wasta-Offline Mirror for Precise and Trusty 
+   into the USB port of the computer that has an up-to-date copy of the Wasta-Offline
+   Mirror.
+2. After about 10 seconds the wasta-offline program will start automatically (if the 
+   computer is running wasta-linux), and display a dialog asking for your password. 
+   This time click on "Cancel" to close the dialog and stop the wasta-offline program 
+   from running. We don't need the wasta-offline program running while we update the 
+   mirror (although it causes no problem if it is running).
+3. Open the File Manager (Nemo) and locate the external hard drive. It should be 
+   called "LM-UPDATES" under the "Devices" list in Nemo. Click on "LM-UPDATES" to 
+   highlight the drive and display its contents in the right-hand pane of Nemo.
+4. In the root directory of the LM-UPDATES drive you should see a script there that 
+   is called: sync_Wasta-Offline_to_Ext_Drive.sh. 
+5. Highlight the sync_Wasta-Offline_to_Ext_Drive.sh script and press Enter (or 
+   double-click on the sync_Wasta-Offline_to_Ext_Drive.sh file). Select the "Run in 
+   Terminal" button. The script will open a terminal window and start running. If the
+   script starts running in a terminal window skip to step 6 below.
+   Note: If the script opens in the gedit editor instead of asking you if you want
+   to "Run in Terminal", you can make the following adjustment in the Nemo settings:
+     a. Quit the gedit editor, and start the Nemo file manager (click the "Files"
+        icon on the panel) 
+     b. Select "Preferences" from Nemo's "Edit" menu.
+     c. Select the "Behavior" tab at the top of the Preferences dialog.
+     d. Under the "Executable Text Files" section, select the "Ask each time" button.
+     e. Click on the "Close" button. Now when you double-click on an executable 
+        script file, Nemo should give you the option of "Run in Terminal".
+   If, after following sub-steps a through e above, Nemo still opens the script in 
+   the gedit editor instead of offering to "Run" it, it may be that the script is 
+   not set to have executable permissions. To check and set permissions on the script,
+   you can make the following adjustment to the script file's permissions:
+     a. Start the Nemo file manager (click the "Files" icon on the panel)
+     b. Navigate to the device or folder containing the script that you want to check.
+     c. Right-click on the script's name in the list, and select "Properties".
+     d. In the "Properties" dialog select the "Permissions" tab at the top of the 
+        dialog.
+     e. Make sure there is a tick in the check box to the right of "Execute" that says
+        "Allow executing file as program".
+     f. Click on the "Close" button. Now when you double-click on an executable 
+        script file, Nemo should give you the option of "Run in Terminal".
+6. The script will ask you for your user password. Type the password (blindly since 
+   it doesn't echo what you type) and press Enter.
+7. The sync_Wasta-Offline_to_Ext_Drive.sh assumes by default that the master mirror
+   on the local computer is located at: /data/wasta-offline/apt-mirror, and the 
+   mirror on the external USB drive is at: /media/LM-UPDATES/wasta-offline/apt-mirror
+   (if running Precise 12.04 version of Wasta-Linux), or the mirror on the external
+   USB drive will be at: /media/$USER/LM-UPDATES/wasta-offline/apt-mirror (if running
+   Trusty 14.04 version of Wasta-Linux.
+   If your mirror locations are not at these defaults, you will need to launch the
+   sync_Wasta-Offline_to_Ext_Drive.sh script from the command line and provide it
+   with parameters that specify the source and destination apt-mirror directories
+   used in your individual configuration. The parameters should point to the 
+   wasta-offline directory of the source and destination mirrors.
+8. Once the sync_Wasta-Offline_to_Ext_Drive.sh script is running, it will check 
+   timestamp of the mirror on the external USB drive and compare it with the 
+   timestamp of the master local mirror. Since the master mirror is presumed to be
+   more up-to-date, you will be asked to confirm whether you want the mirror at the
+   external USB drive destination to be updated from the master mirror's NEWER 
+   version:
+ 
+    Comparing time stamps of the destination and source mirrors...
+      Timestamp of mirror at destination is: 1415071069
+      Timestamp of mirror at source is: 1415059606
+    An OLDER copy of the wasta-offline mirror already exists!
+    Replace it with the NEWER mirror from the external hard drive? [y/n]
+    Please press the y or n key, or hit any key to abort - countdown 60  
+
+   Here again, the "countdown" will take 60 seconds to count down. If you don't
+   respond within 60 seconds the "y" (yes) response will be assumed if the destination
+   mirror is OLDER or if there is no timestamp on the destination mirror. (In all other
+   situations, a "n" (no) response will be assumed.)
+9. Assuming the script continues from the above prompt, it calls rsync to update
+   the mirror files at the external drive destination with those in the master
+   mirror. If the mirrors on external USB drives are synchronized periodically, the
+   updating process goes quickly, usually just a few minutes to complete. 
+10. When the sync_Wasta-Offline_to_Ext_Drive.sh script finishes the terminal will 
+    display these two lines:
+      The sync_Wasta-Offline_to_Ext_Drive.sh script has finished.
+      FINISHED:  Press <ENTER> to exit...
+    Press the Enter key to end the terminal session and close its window. This needs 
+    to be done, otherwise the USB external hard drive will indicate it is "Busy" when  
+    you try to safely remove it.
+
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+How to update the "Full Wasta-Offline Mirror for Precise & Trusty" with the latest 
+   software updates from the Internet or from the Ukarumpa FTP site (using the
+   update-mirror.sh script):
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+This "How to" tells how to update the mirror using any Linux computer that has access 
+to the Internet, or access to a local FTP server that has up-to-date versions of the 
+software mirrors mentioned above. The update-mirror.sh script is provided for this
+purpose. The process of updating this full mirror could involve downloading many 
+gigabytes of data, so be sure you have cheap access for downloading data from the 
+Internet, or have access to a free FTP server that contains the data. Depending on 
+the speed of your connection to the Internet (or to the FTP server), the update 
+process could take many hours (or even days). Hence, do the updating process on a 
+computer that can be left to run unattended for a long time - perhaps overnight is
+often a convenient time.
+1. Plug the Full Wasta-Offline Mirror for Precise and Trusty into the USB port of the 
+   computer that has a connection to the server or Internet.
+2. After about 10 seconds the wasta-offline program will start automatically (if the 
+   computer is running Wasta-Linux and wasta-offline is pre-installed), and 
+   wasta-offline will display a dialog asking for your password. 
+   This time click on "Cancel" to close the dialog and stop the wasta-offline program 
+   from running. We don't need the wasta-offline program running while we update the 
+   mirror (although it causes no problem if it is running).
+3. Open the File Manager (Nemo) and locate the external hard drive. It should be 
+   called "LM-UPDATES" under the "Devices" list in Nemo. Click on "LM-UPDATES" to 
+   highlight the drive and display its contents in the right-hand pane of Nemo.
+4. In the root directory of the LM-UPDATES drive you should see a script there that 
+   is called: update-mirror.sh. 
+5. Highlight the update-mirror.sh script and press Enter (or double-click on the 
+   update-mirror.sh file). Select the "Run in Terminal" button. The script will open
+   a terminal window and start running. If the script starts running in a terminal 
+   window skip to step 6 below.
+   Note: If the script opens in the gedit editor instead of asking you if you want
+   to "Run in Terminal", you can make the following adjustment in the Nemo settings:
+     a. Quit the gedit editor, and start the Nemo file manager (click the "Files"
+        icon on the panel) 
+     b. Select "Preferences" from Nemo's "Edit" menu.
+     c. Select the "Behavior" tab at the top of the Preferences dialog.
+     d. Under the "Executable Text Files" section, select the "Ask each time" button.
+     e. Click on the "Close" button. Now when you double-click on an executable 
+        script file, Nemo should give you the option of "Run in Terminal".
+   If, after following sub-steps a through e above, Nemo still opens the script in 
+   the gedit editor instead of offering to "Run" it, it may be that the script is 
+   not set to have executable permissions. To check and set permissions on the script,
+   you can make the following adjustment to the script file's permissions:
+     a. Start the Nemo file manager (click the "Files" icon on the panel)
+     b. Navigate to the device or folder containing the script that you want to check.
+     c. Right-click on the script's name in the list, and select "Properties".
+     d. In the "Properties" dialog select the "Permissions" tab at the top of the 
+        dialog.
+     e. Make sure there is a tick in the check box to the right of "Execute" that says
+        "Allow executing file as program".
+     f. Click on the "Close" button. Now when you double-click on an executable 
+        script file, Nemo should give you the option of "Run in Terminal".
+6. The script will ask you for your user password. Type the password (blindly since 
+   it doesn't echo what you type) and press Enter.
+7. The script then checks for the existence of certain files and programs, and will 
+   install the apt-mirror program on the computer if it is not already installed. 
+8. The script will then ask you where it should get software updates from, giving you 
+   the following choices to choose from:
+
+   Where should the Wasta-Offline Mirror get its software updates?
+     1) Get software updates from the SIL Ukarumpa local network FTP server.
+     2) Get software updates directly from the Internet (might be expensive!)
+     3) Get software updates from a custom network path that I will provide.
+     4) Quit - I don't want to get any software updates at this time.
+   Please press the 1, 2, 3, or 4 key, or hit any key to abort - countdown 60
+
+   The "countdown" will take 60 seconds to count down. If you don't respond within  
+   60 seconds the 4) Quit option will automatically happen and the script will stop 
+   without doing anything more. If it quits before you can read the options and 
+   decide, just press Enter to finish the script, and begin again at step 5 above.
+   The usual option to select when at Ukarumpa would be "1) Get software updates from 
+   the SIL Ukarumpa local network FTP server". You should have a speedy DSL 
+   connection to the server, and the computer's access to the FTP server should be 
+   confirmed before you make your selection at this menu, otherwise the script will 
+   abort with an error if it cannot access the FTP server.
+   If you are in a country with cheap/unlimited data access to the Internet, and 
+   have a broadband connection, then you would choose 2) Get software updates 
+   directly from the Internet. Be forewarned - updating the full mirror may involve 
+   downloading anywhere from a few hundred Magabytes to tens of Gigabytes of data 
+   and take hours (if not days) to complete - especially if it has been a long time 
+   since the full mirror was updated.
+   If you are in a country/location that has access to a local software mirror that 
+   you can access without cost, you might choose option 3) and enter a network path 
+   to the mirror. The path you enter will need to be the full path to the directory 
+   that contains the mirror repos listed in the chart above. This might take some 
+   experimentation to get the path you enter correct.
+9. Once you respond with 1, 2, or 3, of the 4 items in the above menu, and the 
+   apt-mirror program has started, apt-mirror will continue downloading any updated
+   mirror data until all the data has been downloaded - which may take a long time.
+10. When apt-mirror finishes downloading the data, it automatically runs the 
+    postmirror.sh script located in the local mirror's /wasta-offline/apt-mirror/var/
+    directory. This script automatically calls a clean.sh script (located in the same
+    directory), and then prompts the user with this menu of choices:
+
+    Run the postmirror2.sh script to correct Hash Sum mismatches errors?
+      1) No, don't run the script. There are no Hash Sum mismatches (default)
+      2) Yes, run the script and get (75MB) of metadata from the Internet, or
+      3) Yes, run the script and get (75MB) of metadata from the local FTP site
+    Please press the 1, 2, or 3 key, or hit any key to abort - countdown 60  
+
+    The "countdown" will take 60 seconds to count down. If you don't respond within  
+    60 seconds the 1) No, don't run the script... selection will automatically happen 
+    and the script will not check for "Hash Sum mismatches". Not checking for "Hash Sum
+    mismatches" should be the usual choice - unless you or others have experienced 
+    "Hash Sum mismatch" errors when trying to update the software on computers while
+    using the wasta-offline program against this mirror.
+11. The script will keep running, and if an external USB drive is attached, the script
+    will check timestamp of the mirror on the external USB drive and compare it with 
+    the timestamp of the local mirror that was just updated by apt-mirror. Depending
+    on the timestamps, you will be asked to confirm whether or not you want the 
+    mirror at the external USB drive destination to be updated. The information and
+    prompt will look something like this:
+ 
+    Comparing time stamps of the destination and source mirrors...
+      Timestamp of mirror at destination is: 1415071069
+      Timestamp of mirror at source is: 1415059606
+    An OLDER copy of the wasta-offline mirror already exists!
+    Replace it with the NEWER mirror from the external hard drive? [y/n]
+    Please press the y or n key, or hit any key to abort - countdown 60  
+
+    Here again, the "countdown" will take 60 seconds to count down. If you don't
+    respond within 60 seconds the "y" (yes) response will be assumed if the destination
+    mirror is "OLDER" or if "there is no timestamp" on the destination mirror. In all 
+    other situations, a "n" (no) response will be assumed, and automatically selected
+    if the countdown reaches zero.
+12. The prompts in 10 and 11 above have countdown times so that a user can allow the
+    most common actions to take place unattended - that is, not checking for "Hash Sum
+    mismatches", and the usual updating of a mirror on an attached external USB drive 
+    which will normally be OLDER than the just-updated local master mirror.
+
+    If you need to interrupt the script for any reason, you can do so by typing CTRL+C 
+    within the terminal session window (you may need to do CTRL+C repeatedly to truly 
+    stop the script). If apt-mirror was still running when a CTRL+C interrupt signal is
+    given, the apt-mirror program will stop. You can start up the update-mirror.sh script 
+    again at any time and apt-mirror will continue downloading the software changes from 
+    the point where it left off. It won't have to re-download any data that has already 
+    been downloaded. Hence, you can repeatedly run the updata-mirror.sh script and 
+    interrupt it as many times as it takes to get all the available software updates - or
+    choose an alternate menu response that was bypassed by the countdown in 10 or 11
+    above.
+13. When the updata-mirror.sh script finishes the terminal will display these two 
+    lines:
+      The updata-mirror.sh script has finished.
+      FINISHED:  Press <ENTER> to exit...
+    Press the Enter key to end the terminal session and close its window. This needs 
+    to be done, otherwise the USB external hard drive will indicate it is "Busy" when  
+    you try to safely remove it.
+
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+How to Make a Master or Backup Wasta-Offline Mirror by Copying all of the data from 
+   the Existing Mirror on the External USB Drive to the local computer (using the
+   make_Master_for_Wasta-Offline.sh script):
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+This "How to" tells how to create a full Wasta-Offline master mirror on a local 
+computer (or a backup of the full Wasta-Offline mirror) copying from an existing
+Wasta-Offline mirror contained on an external USB drive. Making a master mirror is
+desirable since it can be used as the machine that regularly calls apt-mirror to
+keep its master mirror up-to-date, and can then be the source mirror from which 
+one or more external drive(s) can be synchronized and brought up to date locally
+without having to download mirror update afresh for each copy of the mirror. The
+computer containing the master mirror can be set to automatically download mirror
+updates from a free local FTP server that has up-to-date versions of the software 
+mirrors mentioned above, or (if cheap "unlimited" Internet is available) from
+the Internet. 
+   IMPORTANT: Before you create a full Wasta-Offline master mirror, be sure that
+the computer has enough space available to hold a full mirror. It should have at
+least 320GB of free space for the mirror (and future updates).
+The update-mirror.sh script is provided for this purpose. Here are the steps:
+1. Plug the Full Wasta-Offline Mirror for Precise and Trusty into the USB port of the 
+   computer that has a connection to the server or Internet.
+2. After about 10 seconds the wasta-offline program will start automatically (if the 
+   computer is running wasta-linux), and display a dialog asking for your password. 
+   This time click on "Cancel" to close the dialog and stop the wasta-offline program 
+   from running. We don't need the wasta-offline program running while we update the 
+   mirror (although it causes no problem if it is running).
+3. Open the File Manager (Nemo) and locate the external hard drive. It should be 
+   called "LM-UPDATES" under the "Devices" list in Nemo. Click on "LM-UPDATES" to 
+   highlight the drive and display its contents in the right-hand pane of Nemo.
+4. In the root directory of the LM-UPDATES drive you should see a script there that 
+   is called: make_Master_for_Wasta-Offline.sh. Highlight the 
+   make_Master_for_Wasta-Offline.sh script and press Enter (or double-click on the 
+   make_Master_for_Wasta-Offline.sh file). Select the "Run in Terminal" button. The 
+   script will open a terminal window and start running. If the script starts 
+   running in a terminal window skip to step 5 below.
+   Note: If the script opens in the gedit editor instead of asking you if you want
+   to "Run in Terminal", you can make the following adjustment in the Nemo settings:
+     a. Quit the gedit editor, and start the Nemo file manager (click the "Files"
+        icon on the panel) 
+     b. Select "Preferences" from Nemo's "Edit" menu.
+     c. Select the "Behavior" tab at the top of the Preferences dialog.
+     d. Under the "Executable Text Files" section, select the "Ask each time" button.
+     e. Click on the "Close" button. Now when you double-click on an executable 
+        script file, Nemo should give you the option of "Run in Terminal".
+   If, after following sub-steps a through e above, Nemo still opens the script in 
+   the gedit editor instead of offering to "Run" it, it may be that the script is 
+   not set to have executable permissions. To check and set permissions on the script,
+   you can make the following adjustment to the script file's permissions:
+     a. Start the Nemo file manager (click the "Files" icon on the panel)
+     b. Navigate to the device or folder containing the script that you want to check.
+     c. Right-click on the script's name in the list, and select "Properties".
+     d. In the "Properties" dialog select the "Permissions" tab at the top of the 
+        dialog.
+     e. Make sure there is a tick in the check box to the right of "Execute" that says
+        "Allow executing file as program".
+     f. Click on the "Close" button. Now when you double-click on an executable 
+        script file, Nemo should give you the option of "Run in Terminal".
+5. The script will ask you for your user password. Type the password (blindly since 
+   it doesn't echo what you type) and press Enter.
+6. If there is no master mirror already located at /data/wasta-offline/apt-mirror/
+   the script calls another script called sync_Wasta-Offline_to_Ext_Drive.sh with 
+   appropriate parameters so that it copies the full mirror from the external USB 
+   drive to that /data/wasta-offline/apt-mirror/ location on the local computer, 
+   creating the master mirror tree at that /data folder off the root directory.
+
+   If an existing mirror exists at the /data/wasta-offline/apt-mirror location, the 
+   timestamps of the mirrors will be checked and you will be told whether the 
+   destination mirror is "Newer", "Older", or the "Same" as the mirror being copied 
+   from. Depending on the timestamps, you will be asked to confirm whether you want 
+   the mirror at the external USB drive destination to be updated or not:
+ 
+   Comparing time stamps of the destination and source mirrors...
+      Timestamp of mirror at destination is: 1415071069
+      Timestamp of mirror at source is: 1415059606
+   An OLDER copy of the wasta-offline mirror already exists!
+   Replace it with the NEWER mirror from the external hard drive? [y/n]
+   Please press the y or n key, or hit any key to abort - countdown 60  
+
+   Here again, the "countdown" will take 60 seconds to count down. If you don't
+   respond within 60 seconds the "y" (yes) response will be assumed if the destination
+   mirror is OLDER or if there is no timestamp on the destination mirror. In all other
+   situations, a "n" (no) response will be assumed.
+
+   Note: If you want the master mirror created at a different location than the 
+   default location of /data/wasta-offline/apt-mirror/, you can do so by running
+   the make_Master_for_Wasta-Offline.sh script manually from the command line in a
+   Terminal with a call like this (made from the /media/LM-UPDATES directory if using
+   Wasta-Linux Precise 12.04, or from the /media/<user-name>/LM-UPDATES directory if 
+   using Wasta-Linux Trusty 14.04):
+
+        cd /media/LM-UPDATES  [ or: cd /media/<user-name>/LM-UPDATES ]
+        bash make_Master_for_Wasta-Offline.sh <destination-path> 
+
+   where the <destination-path> should be the path to the destination mirror tree's
+   apt-mirror directory. For example, if the destination is to be in the /home/bill/
+   directory, the <destination-path> would be: /home/bill/wasta-offline/apt-mirror
+   and the actual command line command would be (on a Trusty system):
+
+        cd /media/bill/LM-UPDATES
+        bash make_Master_for_Wasta-Offline.sh /home/bill/wasta-offline/apt-mirror
+
+   See the script file itself for how to use other parameter configurations when
+   manually invoking the script from a command line.
+7. The script uses rsync to create the master mirror (or update if one already
+   existed). The creation of a new mirror at the destination will take about 4.5
+   hours to complete regardless of whether you are using a USB 2.0 or USB 3.0 
+   connection. 
+8. When the make_Master_for_Wasta-Offline.sh and sync_Wasta-Offline_to_Ext_Drive.sh 
+   scripts finish the terminal will display these lines:
+      The sync_Wasta-Offline_to_Ext_Drive.sh script has finished.
+      The make_Master_for_Wasta-Offline.sh script has finished.
+      FINISHED:  Press <ENTER> to exit...
+   Press the Enter key to end the terminal session and close its window. This needs 
+   to be done, otherwise the USB external hard drive will indicate it is "Busy" when  
+   you try to safely remove it.
+
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+How to clone a new Wasta-Offline Mirror to a New External USB Hard Drive, Copying 
+   from a Master Wasta-Offline Mirror (using the sync_Wasta-Offline_to_Ext_Drive.sh
+   script):
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+This "How to" assumes that you have a master mirror on the local computer and that
+you want to make a new Wasta-Offline Mirror on a new or empty External USB hard 
+drive. 
+1. Plug in a new or empty external USB hard drive into the USB port of the local 
+   computer that has an existing master copy of Wasta-Offline Mirror on its hard 
+   drive (the default location of the master mirror is /data/wasta-offline/apt-mirror). 
+   This new/empty USB hard drive should have at least 320GB of capacity. 
+2. Open the File Manager (Nemo) on the local computer and locate the wasta-offline
+   mirror. The default location for it would be /data/wasta-offline/apt-mirror/.
+   Navigate to the base directory of the mirror (in our case the /data/ directory), 
+   where you should see its contents displayed in the right-hand pane of Nemo.
+3. In the root (/data) directory you should see a script there that is called: 
+   sync_Wasta-Offline_to_Ext_Drive.sh. Highlight the sync_Wasta-Offline_to_Ext_Drive.sh
+   script and press Enter (or double-click on the sync_Wasta-Offline_to_Ext_Drive.sh
+   file). Select the "Run in Terminal" button. The script will open a terminal window 
+   and start running. If the script starts running in a terminal window skip to step 
+   4 below.
+   Note: If the script opens in the gedit editor instead of asking you if you want
+   to "Run in Terminal", you can make the following adjustment in the Nemo settings:
+     a. Quit the gedit editor, and start the Nemo file manager (click the "Files"
+        icon on the panel) 
+     b. Select "Preferences" from Nemo's "Edit" menu.
+     c. Select the "Behavior" tab at the top of the Preferences dialog.
+     d. Under the "Executable Text Files" section, select the "Ask each time" button.
+     e. Click on the "Close" button. Now when you double-click on an executable 
+        script file, Nemo should give you the option of "Run in Terminal".
+   If, after following sub-steps a through e above, Nemo still opens the script in 
+   the gedit editor instead of offering to "Run" it, it may be that the script is 
+   not set to have executable permissions. To check and set permissions on the script,
+   you can make the following adjustment to the script file's permissions:
+     a. Start the Nemo file manager (click the "Files" icon on the panel)
+     b. Navigate to the device or folder containing the script that you want to check.
+     c. Right-click on the script's name in the list, and select "Properties".
+     d. In the "Properties" dialog select the "Permissions" tab at the top of the 
+        dialog.
+     e. Make sure there is a tick in the check box to the right of "Execute" that says
+        "Allow executing file as program".
+     f. Click on the "Close" button. Now when you double-click on an executable 
+        script file, Nemo should give you the option of "Run in Terminal".
+4. The script will ask you for your user password. Type the password (blindly since 
+   it doesn't echo what you type) and press Enter.
+5. If the external hard drive is formatted as a FAT, FAT32, or other non-Linux file 
+   system, it needs to be formatted to a Linux Ext4 file system to receive a clone of
+   the master mirror, and so the script will search for and display any such eligible 
+   USB drives that are mounted on the system, and present the user with a list of
+   such drive(s), and prompt the user to select the number of the USB drive to be
+   used. Normally only one such drive would be listed, but if more such USB drives 
+   are mounted they would be listed as 2), 3), etc. The prompt will look similar to
+   this:
+
+     Seaching for USB storage drive(s) on this computer...
+      1) WDC WD50:00LPVX-22V0TT0:/dev/sdd:/media/MyData:MyData:500GB 
+     Type the number of the USB drive to use, or hit any key to abort - countdown 60
+
+   If the countdown goes to 0 before a response is given, no USB drive will be
+   selected, error messages issued and the sync process will be aborted. If the
+   user does make a selection, the following information and prompt will be 
+   displayed:
+
+   You have selected this USB device mounted at /dev/sdd:
+     WDC WD50:00LPVX-22V0TT0:/dev/sdd:/media/MyData:MyData:500GB
+
+   WARNING: This USB drive will be formatted - ALL data on it erased. OK (y/n)? 
+   Type 'y' to proceed with formatting, any other key to abort - countdown 60
+
+   Again, if the countdown goes to 0 before a response is given, the formatting
+   process will be aborted, error messages issued and the sync process will be 
+   aborted.
+
+6. Once the external hard drive is deemed eligible to receive the mirror data (has
+   the required Linux file system, and a capacity of at least 320GB), the
+   sync process will proceed.
+7. When the sync_Wasta-Offline_to_Ext_Drive.sh script finishes the terminal will 
+   display these lines:
+      The sync_Wasta-Offline_to_Ext_Drive.sh script has finished.
+      FINISHED:  Press <ENTER> to exit...
+   Press the Enter key to end the terminal session and close its window. This needs 
+   to be done, otherwise the USB external hard drive will indicate it is "Busy" when  
+   you try to safely remove it.
+
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+How to Fix "Hash Sum mismatch" Errors that Appear When Trying to Use the "Full 
+   Wasta-Offline Mirror for Precise & Trusty" external USB Drive (using the
+   update-mirror.sh and postmirror2.sh scripts):
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+If users get "Hash Sum mismatch" errors when they try to use the Wasta-Offline
+Mirror to update their computer , it means that some of the mirror's metadata files 
+were not properly synchronized or updated when the apt-mirror program attempted to 
+update the mirror. This situation can usually be rectified by allowing the postmirror2.sh
+script to run at the end of an apt-mirror update. Follow these steps:
+1. Plug the Full Wasta-Offline Mirror for Precise and Trusty into the USB port of the 
+   computer that has a connection to the server or Internet.
+2. After about 10 seconds the wasta-offline program will start automatically (if the 
+   computer is running wasta-linux), and display a dialog asking for your password. 
+   This time click on "Cancel" to close the dialog and stop the wasta-offline program 
+   from running. We don't need the wasta-offline program running while we update the 
+   mirror (although it causes no problem if it is running).
+3. Open the File Manager (Nemo) and locate the external hard drive. It should be 
+   called "LM-UPDATES" under the "Devices" list in Nemo. Click on "LM-UPDATES" to 
+   highlight the drive and display its contents in the right-hand pane of Nemo.
+4. In the root directory of the LM-UPDATES drive you should see a script there that 
+   is called: update-mirror.sh. Highlight the update-mirror.sh script and press Enter 
+   (or double-click on the update-mirror.sh file). Select the "Run in Terminal" button. 
+   The script will open a terminal window and start running. If the script starts 
+   running in a terminal window skip to step 5 below.
+   Note: If the script opens in the gedit editor instead of asking you if you want
+   to "Run in Terminal", you can make the following adjustment in the Nemo settings:
+     a. Quit the gedit editor, and start the Nemo file manager (click the "Files"
+        icon on the panel) 
+     b. Select "Preferences" from Nemo's "Edit" menu.
+     c. Select the "Behavior" tab at the top of the Preferences dialog.
+     d. Under the "Executable Text Files" section, select the "Ask each time" button.
+     e. Click on the "Close" button. Now when you double-click on an executable 
+        script file, Nemo should give you the option of "Run in Terminal".
+   If, after following sub-steps a through e above, Nemo still opens the script in 
+   the gedit editor instead of offering to "Run" it, it may be that the script is 
+   not set to have executable permissions. To check and set permissions on the script,
+   you can make the following adjustment to the script file's permissions:
+     a. Start the Nemo file manager (click the "Files" icon on the panel)
+     b. Navigate to the device or folder containing the script that you want to check.
+     c. Right-click on the script's name in the list, and select "Properties".
+     d. In the "Properties" dialog select the "Permissions" tab at the top of the 
+        dialog.
+     e. Make sure there is a tick in the check box to the right of "Execute" that says
+        "Allow executing file as program".
+     f. Click on the "Close" button. Now when you double-click on an executable 
+        script file, Nemo should give you the option of "Run in Terminal".
+5. The script will ask you for your user password. Type the password (blindly since 
+   it doesn't echo what you type) and press Enter.
+6. At the end of the apt-mirror update, apt-mirror automatically calls the postmirror.sh 
+   script. This postmirror.sh script will give the user the following options:
+
+   Run the postmirror2.sh script to correct Hash Sum mismatches errors?
+    1) No, don't run the script. There are no Hash Sum mismatches
+    2) Yes, run the script and get (75MB) of metadata from the Internet, or
+    3) Yes, run the script and get (75MB) of metadata from the local FTP site
+   Please press the 1, 2, or 3 key, or hit any key to abort - countdown 60  
+
+   Select item 2) or 3) - whichever is appropriate for your situation - to download
+   the metadata files afresh to the mirror.
+   Note: This prompt has a timer. If no response is given within 60 seconds, 
+   "1) No, don't run the script. There are no Hash Sum mismatches" is 
+   automatically selected and the script will end without attempting to correct any 
+   Hash Sum mismatches.
+   If 1 is entered, the script finishes with, "The postmirror2.sh will not be called.
+   Script completed."
+   If 2 is entered, postmirror2.sh is called without any parameter (Internet use 
+   assumed)
+   If 3 is entered, postmirror2.sh is called with a "ftp" parameter and "ftp" will be 
+   interpreted to be equivalent to:
+   "ftp://ftp.sil.org.pg/Software/CTS/Supported_Software/Ubuntu_Repository/mirror/"
+   within the postmirror2.sh script (unless postmirror2.sh is called manually and a 
+   different parameter is used for the URL).
+7. When the update-mirror.sh, postmirror.sh, and postmirror2.sh scripts finish the 
+   terminal will display these lines:
+      The update-mirror.sh script has finished.
+      FINISHED:  Press <ENTER> to exit...
+   Press the Enter key to end the terminal session and close its window. This needs 
+   to be done, otherwise the USB external hard drive will indicate it is "Busy" when  
+   you try to safely remove it.
+8. You should then run the wasta-offline program against the mirror on the USB drive 
+   and run the Update Manager, and click on the Update Manager's "Refresh" button. There
+   should no longer be any "Hash Sum mismatch" errors detected.
+
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+How to Set Up a Computer to Get Software Updates from the Internet or from the 
+   Ukarumpa FTP Site On a Scheduled Daily or Periodic Basis:
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+It is best to schedule the downloading of software updates to be done to a master 
+copy of the Wasta-Offline Mirror that exists on a local computer that can be left
+running overnight. The "How to Make a Master or Backup Wasta-Offline Mirror..."
+instructions above tell how to create such a master copy of the Wasta-Offline Mirror.
+Once a master mirror exists on a computer, updates to that mirror can be scheduled
+as a cron job. When apt-mirror is installed on a computer, it creates a sample
+cron job template file at: /etc/cron.d/apt-mirror. Here is how to schedule such a cron 
+job:
+1. Open a Terminal window (CTRL+ALT+T).
+2. Change to the /etc/cron.d/ directory: cd /etc/cron.d
+3. Edit the apt-mirror file as root: sudo gedit apt-mirror
+4. The content of the apt-mirror file will initially look like this:
+
+  #
+  # Regular cron jobs for the apt-mirror package
+  #
+  #0 4     * * *   apt-mirror      /usr/bin/apt-mirror > /var/spool/apt-mirror/var/cron.log
+
+   Remove the # character in front of the last line to activate that line. The 4 represents
+   4:00am as the time to run apt-mirror. That would be OK if you regularly leave the 
+   computer running overnight. Alternately, you may want to change the 4 to a different time
+   such as 9 which will represent 9:00am - a time more suitable for a computer that is 
+   generally running during the day but not at night.
+5. After doing the above edits to the apt-mirror file, save the file and quit gedit.
+6. Note: When updated and synced with the supplied scripts, chown calls are made to set the 
+   Wasta-Offline Mirror's owner:group to apt-mirror:apt-mirror. This is necessary for the
+   cron job to work on schedule.
+7. With a cron job updating a master Wasta-Offline Mirror on a regular schedule, it is then
+   a fairly quick job to synchronize one or more external USB drive(s) to bring them 
+   up-to-date, following the steps in the "How to" above called: "How to update a 
+   Wasta-Offline Mirror on a USB external Drive and bring it up to date - synchronizing it 
+   with a master mirror".
+8. You should regularly check the apt-mirror cron job's log to make sure that it is doing
+   its updates as scheduled. The log file is at: /var/spool/apt-mirror/var/cron.log
+   If you double click on the cron.log file at the above location, it should open in gedit
+   and you can check the date of the last run of apt-mirror, and see the output of the
+   apt-mirror run as well as the output of the postmirror.sh script - checking for any
+   reported errors.
+
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+How to Tweak the update-mirror.sh Script to Add or Remove a Repository from the 
+   apt-mirror Updating Process:
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+The content of an apt-mirror generated software mirror is determined by the contents of
+a configuration file called mirror.list that is located at: /etc/apt/mirror.list on the 
+computer that runs the apt-mirror program. The provided script called update-mirror.sh takes 
+care of adjusting the computer's mirror.list file - ensuring that it points to the 
+appropriate external software mirrors. Where the mirror.list file's software sources point 
+to, depend on the user's choice at the following menu when the update-mirror.sh script is 
+run:
+
+   Where should the Wasta-Offline Mirror get its software updates?
+     1) Get software updates from the SIL Ukarumpa local network FTP server.
+     2) Get software updates directly from the Internet (might be expensive!)
+     3) Get software updates from a custom network path that I will provide.
+     4) Quit - I don't want to get any software updates at this time.
+   Please press the 1, 2, 3, or 4 key, or hit any key to abort - countdown 60
+
+See the "How to update the "Full Wasta-Offline Mirror for Precise & Trusty" with the 
+latest software updates from the Internet or from the Ukarumpa FTP site (using the
+update-mirror.sh script)" above for the details.
+
+This "How to" tells how to tweak the script to remove or add repositories that compose
+the "full" Wasta-Offline Mirror. 
+
+The update-mirror.sh script actually uses a bash function called 
+generate_mirror_list_file () which is located in the bash_functions.sh file included
+with the other scripts in this distribution. It is in the generate_mirror_list_file ()
+function that tweaks can be made to determine what content gets generated into the 
+computer's mirror.list file. That generate_mirror_list_file () function utilizes a 
+"here-document" form of redirection that tells the shell to read from the current script's 
+source-text until the line containing EOF is seen. This effectively duplicates the textual 
+content of that segment of the function between its "cat <<EOF..." statement and its final 
+"EOF" line copying that into a fresh version of the mirror.list file on the user's 
+computer. Variables within the text are expanded into their current text values before the 
+mirror.list file is written out to disk. One can control the active content of one's 
+mirror.list file by adding new software repositories to this "here-document" template, or 
+by commenting out existing software repositories. For example, here are two lines from
+the middle of that "here-document":
+
+deb-amd64 $1packages.sil.org/ubuntu precise main
+deb-i386 $1packages.sil.org/ubuntu precise main
+
+The $1 variable will be substituted with a string of characters that was used as a 
+parameter when the generate_mirror_list_file () function was called from the
+update-mirror.sh script. That parameter was either "http://" or the much longer string:
+"ftp://ftp.sil.org.pg/Software/CTS/Supported_Software/Ubuntu_Repository/mirror/".
+If one wanted to remove this repository from the mirror, one could put a # character
+at the beginning of each of the above two lines. That effectively "comments out" those
+two lines from being read by the apt-mirror program. 
+
+Including more repositories is fairly simple. You just add them to the "here-document"
+or uncomment any that are there but are currently commented out. For example, there are
+two lines (for each of the precise and trusty) sections of the template that refer to the 
+virtualbox repositories, but they are initially commented out when they are written to
+the user's mirror.list file. If a user desires to include the virtualbox repositories in 
+the mirror, they could modify the lines in the "here-document" by removing the initial # 
+characters ("uncommenting" them), so that instead of being:
+
+  #deb-amd64 $1download.virtualbox.org/virtualbox/debian precise contrib
+  #deb-i386 $1download.virtualbox.org/virtualbox/debian precise contrib
+
+they would become:
+
+  deb-amd64 $1download.virtualbox.org/virtualbox/debian precise contrib
+  deb-i386 $1download.virtualbox.org/virtualbox/debian precise contrib
+
+in the "here-document", and would consequently be activated when written out to the user's 
+mirror.list file on-the-fly at the time the update-mirror.sh script is run.
+
+Note: If you remove repositories by commenting them out of the resulting mirror.list
+configuration file, those repositories will be purged from the mirror itself, and if you
+later want those repositories back in the mirror, they would have to be downloaded again.
+
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+End of ReadMe documentation
+
