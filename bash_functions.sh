@@ -775,7 +775,20 @@ deb-i386 $1ppa.launchpad.net/libreoffice/libreoffice-4-2/ubuntu trusty main
 deb-amd64 $1ppa.launchpad.net/libreoffice/libreoffice-4-3/ubuntu trusty main
 deb-i386 $1ppa.launchpad.net/libreoffice/libreoffice-4-3/ubuntu trusty main
 
+# Note: the following are for wasta 14.04.2 / Linux Mint 17.1 Rebecca
+deb-amd64 $1packages.linuxmint.com/ rebecca main upstream import #id:linuxmint_main
+deb-i386 $1packages.linuxmint.com/ rebecca main upstream import #id:linuxmint_main
+deb-amd64 $1extra.linuxmint.com/ rebecca main #id:linuxmint_extra
+deb-i386 $1extra.linuxmint.com/ rebecca main #id:linuxmint_extra
+
+# Note: the following are for wasta 14.04.2 / Linux Mint 17.2 Rafaela
+deb-amd64 $1packages.linuxmint.com/ rafaela main upstream import #id:linuxmint_main
+deb-i386 $1packages.linuxmint.com/ rafaela main upstream import #id:linuxmint_main
+deb-amd64 $1extra.linuxmint.com/ rafaela main #id:linuxmint_extra
+deb-i386 $1extra.linuxmint.com/ rafaela main #id:linuxmint_extra
+
 clean $1packages.linuxmint.com/
+clean $1extra.linuxmint.com/
 clean $1archive.ubuntu.com/ubuntu
 clean $1$ARCHIVESECURITY.ubuntu.com/ubuntu
 clean $1extras.ubuntu.com/ubuntu
