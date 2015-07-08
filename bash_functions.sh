@@ -781,7 +781,7 @@ deb-i386 $1packages.linuxmint.com/ rebecca main upstream import #id:linuxmint_ma
 deb-amd64 $1extra.linuxmint.com/ rebecca main #id:linuxmint_extra
 deb-i386 $1extra.linuxmint.com/ rebecca main #id:linuxmint_extra
 
-# Note: the following are for wasta 14.04.2 / Linux Mint 17.2 Rafaela
+# Note: the following are for wasta 14.04.3 / Linux Mint 17.2 Rafaela
 deb-amd64 $1packages.linuxmint.com/ rafaela main upstream import #id:linuxmint_main
 deb-i386 $1packages.linuxmint.com/ rafaela main upstream import #id:linuxmint_main
 deb-amd64 $1extra.linuxmint.com/ rafaela main #id:linuxmint_extra
