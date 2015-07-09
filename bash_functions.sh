@@ -191,7 +191,7 @@ get_valid_LM_UPDATES_mount_point ()
           echo -e "\nCould not find a USB drive on this system!"
           echo "Please connect an LM-UPDATES USB drive to receive software updates, or"
           echo "Alternately, connect an empty USB drive that meets these qualifications:"
-          echo "  Is large enough to contain the full wasta-offline mirror (at least 320GB)"
+          echo "  Is large enough to contain the full wasta-offline mirror (at least 400GB)"
           echo "  Can be formatted with a Linux Ext4 file system (destroying any existing data)"
           echo "  Can be renamed with this label: LM-UPDATES"
           echo "Then, run this script again. Aborting..."
@@ -211,7 +211,7 @@ get_valid_LM_UPDATES_mount_point ()
           echo "Unrecognized selection made, or no reponse within $WAIT seconds."
           echo "Please connect an LM-UPDATES USB drive to receive software updates, or"
           echo "Alternately, connect an empty USB drive that meets these qualifications:"
-          echo "  Is large enough to contain the full wasta-offline mirror (at least 320GB)"
+          echo "  Is large enough to contain the full wasta-offline mirror (at least 400GB)"
           echo "  Can be formatted with a Linux Ext4 file system (destroying any existing data)"
           echo "  Can be renamed with this label: LM-UPDATES"
           echo "Then, run this script again. Aborting..."
@@ -220,11 +220,11 @@ get_valid_LM_UPDATES_mount_point ()
         # If we get this far, the user has typed a valid selection
         echo -e "\n"
         echo "Your choice was $SELECTION"
-        # Check if USB drive has at least 320GB of space
-        if [ ${USBSIZEARRAY[SELECTION-1]} -lt 320 ]; then
+        # Check if USB drive has at least 400GB of space
+        if [ ${USBSIZEARRAY[SELECTION-1]} -lt 400 ]; then
           echo "The selected USB drive has a capacity of ${USBSIZEARRAY[SELECTION-1]}GB"
-          echo "The selected USB drive is too small - it has less than 320GB of disk space."
-          echo "You need a USB hard drive that has at least 320GB of storage capacity."
+          echo "The selected USB drive is too small - it has less than 400GB of disk space."
+          echo "You need a USB hard drive that has at least 400GB of storage capacity."
           echo "Aborting..."
           return 1
         fi
