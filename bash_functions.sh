@@ -738,6 +738,10 @@ deb-amd64 $1ppa.launchpad.net/libreoffice/libreoffice-4-2/ubuntu precise main
 deb-i386 $1ppa.launchpad.net/libreoffice/libreoffice-4-2/ubuntu precise main
 deb-amd64 $1ppa.launchpad.net/libreoffice/libreoffice-4-3/ubuntu precise main
 deb-i386 $1ppa.launchpad.net/libreoffice/libreoffice-4-3/ubuntu precise main
+deb-amd64 $1ppa.launchpad.net/libreoffice/libreoffice-4-4/ubuntu precise main
+deb-i386 $1ppa.launchpad.net/libreoffice/libreoffice-4-4/ubuntu precise main
+deb-amd64 $1ppa.launchpad.net/libreoffice/libreoffice-5-0/ubuntu precise main
+deb-i386 $1ppa.launchpad.net/libreoffice/libreoffice-5-0/ubuntu precise main
 
 # whm added 21Sep2014 trusty repos below:
 # Note: the following are referenced in /etc/apt/sources.list
@@ -774,18 +778,22 @@ deb-amd64 $1ppa.launchpad.net/libreoffice/libreoffice-4-2/ubuntu trusty main
 deb-i386 $1ppa.launchpad.net/libreoffice/libreoffice-4-2/ubuntu trusty main
 deb-amd64 $1ppa.launchpad.net/libreoffice/libreoffice-4-3/ubuntu trusty main
 deb-i386 $1ppa.launchpad.net/libreoffice/libreoffice-4-3/ubuntu trusty main
+deb-amd64 $1ppa.launchpad.net/libreoffice/libreoffice-4-4/ubuntu trusty main
+deb-i386 $1ppa.launchpad.net/libreoffice/libreoffice-4-4/ubuntu trusty main
+deb-amd64 $1ppa.launchpad.net/libreoffice/libreoffice-5-0/ubuntu trusty main
+deb-i386 $1ppa.launchpad.net/libreoffice/libreoffice-5-0/ubuntu trusty main
 
 # Note: the following are for wasta 14.04.2 / Linux Mint 17.1 Rebecca
-deb-amd64 $1packages.linuxmint.com/ rebecca main upstream import #id:linuxmint_main
-deb-i386 $1packages.linuxmint.com/ rebecca main upstream import #id:linuxmint_main
-deb-amd64 $1extra.linuxmint.com/ rebecca main #id:linuxmint_extra
-deb-i386 $1extra.linuxmint.com/ rebecca main #id:linuxmint_extra
+deb-amd64 $1packages.linuxmint.com/ rebecca main upstream import
+deb-i386 $1packages.linuxmint.com/ rebecca main upstream import
+deb-amd64 $1extra.linuxmint.com/ rebecca main
+deb-i386 $1extra.linuxmint.com/ rebecca main
 
 # Note: the following are for wasta 14.04.3 / Linux Mint 17.2 Rafaela
-deb-amd64 $1packages.linuxmint.com/ rafaela main upstream import #id:linuxmint_main
-deb-i386 $1packages.linuxmint.com/ rafaela main upstream import #id:linuxmint_main
-deb-amd64 $1extra.linuxmint.com/ rafaela main #id:linuxmint_extra
-deb-i386 $1extra.linuxmint.com/ rafaela main #id:linuxmint_extra
+deb-amd64 $1packages.linuxmint.com/ rafaela main upstream import
+deb-i386 $1packages.linuxmint.com/ rafaela main upstream import
+deb-amd64 $1extra.linuxmint.com/ rafaela main
+deb-i386 $1extra.linuxmint.com/ rafaela main
 
 clean $1packages.linuxmint.com/
 clean $1extra.linuxmint.com/
@@ -800,6 +808,8 @@ clean $1ppa.launchpad.net/wasta-linux/wasta/ubuntu
 clean $1ppa.launchpad.net/libreoffice/libreoffice-4-1/ubuntu
 clean $1ppa.launchpad.net/libreoffice/libreoffice-4-2/ubuntu
 clean $1ppa.launchpad.net/libreoffice/libreoffice-4-3/ubuntu
+clean $1ppa.launchpad.net/libreoffice/libreoffice-4-4/ubuntu
+clean $1ppa.launchpad.net/libreoffice/libreoffice-5-0/ubuntu
 
 EOF
   LASTERRORLEVEL=$?
