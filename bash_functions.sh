@@ -722,8 +722,10 @@ deb-amd64 $1archive.canonical.com/ubuntu precise partner
 deb-i386 $1archive.canonical.com/ubuntu precise partner
 deb-amd64 $1packages.sil.org/ubuntu precise main
 deb-i386 $1packages.sil.org/ubuntu precise main
-#deb-amd64 $1download.virtualbox.org/virtualbox/debian precise contrib
-#deb-i386 $1download.virtualbox.org/virtualbox/debian precise contrib
+deb-amd64 $1packages.sil.org/ubuntu precise-experimental main
+deb-i386 $1packages.sil.org/ubuntu precise-experimental main
+deb-amd64 $1download.virtualbox.org/virtualbox/debian precise contrib
+deb-i386 $1download.virtualbox.org/virtualbox/debian precise contrib
 # Note: the following are referenced in separate .list files in /etc/apt/sources.list.d/
 # Note: the wasta-linux repos need the source code packages also included
 deb-amd64 $1ppa.launchpad.net/wasta-linux/wasta-apps/ubuntu precise main
@@ -762,8 +764,10 @@ deb-amd64 $1archive.canonical.com/ubuntu trusty partner
 deb-i386 $1archive.canonical.com/ubuntu trusty partner
 deb-amd64 $1packages.sil.org/ubuntu trusty main
 deb-i386 $1packages.sil.org/ubuntu trusty main
-#deb-amd64 $1download.virtualbox.org/virtualbox/debian trusty contrib
-#deb-i386 $1download.virtualbox.org/virtualbox/debian trusty contrib
+deb-amd64 $1packages.sil.org/ubuntu trusty-experimental main
+deb-i386 $1packages.sil.org/ubuntu trusty-experimental main
+deb-amd64 $1download.virtualbox.org/virtualbox/debian trusty contrib
+deb-i386 $1download.virtualbox.org/virtualbox/debian trusty contrib
 # Note: the following are referenced in separate .list files in /etc/apt/sources.list.d/
 # Note: the wasta-linux repos need the source code packages also included
 deb-amd64 $1ppa.launchpad.net/wasta-linux/wasta-apps/ubuntu trusty main
@@ -782,6 +786,10 @@ deb-amd64 $1ppa.launchpad.net/libreoffice/libreoffice-4-4/ubuntu trusty main
 deb-i386 $1ppa.launchpad.net/libreoffice/libreoffice-4-4/ubuntu trusty main
 deb-amd64 $1ppa.launchpad.net/libreoffice/libreoffice-5-0/ubuntu trusty main
 deb-i386 $1ppa.launchpad.net/libreoffice/libreoffice-5-0/ubuntu trusty main
+
+# Note: the following are for musescore 2.0.x (trusty only)
+deb-amd64 $1ppa.launchpad.net/mscore-ubuntu/mscore-stable/ubuntu trusty main
+deb-i386 $1ppa.launchpad.net/mscore-ubuntu/mscore-stable/ubuntu trusty main
 
 # Note: the following are for wasta 14.04.2 / Linux Mint 17.1 Rebecca
 deb-amd64 $1packages.linuxmint.com/ rebecca main upstream import
