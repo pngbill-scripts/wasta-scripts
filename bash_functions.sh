@@ -585,10 +585,13 @@ copy_mirror_root_files ()
     # which updates the destination only if the source file is newer
     rsync -avz --progress --update $script $destscript
   done
-  echo "Synchronizing the ReadMe file to $2..."
+  echo "Synchronizing the ReadMe and README.md files to $2..."
   # For these "root" level files we use --update option instead of the --delete option
   # which updates the destination only if the source file is newer
   rsync -avz --progress --update $1/ReadMe $2
+  rsync -avz --progress --update $1/README.md $2
+  echo "Synchronizing the .git and .gitignore files to $2..."
+  rsync -avz --progress --update $1/.git* $2
   return 0
 }
 
