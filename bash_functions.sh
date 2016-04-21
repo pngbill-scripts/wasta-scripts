@@ -1,6 +1,14 @@
 #!/bin/bash
 # Author: Bill Martin <bill_martin@sil.org>
 # Date: 7 November 2014
+#   - 17 April 2016 Revised some functions to update them and correct logic errors:
+#     get_valid_LM_UPDATES_mount_point () drive space needed increased from 400 to 500GB
+#     copy_mirror_root_files () to find the wasta-offline deb files (now .._all.deb),
+#       and remove any old _i386.deb and _amd64.deb files
+#     generate_mirror_list_file () removed older libreoffice distros and added new ones. Also
+#       added Linux Mint rosa to the repo lists, added ...-experimental to packages.sil.org list.
+#     is_there_a_wasta_offline_mirror_at () had some logic errors fixed, removed the libreoffice
+#       distros from UBUNTUMIRRORS to be scanned.
 # Name: bash_functions.sh
 # Distribution: 
 # This script is included with all Wasta-Offline Mirrors supplied by Bill Martin.
@@ -11,6 +19,7 @@
 # that are used by the other Wasta-Offline scripts, including the following scripts:
 # 1. update-mirror.sh
 # 2. sync_Wasta-Offline_to_Ext_Drive.sh
+# 3. make_Master_for_Wasta-Offline.sh (calls the sync_Wasta-Offline_to_Ext_Drive.sh script)
 #
 # Usage: This bash_functions.sh script should be in the same directory as the calling
 # bash scripts, or referenced with a "source <relative-path>/bash_functions.sh" call is used
@@ -191,7 +200,7 @@ get_valid_LM_UPDATES_mount_point ()
           echo -e "\nCould not find a USB drive on this system!"
           echo "Please connect an LM-UPDATES USB drive to receive software updates, or"
           echo "Alternately, connect an empty USB drive that meets these qualifications:"
-          echo "  Is large enough to contain the full wasta-offline mirror (at least 400GB)"
+          echo "  Is large enough to contain the full wasta-offline mirror (at least 500GB)"
           echo "  Can be formatted with a Linux Ext4 file system (destroying any existing data)"
           echo "  Can be renamed with this label: LM-UPDATES"
           echo "Then, run this script again. Aborting..."
@@ -211,7 +220,7 @@ get_valid_LM_UPDATES_mount_point ()
           echo "Unrecognized selection made, or no reponse within $WAIT seconds."
           echo "Please connect an LM-UPDATES USB drive to receive software updates, or"
           echo "Alternately, connect an empty USB drive that meets these qualifications:"
-          echo "  Is large enough to contain the full wasta-offline mirror (at least 400GB)"
+          echo "  Is large enough to contain the full wasta-offline mirror (at least 500GB)"
           echo "  Can be formatted with a Linux Ext4 file system (destroying any existing data)"
           echo "  Can be renamed with this label: LM-UPDATES"
           echo "Then, run this script again. Aborting..."
@@ -220,11 +229,11 @@ get_valid_LM_UPDATES_mount_point ()
         # If we get this far, the user has typed a valid selection
         echo -e "\n"
         echo "Your choice was $SELECTION"
-        # Check if USB drive has at least 400GB of space
-        if [ ${USBSIZEARRAY[SELECTION-1]} -lt 400 ]; then
+        # Check if USB drive has at least 500GB of space
+        if [ ${USBSIZEARRAY[SELECTION-1]} -lt 500 ]; then
           echo "The selected USB drive has a capacity of ${USBSIZEARRAY[SELECTION-1]}GB"
-          echo "The selected USB drive is too small - it has less than 400GB of disk space."
-          echo "You need a USB hard drive that has at least 400GB of storage capacity."
+          echo "The selected USB drive is too small - it has less than 500GB of disk space."
+          echo "You need a USB hard drive that has at least 500GB of storage capacity."
           echo "Aborting..."
           return 1
         fi
@@ -477,57 +486,51 @@ copy_mirror_root_files ()
   # $PKGPATH is assigned the path to the wasta-offline directory containing the deb packages 
   # deep in the ppa.launchpad.net part of the source mirror's "pool" repo:
   # Note: Since COPYFROMDIR generally has a final /, append $APPMIRROR to it rather than $APPMIRRORDIR
-  PKGPATH=$1$OFFLINEDIR$APTMIRRORDIR"/mirror/ppa.launchpad.net/wasta-linux/wasta-apps/ubuntu/pool/main/w/wasta-offline/"
+  PKGPATH=$1$OFFLINEDIR$APTMIRRORDIR"/mirror/ppa.launchpad.net/wasta-linux/wasta-apps/ubuntu/pool/main/w/wasta-offline"
 
   echo "The 1 parameter is: $1"
   echo "The 2 parameter is: $2"
+  echo "The PKGPATH is: $PKGPATH"
 
-  # Find the latest 32bit and 64bit deb packages, getting their absolute paths prefixed
+  # Previously the wasta-offline debs were specifically packaged for i386 and amd64 packages, but
+  # are currently packaged in an _all.deb package for each distro supported.
   # Due to a strange quirk I'm experiencing with the find command, it fails to find the deb files 
   # if the current directory is /data, so as a work-around, I'll temporarily change the directory
   # to / (root), execute the find command, and then change the current directory back to what it
   # was previously (!).
   OLDDIR=`pwd` # Save the working dir path
   cd / # temporarily change the working dir path to root
-  DEB32BITPKG=`find "$1$OFFLINEDIR$APTMIRRORDIR" -type f -name wasta-offline_*_i386.deb -printf '%T@ %p\n' | sort -n | tail -1 | cut -f2- -d" "`
-  DEB64BITPKG=`find "$1$OFFLINEDIR$APTMIRRORDIR" -type f -name wasta-offline_*_amd64.deb -printf '%T@ %p\n' | sort -n | tail -1 | cut -f2- -d" "`
-  # Handle any find failure that leaves the DEB*PKG variables empty and, if no failures,
+  # Store the found deb files, along with their absolute paths prefixed in a DEBS variable
+  DEBS=`find "$PKGPATH" -type f -name wasta-offline_*_all.deb -printf '%T@ %p\n' | sort -n | cut -f2 -d" "`
+  # Handle any find failure that leaves the DEBS variable empty and, if no failures,
   # copy the deb packages to the root dir of both the source and destination locations.
-  if [[ "x$DEB32BITPKG" == "x" ]]; then
-    echo -e "\nCould not find 32bit wasta-offline deb package in source mirror"
+  if [[ "x$DEBS" == "x" ]]; then
+    echo -e "\nCould not find the wasta-offline deb packages in source mirror"
   else
-    echo -e "\nRemoving any old $1/wasta-offline_*_i386.deb package(s)"
-    rm $1/wasta-offline_*_i386.deb
-    echo "Copying 32bit package from source mirror tree to: $1"
+    if [ -f $1/wasta-offline_*_i386.deb ]; then
+      echo -e "\nRemoving any old $1/wasta-offline_*_i386.deb package(s)"
+      rm $1/wasta-offline_*_i386.deb
+    fi
+    if [ -f $1/wasta-offline_*_amd64.deb ]; then
+      echo -e "\nRemoving any old $1/wasta-offline_*_amd64.deb package(s)"
+      rm $1/wasta-offline_*_amd64.deb
+    fi
+    echo "Copying packages from source mirror tree to: $1"
     # For these "root" level files we use --update option instead of the --delete option
     # which updates the destination only if the source file is newer
-    rsync -avz --progress --update $DEB32BITPKG $1
+    rsync -avz --progress --update $DEBS $1
     if [ -f $2/wasta-offline_*_i386.deb ]; then
       echo "Removing any existing $2/wasta-offline_*_i386.deb file"
       rm $2/wasta-offline_*_i386.deb
     fi
-    echo "Copying 32bit package from source mirror tree to: $2"
-    # For these "root" level files we use --update option instead of the --delete option
-    # which updates the destination only if the source file is newer
-    rsync -avz --progress --update $DEB32BITPKG $2
-  fi
-  if [[ "x$DEB64BITPKG" == "x" ]]; then
-    echo -e "\nCould not find 64bit wasta-offline deb package in source mirror"
-  else
-    echo -e "\nRemoving any old $1/wasta-offline_*_amd64.deb package(s)"
-    rm $1/wasta-offline_*_amd64.deb
-    echo "Copying 64bit package from source mirror tree to: $1"
-    # For these "root" level files we use --update option instead of the --delete option
-    # which updates the destination only if the source file is newer
-    rsync -avz --progress --update $DEB64BITPKG $1
     if [ -f $2/wasta-offline_*_amd64.deb ]; then
       echo "Removing any existing $2/wasta-offline_*_amd64.deb file"
       rm $2/wasta-offline_*_amd64.deb
     fi
-    echo "Copying 64bit package from source mirror tree to: $2"
+    echo "Copying packages from source mirror tree to: $2"
     # For these "root" level files we use --update option instead of the --delete option
     # which updates the destination only if the source file is newer
-    rsync -avz --progress --update $DEB64BITPKG $2
+    rsync -avz --progress --update $DEBS $2
   fi
   cd $OLDDIR # Restore the working dir to what it was
 
@@ -643,7 +646,9 @@ generate_mirror_list_file ()
   #      /data/wasta-offline/apt-mirror for the master copy of the full mirror)
   #   $ARCHIVESECURITY is either "archive" (for Ukarumpa FTP mirror), or "security" (for the
   #      remote Internet mirror).
-  # 
+  # Revised 22 March 2016 by Bill Martin:
+  #   Change LibreOffice versions to include 4-2, 4-4, 5-0, 5-1
+  #   Add Linux Mint Rosa to list
 
   # If this is the first generation of mirror.list, first back up the user's existing mirror.list
   # to mirror.list.save. The existing mirror.list file won't have the $GENERATEDSIGNATURE in the
@@ -722,6 +727,8 @@ deb-amd64 $1archive.canonical.com/ubuntu precise partner
 deb-i386 $1archive.canonical.com/ubuntu precise partner
 deb-amd64 $1packages.sil.org/ubuntu precise main
 deb-i386 $1packages.sil.org/ubuntu precise main
+deb-amd64 $1packages.sil.org/ubuntu precise-experimental main
+deb-i386 $1packages.sil.org/ubuntu precise-experimental main
 #deb-amd64 $1download.virtualbox.org/virtualbox/debian precise contrib
 #deb-i386 $1download.virtualbox.org/virtualbox/debian precise contrib
 # Note: the following are referenced in separate .list files in /etc/apt/sources.list.d/
@@ -732,12 +739,13 @@ deb-src $1ppa.launchpad.net/wasta-linux/wasta-apps/ubuntu precise main
 deb-amd64 $1ppa.launchpad.net/wasta-linux/wasta/ubuntu precise main
 deb-i386 $1ppa.launchpad.net/wasta-linux/wasta/ubuntu precise main
 deb-src $1ppa.launchpad.net/wasta-linux/wasta/ubuntu precise main
-deb-amd64 $1ppa.launchpad.net/libreoffice/libreoffice-4-1/ubuntu precise main
-deb-i386 $1ppa.launchpad.net/libreoffice/libreoffice-4-1/ubuntu precise main
 deb-amd64 $1ppa.launchpad.net/libreoffice/libreoffice-4-2/ubuntu precise main
 deb-i386 $1ppa.launchpad.net/libreoffice/libreoffice-4-2/ubuntu precise main
-deb-amd64 $1ppa.launchpad.net/libreoffice/libreoffice-4-3/ubuntu precise main
-deb-i386 $1ppa.launchpad.net/libreoffice/libreoffice-4-3/ubuntu precise main
+deb-amd64 $1ppa.launchpad.net/libreoffice/libreoffice-4-4/ubuntu precise main
+deb-i386 $1ppa.launchpad.net/libreoffice/libreoffice-4-4/ubuntu precise main
+deb-amd64 $1ppa.launchpad.net/libreoffice/libreoffice-5-0/ubuntu precise main
+deb-i386 $1ppa.launchpad.net/libreoffice/libreoffice-5-0/ubuntu precise main
+# It appears that libreoffice-5-0 is the last version available for precise
 
 # whm added 21Sep2014 trusty repos below:
 # Note: the following are referenced in /etc/apt/sources.list
@@ -758,6 +766,8 @@ deb-amd64 $1archive.canonical.com/ubuntu trusty partner
 deb-i386 $1archive.canonical.com/ubuntu trusty partner
 deb-amd64 $1packages.sil.org/ubuntu trusty main
 deb-i386 $1packages.sil.org/ubuntu trusty main
+deb-amd64 $1packages.sil.org/ubuntu trusty-experimental main
+deb-i386 $1packages.sil.org/ubuntu trusty-experimental main
 #deb-amd64 $1download.virtualbox.org/virtualbox/debian trusty contrib
 #deb-i386 $1download.virtualbox.org/virtualbox/debian trusty contrib
 # Note: the following are referenced in separate .list files in /etc/apt/sources.list.d/
@@ -768,24 +778,32 @@ deb-src $1ppa.launchpad.net/wasta-linux/wasta-apps/ubuntu trusty main
 deb-amd64 $1ppa.launchpad.net/wasta-linux/wasta/ubuntu trusty main
 deb-i386 $1ppa.launchpad.net/wasta-linux/wasta/ubuntu trusty main
 deb-src $1ppa.launchpad.net/wasta-linux/wasta/ubuntu trusty main
-deb-amd64 $1ppa.launchpad.net/libreoffice/libreoffice-4-1/ubuntu trusty main
-deb-i386 $1ppa.launchpad.net/libreoffice/libreoffice-4-1/ubuntu trusty main
 deb-amd64 $1ppa.launchpad.net/libreoffice/libreoffice-4-2/ubuntu trusty main
 deb-i386 $1ppa.launchpad.net/libreoffice/libreoffice-4-2/ubuntu trusty main
-deb-amd64 $1ppa.launchpad.net/libreoffice/libreoffice-4-3/ubuntu trusty main
-deb-i386 $1ppa.launchpad.net/libreoffice/libreoffice-4-3/ubuntu trusty main
+deb-amd64 $1ppa.launchpad.net/libreoffice/libreoffice-4-4/ubuntu trusty main
+deb-i386 $1ppa.launchpad.net/libreoffice/libreoffice-4-4/ubuntu trusty main
+deb-amd64 $1ppa.launchpad.net/libreoffice/libreoffice-5-0/ubuntu trusty main
+deb-i386 $1ppa.launchpad.net/libreoffice/libreoffice-5-0/ubuntu trusty main
+deb-amd64 $1ppa.launchpad.net/libreoffice/libreoffice-5-1/ubuntu trusty main
+deb-i386 $1ppa.launchpad.net/libreoffice/libreoffice-5-1/ubuntu trusty main
 
 # Note: the following are for wasta 14.04.2 / Linux Mint 17.1 Rebecca
-deb-amd64 $1packages.linuxmint.com/ rebecca main upstream import #id:linuxmint_main
-deb-i386 $1packages.linuxmint.com/ rebecca main upstream import #id:linuxmint_main
-deb-amd64 $1extra.linuxmint.com/ rebecca main #id:linuxmint_extra
-deb-i386 $1extra.linuxmint.com/ rebecca main #id:linuxmint_extra
+deb-amd64 $1packages.linuxmint.com/ rebecca main upstream import
+deb-i386 $1packages.linuxmint.com/ rebecca main upstream import
+deb-amd64 $1extra.linuxmint.com/ rebecca main
+deb-i386 $1extra.linuxmint.com/ rebecca main
 
 # Note: the following are for wasta 14.04.3 / Linux Mint 17.2 Rafaela
-deb-amd64 $1packages.linuxmint.com/ rafaela main upstream import #id:linuxmint_main
-deb-i386 $1packages.linuxmint.com/ rafaela main upstream import #id:linuxmint_main
-deb-amd64 $1extra.linuxmint.com/ rafaela main #id:linuxmint_extra
-deb-i386 $1extra.linuxmint.com/ rafaela main #id:linuxmint_extra
+deb-amd64 $1packages.linuxmint.com/ rafaela main upstream import
+deb-i386 $1packages.linuxmint.com/ rafaela main upstream import
+deb-amd64 $1extra.linuxmint.com/ rafaela main
+deb-i386 $1extra.linuxmint.com/ rafaela main
+
+# Note: the following are for Linux Mint 17.3 Rosa
+deb-amd64 $1packages.linuxmint.com/ rosa main upstream import
+deb-i386 $1packages.linuxmint.com/ rosa main upstream import
+deb-amd64 $1extra.linuxmint.com/ rosa main
+deb-i386 $1extra.linuxmint.com/ rosa main
 
 clean $1packages.linuxmint.com/
 clean $1extra.linuxmint.com/
@@ -797,9 +815,10 @@ clean $1packages.sil.org/ubuntu
 #clean $1download.virtualbox.org/virtualbox/debian
 clean $1ppa.launchpad.net/wasta-linux/wasta-apps/ubuntu
 clean $1ppa.launchpad.net/wasta-linux/wasta/ubuntu
-clean $1ppa.launchpad.net/libreoffice/libreoffice-4-1/ubuntu
 clean $1ppa.launchpad.net/libreoffice/libreoffice-4-2/ubuntu
-clean $1ppa.launchpad.net/libreoffice/libreoffice-4-3/ubuntu
+clean $1ppa.launchpad.net/libreoffice/libreoffice-4-4/ubuntu
+clean $1ppa.launchpad.net/libreoffice/libreoffice-5-0/ubuntu
+clean $1ppa.launchpad.net/libreoffice/libreoffice-5-1/ubuntu
 
 EOF
   LASTERRORLEVEL=$?
@@ -809,12 +828,13 @@ EOF
 # A bash function that determines if a full wasta-offline mirror exists at the given
 # path.
 # Returns 0 if a full wasta-offline mirror exists at $1, otherwise returns 1.
-# An single optional parameter must be used which should be the absolute path to the
+# Revised: 17 April 2016 to correct logic and remove libreoffice repo tests
+# A single optional parameter must be used which should be the absolute path to the
 # wasta-offline directory of an apt-mirror generated mirror tree. For example,
-# /data/wasta-offline or /media/LM-UPDATES/wasta-offline or /media/$USER/LM-UPDATES/wasta-offline.
+# /data/master/wasta-offline or /media/LM-UPDATES/wasta-offline or /media/$USER/LM-UPDATES/wasta-offline.
 # A "full" wasta-offline mirror should have the following mirrors:
 # List of Mirrors and Repos:
-# As of October 2014 these are the mirrors and the repositories that we use in the
+# As of April 2016 these are the mirrors and the repositories that we use in the
 # full Wasta-Linux Mirror as supplied by Bill Martin:
 #   Mirror                                        Repos
 #   --------------------------------------------------------------------------------
@@ -823,18 +843,25 @@ EOF
 #   extras.ubuntu.com                             main
 #   packages.linuxmint.com                        backport import main upstream
 #   packages.sil.org                              main
-#   ppa.launchpad.net/libreoffice/libreoffice-4-1 main
-#   ppa.launchpad.net/libreoffice/libreoffice-4-2 main
+#   *ppa.launchpad.net/libreoffice/libreoffice-4-2 main
+#   *ppa.launchpad.net/libreoffice/libreoffice-4-4 main
+#   *ppa.launchpad.net/libreoffice/libreoffice-5-0 main
+#   *ppa.launchpad.net/libreoffice/libreoffice-5-1 main
 #   ppa.launchpad.net/wasta-linux/wasta           main
 #   ppa.launchpad.net/wasta-linux/wasta-apps      main
 #   security.ubuntu.com                           main multiverse restricted universe
 # 
+# Note: the libreoffice mirrors above marked with * are not included in our test for presence of a wasta-offline mirror.
 # For each of the above Repos we include both binary-i386 and binary-amd64 architecture packages. 
 is_there_a_wasta_offline_mirror_at ()
 {
-  # The following are used exclusively in the is_there_a_wasta_offline_mirror_at () function:
-  WASTAOFFLINEDIR="/data" # initial assignment, varies between /data and /media/LM-UPDATES or /media/$USER/LM-UPDATES
-  UBUNTUMIRRORS=("archive.ubuntu.com" "extras.ubuntu.com" "packages.sil.org" "ppa.launchpad.net/libreoffice/libreoffice-4-1" "ppa.launchpad.net/libreoffice/libreoffice-4-2" "ppa.launchpad.net/wasta-linux/wasta" "ppa.launchpad.net/wasta-linux/wasta-apps")
+  # The following constants are used exclusively in the is_there_a_wasta_offline_mirror_at () function:
+  #WASTAOFFLINEDIR="/data" # initial assignment, varies between /data and /media/LM-UPDATES or /media/$USER/LM-UPDATES
+  # 17 Apr 2016 whm removed the libreoffice mirrors from $UBUNTUMIRRORS list (they have repos for specific versions)
+  WASTAOFFLINEDIR=$1
+  echo -e "\nParameter is $1"
+  echo "WASTAOFFLINEDIR is $WASTAOFFLINEDIR"
+  UBUNTUMIRRORS=("archive.ubuntu.com" "extras.ubuntu.com" "packages.sil.org" "ppa.launchpad.net/wasta-linux/wasta" "ppa.launchpad.net/wasta-linux/wasta-apps")
   UBUNTUDISTS=("precise" "trusty")
   LINUXMINTDISTS=("maya" "qiana")
   UBUNTUSECUREDISTS=("precise-security" "trusty-security")
@@ -845,10 +872,10 @@ is_there_a_wasta_offline_mirror_at ()
 
   # Check to see if there is a valid wasta-offline path at the $1 parameter location. If not,
   # return 1 (for failure)
-  if [ ! -d $1 ]; then
+ if [ ! -d $1 ]; then
     return 1
   fi
-
+  
   # Note: We won't survey all the repos that exist for each of the mirrors in the above
   # chart. We will survey only one repo in each of the mirrors - the "main" repo in all
   # mirrors except for the canonical mirror which only has a "partner" repo. Hence, we won't
@@ -869,8 +896,9 @@ is_there_a_wasta_offline_mirror_at ()
     do
       for arch in "${ARCHS[@]}"
       do
-        if [ -d "$WASTAOFFLINEDIR/apt-mirror/mirror/$mirror/ubuntu/dists/$dist/main/$arch" ]; then
+        if [ ! -d "$WASTAOFFLINEDIR/apt-mirror/mirror/$mirror/ubuntu/dists/$dist/main/$arch" ]; then
           full_mirror_exists="FALSE"
+          echo -n "x"
           break
         else
           echo -n "." #"Found: $WASTAOFFLINEDIR/apt-mirror/mirror/$mirror/ubuntu/dists/$dist/main/$arch"
@@ -886,7 +914,7 @@ is_there_a_wasta_offline_mirror_at ()
   do
     for arch in "${ARCHS[@]}"
     do
-      if [ -d "$WASTAOFFLINEDIR/apt-mirror/mirror/archive.canonical.com/ubuntu/dists/$dist/partner/$arch" ]; then
+      if [ ! -d "$WASTAOFFLINEDIR/apt-mirror/mirror/archive.canonical.com/ubuntu/dists/$dist/partner/$arch" ]; then
         full_mirror_exists="FALSE"
         break
       else
@@ -902,7 +930,7 @@ is_there_a_wasta_offline_mirror_at ()
   do
     for arch in "${ARCHS[@]}"
     do
-      if [ -d "$WASTAOFFLINEDIR/apt-mirror/mirror/packages.linuxmint.com/dists/$dist/main/$arch" ]; then
+      if [ ! -d "$WASTAOFFLINEDIR/apt-mirror/mirror/packages.linuxmint.com/dists/$dist/main/$arch" ]; then
         full_mirror_exists="FALSE"
         break
       else
@@ -918,7 +946,7 @@ is_there_a_wasta_offline_mirror_at ()
   do
     for arch in "${ARCHS[@]}"
     do
-      if [ -d "$WASTAOFFLINEDIR/apt-mirror/mirror/security.ubuntu.com/ubuntu/dists/$dist/main/$arch" ]; then
+      if [ ! -d "$WASTAOFFLINEDIR/apt-mirror/mirror/security.ubuntu.com/ubuntu/dists/$dist/main/$arch" ]; then
         full_mirror_exists="FALSE"
         break
       else
