@@ -1,32 +1,31 @@
 Subject: Full Wasta-Offline Mirror for Precise and Trusty
 Author:  Bill Martin
 Date:    17 November 2014
+Revised: 21 April 2016
 
 This external hard drive contains the full wasta-offline software mirrors for the 
 Ubuntu, Linux Mint, SIL, LibreOffice, and Wasta-Linux distributions. The Ubuntu 
 mirrors include all LTS packages for both Precise and Trusty. The Linux Mint mirrors 
-include the LTS packages for both Maya and Qiana. Both 32-bit and 64-bit packages are 
-included for all repos. All together this represents approximately 285GB of data on 
-this USB hard drive.
+include the LTS packages for Maya, Qiana, Rebecca, Rafaela, and Rosa. Both 32-bit 
+and 64-bit packages are included for all repos. All together this represents 
+approximately 430GB of data on this USB hard drive.
 
 As of November 2014, the mirrors and repositories contained on this hard drive are:
    Mirror                                        Repos
    --------------------------------------------------------------------------------
    archive.canonical.com                         partner
    archive.ubuntu.com                            main multiverse restricted universe
+   extra.linuxmint.com                           main
    extras.ubuntu.com                             main
    packages.linuxmint.com                        backport import main upstream
    packages.sil.org                              main
-   ppa.launchpad.net/libreoffice/libreoffice-4-1 main
    ppa.launchpad.net/libreoffice/libreoffice-4-2 main
-   ppa.launchpad.net/libreoffice/libreoffice-4-3 main
+   ppa.launchpad.net/libreoffice/libreoffice-4-4 main
+   ppa.launchpad.net/libreoffice/libreoffice-5-0 main
+   ppa.launchpad.net/libreoffice/libreoffice-5-1 main
    ppa.launchpad.net/wasta-linux/wasta           main
    ppa.launchpad.net/wasta-linux/wasta-apps      main
    security.ubuntu.com                           main multiverse restricted universe
-
-Note: The packages.palaso.org repository no longer exists. According to Cambell Prince
-Linux versions of palaso software that get released will be released via the 
-packages.sil.org repository.
 
 This ReadMe file outlines the following How To topics (see detail below):
 - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
@@ -74,10 +73,10 @@ Here is a basic outline of the steps:
 7. Enter the computer user's password and click OK. The Update Manager's main window 
    appears.
 8. If Update Manager's main window shows that software updates are available, click 
-   on the "Install Updates" button on the tool bar. The updates will then be 
+   on the "Install Updates" button on the tool bar. The updates will then be quickly
    downloaded (from the external hard drive to the computer - not from the Internet), 
-   and then they will be installed. The process may take a few minutes depending on 
-   the number of updates.
+   and then they will be installed. The install process may take a few minutes 
+   depending on the number of updates.
 9. When the "Update is complete" message appears, click on the "Close" button. The 
    Update Manager automatically closes.
 10. If you are not going to install any new software, you can click on the "Finished" 
@@ -99,11 +98,11 @@ Here is a basic outline of the steps:
     required changes?" click on the "Mark" button.
 16. Click on the "Apply" button in the main tool bar. Another dialog may open asking 
     "Apply the following changes?". Click on the "Apply" button on this dialog. The 
-    package manager then downloads the software program from the external hard drive 
-    to the computer - not the Internet, and the new software will be installed. After 
-    the installation has finished the package manager will show the program in its 
-    main window listed with the check box showing it as installed (green filled check 
-    box).
+    package manager then quickly downloads the software program from the external 
+    hard drive to the computer - not the Internet, and the new software will be 
+    installed. After the installation has finished the package manager will show the 
+    program in its main window listed with the check box showing it as installed 
+    (a green filled check box means the software is currently installed).
 17. Close the Synaptic Package Manager.
 18. When all updates and installs are finished, remember to click on the "Finished" 
     button on the "wasta [Offline]: Ready" message window, to close it. Before 
@@ -117,15 +116,16 @@ How to update a Wasta-Offline Mirror on a USB external Drive and bring it up to 
 - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
 This "How to" tells how to synchronize a slightly out-of-date Wasta-Offline Mirror that 
 resides on an external USB drive up-to-date against an up-to-date master mirror that
-resides on a local computer
+resides on a local computer:
 1. Plug the slightly out-of-date Full Wasta-Offline Mirror for Precise and Trusty 
-   into the USB port of the computer that has an up-to-date copy of the Wasta-Offline
-   Mirror.
+   into the USB port of the computer that has an up-to-date master copy of the 
+   Wasta-Offline Mirror.
 2. After about 10 seconds the wasta-offline program will start automatically (if the 
    computer is running wasta-linux), and display a dialog asking for your password. 
    This time click on "Cancel" to close the dialog and stop the wasta-offline program 
    from running. We don't need the wasta-offline program running while we update the 
-   mirror (although it causes no problem if it is running).
+   USB drive's mirror from the computer's master mirror (although it causes no problem 
+   if wasta-offline is running during the updating process).
 3. Open the File Manager (Nemo) and locate the external hard drive. It should be 
    called "LM-UPDATES" under the "Devices" list in Nemo. Click on "LM-UPDATES" to 
    highlight the drive and display its contents in the right-hand pane of Nemo.
@@ -160,7 +160,7 @@ resides on a local computer
 6. The script will ask you for your user password. Type the password (blindly since 
    it doesn't echo what you type) and press Enter.
 7. The sync_Wasta-Offline_to_Ext_Drive.sh assumes by default that the master mirror
-   on the local computer is located at: /data/wasta-offline/apt-mirror, and the 
+   on the local computer is located at: /data/master/wasta-offline/apt-mirror, and the 
    mirror on the external USB drive is at: /media/LM-UPDATES/wasta-offline/apt-mirror
    (if running Precise 12.04 version of Wasta-Linux), or the mirror on the external
    USB drive will be at: /media/$USER/LM-UPDATES/wasta-offline/apt-mirror (if running
@@ -196,9 +196,9 @@ resides on a local computer
     display these two lines:
       The sync_Wasta-Offline_to_Ext_Drive.sh script has finished.
       FINISHED:  Press <ENTER> to exit...
-    Press the Enter key to end the terminal session and close its window. This needs 
-    to be done, otherwise the USB external hard drive will indicate it is "Busy" when  
-    you try to safely remove it.
+    Press the Enter key to finish running the script, end the terminal session, and 
+    close its window. Pressing <ENTER> needs to be done, otherwise the USB external 
+    hard drive will indicate it is "Busy" when you try to safely remove it.
 
 - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
 How to update the "Full Wasta-Offline Mirror for Precise & Trusty" with the latest 
@@ -222,7 +222,8 @@ often a convenient time.
    wasta-offline will display a dialog asking for your password. 
    This time click on "Cancel" to close the dialog and stop the wasta-offline program 
    from running. We don't need the wasta-offline program running while we update the 
-   mirror (although it causes no problem if it is running).
+   USB drive's mirror from the computer's master mirror (although it causes no problem 
+   if wasta-offline is running during the updating process).
 3. Open the File Manager (Nemo) and locate the external hard drive. It should be 
    called "LM-UPDATES" under the "Devices" list in Nemo. Click on "LM-UPDATES" to 
    highlight the drive and display its contents in the right-hand pane of Nemo.
@@ -292,7 +293,7 @@ often a convenient time.
    apt-mirror program has started, apt-mirror will continue downloading any updated
    mirror data until all the data has been downloaded - which may take a long time.
 10. When apt-mirror finishes downloading the data, it automatically runs the 
-    postmirror.sh script located in the local mirror's /wasta-offline/apt-mirror/var/
+    postmirror.sh script located in the local mirror's .../wasta-offline/apt-mirror/var/
     directory. This script automatically calls a clean.sh script (located in the same
     directory), and then prompts the user with this menu of choices:
 
@@ -368,15 +369,16 @@ mirrors mentioned above, or (if cheap "unlimited" Internet is available) from
 the Internet. 
    IMPORTANT: Before you create a full Wasta-Offline master mirror, be sure that
 the computer has enough space available to hold a full mirror. It should have at
-least 320GB of free space for the mirror (and future updates).
-The update-mirror.sh script is provided for this purpose. Here are the steps:
+least 500GB of free space for the mirror (and future updates).
+The make_Master_for_Wasta-Offline.sh script is provided for this purpose. 
+Here are the steps:
 1. Plug the Full Wasta-Offline Mirror for Precise and Trusty into the USB port of the 
    computer that has a connection to the server or Internet.
 2. After about 10 seconds the wasta-offline program will start automatically (if the 
    computer is running wasta-linux), and display a dialog asking for your password. 
    This time click on "Cancel" to close the dialog and stop the wasta-offline program 
-   from running. We don't need the wasta-offline program running while we update the 
-   mirror (although it causes no problem if it is running).
+   from running. We don't need the wasta-offline program running while we create the 
+   master mirror (although it causes no problem if it is running).
 3. Open the File Manager (Nemo) and locate the external hard drive. It should be 
    called "LM-UPDATES" under the "Devices" list in Nemo. Click on "LM-UPDATES" to 
    highlight the drive and display its contents in the right-hand pane of Nemo.
@@ -410,14 +412,14 @@ The update-mirror.sh script is provided for this purpose. Here are the steps:
         script file, Nemo should give you the option of "Run in Terminal".
 5. The script will ask you for your user password. Type the password (blindly since 
    it doesn't echo what you type) and press Enter.
-6. If there is no master mirror already located at /data/wasta-offline/apt-mirror/
+6. If there is no master mirror already located at /data/master/wasta-offline/apt-mirror/
    the script calls another script called sync_Wasta-Offline_to_Ext_Drive.sh with 
    appropriate parameters so that it copies the full mirror from the external USB 
-   drive to that /data/wasta-offline/apt-mirror/ location on the local computer, 
-   creating the master mirror tree at that /data folder off the root directory.
+   drive to that /data/master/wasta-offline/apt-mirror/ location on the local computer, 
+   creating the master mirror tree at that location.
 
-   If an existing mirror exists at the /data/wasta-offline/apt-mirror location, the 
-   timestamps of the mirrors will be checked and you will be told whether the 
+   If an existing mirror exists at the /data/master/wasta-offline/apt-mirror location, 
+   the timestamps of the mirrors will be checked and you will be told whether the 
    destination mirror is "Newer", "Older", or the "Same" as the mirror being copied 
    from. Depending on the timestamps, you will be asked to confirm whether you want 
    the mirror at the external USB drive destination to be updated or not:
@@ -435,7 +437,7 @@ The update-mirror.sh script is provided for this purpose. Here are the steps:
    situations, a "n" (no) response will be assumed.
 
    Note: If you want the master mirror created at a different location than the 
-   default location of /data/wasta-offline/apt-mirror/, you can do so by running
+   default location of /data/master/wasta-offline/apt-mirror/, you can do so by running
    the make_Master_for_Wasta-Offline.sh script manually from the command line in a
    Terminal with a call like this (made from the /media/LM-UPDATES directory if using
    Wasta-Linux Precise 12.04, or from the /media/<user-name>/LM-UPDATES directory if 
@@ -455,7 +457,7 @@ The update-mirror.sh script is provided for this purpose. Here are the steps:
    See the script file itself for how to use other parameter configurations when
    manually invoking the script from a command line.
 7. The script uses rsync to create the master mirror (or update if one already
-   existed). The creation of a new mirror at the destination will take about 4.5
+   existed). The creation of a new mirror at the destination will take 4-6
    hours to complete regardless of whether you are using a USB 2.0 or USB 3.0 
    connection. 
 8. When the make_Master_for_Wasta-Offline.sh and sync_Wasta-Offline_to_Ext_Drive.sh 
@@ -477,13 +479,13 @@ you want to make a new Wasta-Offline Mirror on a new or empty External USB hard
 drive. 
 1. Plug in a new or empty external USB hard drive into the USB port of the local 
    computer that has an existing master copy of Wasta-Offline Mirror on its hard 
-   drive (the default location of the master mirror is /data/wasta-offline/apt-mirror). 
-   This new/empty USB hard drive should have at least 320GB of capacity. 
+   drive (the default location of the master mirror is /data/master/wasta-offline/apt-mirror). 
+   This new/empty USB hard drive should have at least 500GB of capacity. 
 2. Open the File Manager (Nemo) on the local computer and locate the wasta-offline
-   mirror. The default location for it would be /data/wasta-offline/apt-mirror/.
-   Navigate to the base directory of the mirror (in our case the /data/ directory), 
+   mirror. The default location for it would be /data/master/wasta-offline/apt-mirror/.
+   Navigate to the base directory of the mirror (in our case the /data/master directory), 
    where you should see its contents displayed in the right-hand pane of Nemo.
-3. In the root (/data) directory you should see a script there that is called: 
+3. In the root (/data/master) directory you should see a script there that is called: 
    sync_Wasta-Offline_to_Ext_Drive.sh. Highlight the sync_Wasta-Offline_to_Ext_Drive.sh
    script and press Enter (or double-click on the sync_Wasta-Offline_to_Ext_Drive.sh
    file). Select the "Run in Terminal" button. The script will open a terminal window 
@@ -542,7 +544,7 @@ drive.
    aborted.
 
 6. Once the external hard drive is deemed eligible to receive the mirror data (has
-   the required Linux file system, and a capacity of at least 320GB), the
+   the required Linux file system, and a capacity of at least 500GB), the
    sync process will proceed.
 7. When the sync_Wasta-Offline_to_Ext_Drive.sh script finishes the terminal will 
    display these lines:
@@ -558,7 +560,7 @@ How to Fix "Hash Sum mismatch" Errors that Appear When Trying to Use the "Full
    update-mirror.sh and postmirror2.sh scripts):
 - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
 If users get "Hash Sum mismatch" errors when they try to use the Wasta-Offline
-Mirror to update their computer , it means that some of the mirror's metadata files 
+Mirror to update their computer, it means that some of the mirror's metadata files 
 were not properly synchronized or updated when the apt-mirror program attempted to 
 update the mirror. This situation can usually be rectified by allowing the postmirror2.sh
 script to run at the end of an apt-mirror update. Follow these steps:
