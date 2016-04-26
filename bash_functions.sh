@@ -625,6 +625,156 @@ set_mirror_ownership_and_permissions ()
   return 0
 }
 
+# A bash function that checks to see if the user has the old default location of /data
+# for their master mirror, rather than the new default location of /data/master. If not
+# the function just returns 0. If a master mirror was detected at the /data location,
+# the function warns the user about potential spurious launchings of wasta-offline, and
+# asks if the user wants a quick move of the master mirror to a better /data/master
+# location. If no y response is given within 60 seconds, n is assumed and the script
+# returns 1 to the caller indicating the caller should abort the operation.
+# Note: If the user responded with y to the prompt, after the move has been done, the 
+# user's /etc/apt/mirror.list file is also adjusted to use the new location for its 
+# base_path setting, if apt-mirror is installed and mirror.list exists.
+# Since the master mirror location is actually a git repository, the script also copies
+# the .git folder and .gitignore file to the new location if available.
+# This function is used in the all the main wasta scripts:
+#   update-mirror.sh
+#   sync_Wasta-Offline_to_Ext_Drive.sh
+#   make_Master_for_Wasta-Offline.sh
+# Once a user responds with y, the script will not prompt the user again, unless the
+# master mirror is moved back to its old /data location.
+move_mirror_from_data_to_data_master ()
+{
+  # Set up some constants for use in function only
+  DATADIR="/data"
+  MASTERDIR="/master"
+  OFFLINEDIR="/wasta-offline"
+  APTMIRRORDIR="/apt-mirror"
+  APTMIRRORSETUPDIR="/apt-mirror-setup"
+  BASH_FUNCTIONS_SCRIPT="bash_functions.sh"
+  SYNC_TO_EXT_DRIVE_SCRIPT="sync_Wasta-Offline_to_Ext_Drive.sh"
+  UPDATE_MIRROR_SCRIPT="update-mirror.sh"
+  MAKE_MASTER_SCRIPT="make_Master_for_Wasta-Offline.sh"
+  MIRRORDIR="/mirror"
+  WAIT=60
+  
+  # Note: In the if test below, we could use the bash function 
+  # is_there_a_wasta_offline_mirror_at () in the test. However, that is a more extensive
+  # test for a full mirror with certain standard repository directories. Here I think
+  # a simpler test is warranted in which we just check to see if there is a directory
+  # tree of /data/wasta-offline/apt-mirror/mirror (regardless of contents) on the local 
+  # computer.
+  if [ -d $DATADIR$OFFLINEDIR$APTMIRRORDIR$MIRRORDIR ]; then
+    echo -e "\nThere appears to be a master mirror at: "
+    echo "   $DATADIR$OFFLINEDIR"
+    echo "Your current mirror location at $DATADIR$OFFLINEDIR can cause spurious"
+    echo "launchings of the wasta-offline program at bootup. We highly recommend"
+    echo "your mirror be relocated a level deeper within $DATADIR to a $MASTERDIR"
+    echo "sub-directory within the $DATADIR directory. This script can move the existing"
+    echo "mirror for you using the mv command without having to copy data."
+    echo "Do you want this script to do a fast move (mv) of your existing mirror to:"
+    echo "   $DATADIR$MASTERDIR$OFFLINEDIR [y/n]?"
+    for (( i=$WAIT; i>0; i--)); do
+      printf "\rPlease press the y or n key, or hit any key to abort - countdown $i "
+      read -s -n 1 -t 1 response
+      if [ $? -eq 0 ]
+      then
+          break
+      fi
+    done
+    if [ ! $response ]; then
+      echo -e "\nNo selection made, or no reponse within $WAIT seconds. Assuming response of n" 
+      response="n"
+    fi
+    echo -e "\nYour choice was $response"
+    #read -r -n 1 -p "Replace it with the NEWER mirror from the external hard drive? [y/n] " response
+    case $response in
+    [yY][eE][sS]|[yY]) 
+        echo -e "\nCreating directory at $DATADIR$MASTERDIR"
+        mkdir -p $DATADIR$MASTERDIR
+        # Check if /data/master already has files/data. If so, warn user to move/rename it first.
+        # If /data/master dir exists, but it empty, all is OK for the move
+        if [ "$(ls -A $DATADIR$MASTERDIR)" ]; then
+          echo -e "\nCannot move master mirror directories to $DATADIR$MASTERDIR!"
+          echo "A non-empty $MASTERDIR directory already exists in $DATADIR"
+          echo "Move $MASTERDIR elsewhere out of $DATADIR or rename it, then run this script again."
+          echo "Aborting..."
+          return $LASTERRORLEVEL
+        else
+          echo "$DATADIR$MASTERDIR already exists but is empty"
+        fi
+        echo "Setting ownership of master directory to apt-mirror:apt-mirror"
+        echo "Setting permissions of master directory to ugo+rw"
+        chown -R apt-mirror:apt-mirror $DATADIR$MASTERDIR
+        chmod -R ugo+rw $DATADIR$MASTERDIR
+        echo "Relocating the master mirror from $DATADIR to: $DATADIR$MASTERDIR"
+        #mv /data/wasta-offline /data/master/wasta-offline
+        mv $DATADIR$OFFLINEDIR $DATADIR$MASTERDIR$OFFLINEDIR
+        LASTERRORLEVEL=$?
+        if [ $LASTERRORLEVEL != 0 ]; then
+          echo -e "\nCannot move (mv) the master mirror directories to: $DATADIR$MASTERDIR"
+          echo "Aborting..."
+          return $LASTERRORLEVEL
+        fi
+        # Relocate the wasta-offline root dir scripts and git repo files/dirs if they exist
+        # if any of these moves fail is it not really grounds for doing an abort
+        if [ -f $DATADIR/$BASH_FUNCTIONS_SCRIPT ]; then
+          echo "Relocating $BASH_FUNCTIONS_SCRIPT to: $DATADIR$MASTERDIR"
+          mv $DATADIR/$BASH_FUNCTIONS_SCRIPT $DATADIR$MASTERDIR
+        fi
+        if [ -f $DATADIR/$SYNC_TO_EXT_DRIVE_SCRIPT ]; then
+          echo "Relocating $SYNC_TO_EXT_DRIVE_SCRIPT to: $DATADIR$MASTERDIR"
+          mv $DATADIR/$SYNC_TO_EXT_DRIVE_SCRIPT $DATADIR$MASTERDIR
+        fi
+        if [ -f $DATADIR/$UPDATE_MIRROR_SCRIPT ]; then
+          echo "Relocating $UPDATE_MIRROR_SCRIPT from: $DATADIR to: $DATADIR$MASTERDIR"
+          mv $DATADIR/$UPDATE_MIRROR_SCRIPT $DATADIR$MASTERDIR
+        fi
+        if [ -f $DATADIR/$MAKE_MASTER_SCRIPT ]; then
+          echo "Relocating $MAKE_MASTER_SCRIPT to: $DATADIR$MASTERDIR"
+          mv $DATADIR/$MAKE_MASTER_SCRIPT $DATADIR$MASTERDIR
+        fi
+        if [ -d $DATADIR/$APTMIRRORSETUPDIR ]; then
+          echo "Relocating apt-mirror-setup dir and postmirror*.sh to: $DATADIR$MASTERDIR"
+          mv $DATADIR/$APTMIRRORSETUPDIR $DATADIR$MASTERDIR
+        fi
+        # get array of any wasta-offline_*.deb files, and test if at least one exists
+        wasta_offline_debs=( $DATADIR/wasta-offline_*.deb )
+        if [ -e ${wasta_offline_debs[0]} ]; then
+          echo "Relocating master mirror wasta-offline deb packages to: $DATADIR$MASTERDIR"
+          mv $DATADIR/wasta-offline_*.deb $DATADIR$MASTERDIR
+        fi
+        if [ -f $DATADIR/ReadMe ]; then
+          echo "Relocating master mirror ReadMe and README.md files to: $DATADIR$MASTERDIR"
+          mv $DATADIR/ReadMe $DATADIR$MASTERDIR
+        fi
+        #mv $DATADIR/README.md $DATADIR$MASTERDIR
+        if [ -d $DATADIR/.git ]; then
+          echo "Relocating the .git directory to: $DATADIR$MASTERDIR"
+          mv $DATADIR/.git $DATADIR$MASTERDIR
+        fi
+        if [ -f $DATADIR/.gitignore ]; then
+          echo "Relocating the .gitignore file to: $DATADIR$MASTERDIR"
+          mv $DATADIR/.gitignore $DATADIR$MASTERDIR
+        fi
+        # Adjust the user's mirror.list file to point to the new master mirror location
+        echo "Modifying base_path in mirror.list file to use the new base_path: "
+        echo "   $DATADIR$MASTERDIR$OFFLINEDIR$APTMIRRORDIR"
+        sed -i 's|'$DATADIR$OFFLINEDIR$APTMIRRORDIR'|'$DATADIR$MASTERDIR$OFFLINEDIR$APTMIRRORDIR'|g' /etc/apt/mirror.list
+        # All moves now completed so just return 0 for success
+        return 0
+        ;;
+     *)
+        echo -e "\nNo action taken! Aborting..."
+        return 1
+        ;;
+    esac
+  else
+    # no old /data mirror location detected, so just return 0
+    return 0
+  fi
+}
+
 generate_mirror_list_file ()
 {
   # A bash function that generates a custom mirror.list file with the proper settings and

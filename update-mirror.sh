@@ -2,9 +2,15 @@
 # Author: Bill Martin <bill_martin@sil.org>
 # Date: 4 November 2014
 # Revision: 
-#   - 7 November 2014 Modified for Trusty mount points having embedded $USERNAME 
-#      in $MOUNTPOINT path as: /media/$USERNAME/LM-UPDATES whereas Precise was: 
+#   - 7 November 2014 Modified for Trusty mount points having embedded $USER 
+#      in $MOUNTPOINT path as: /media/$USER/LM-UPDATES whereas Precise was: 
 #      /media/LM-UPDATES
+#   - 26 April 2016 Revised to use a default source master mirror location of
+#      /data/master/. If a master mirror still exists at the old /data location
+#      the script now offers to quickly move (mv) the master mirror from its
+#      /data location to the more recommended /data/master location.
+#     Added a script version number "0.1" to the script to make future updates
+#      easier.
 # Name: update-mirror.sh
 # Distribution:
 # This script is the main script that is included with all full Wasta-Offline 
@@ -26,7 +32,7 @@
 #
 # NOTE: The inventory of software repositories apt-mirror downloads updates from is
 #       controlled by the bash function below called generate_mirror_list_file ().
-#       The current full Wasta-Offline mirror has about 285GB of data.
+#       The current full Wasta-Offline mirror has about 430GB of data.
 #       Existing repositories can be removed by commenting out lines from the
 #       generate_mirror_list_file () function (see bash_functions.sh) or additional
 #       repositories can be added by adding additional "deb-amd64" and "deb-i386" 
@@ -34,22 +40,27 @@
 # 
 # This script does the following:
 # 1. Runs the script as root (asks for password).
-# 2. Determines whether there is a local copy of the full wasta-offline software
-#    mirror at /data/wasta-offline/apt-mirror/mirror/. If so, it assumes the local
-#    copy of the mirror is the one to be updated, and the wasta-offline software 
-#    mirror on the external USB drive at /media/LM-UPDATES... will be synchronized  
-#    with the local mirror after the updates have been completed (by calling the
-#    sync_Wasta-Offline_to_Ext_Drive.sh script). If no local copy of the full wasta-
-#    offline software mirror is at /data/wasta-offline/apt-mirror/mirror/, the
-#    wasta-offline software mirror on the external USB drive at /media/LM-UPDATES...
+# 2. Determines whether there is a local copy of the wasta-offline software mirror
+#    at the old /data/wasta-offline/apt-mirror/mirror/ location. If one is found at
+#    the old location, the script offers to quickly move (mv) the master mirror
+#    from its /data location to the more recommended /data/master location. 
+# 3. Determines whether there is a wasta-offline software mirror at the prescribed
+#    location of /data/master/wasta-offline/apt-mirror/mirror. If so, it assumes 
+#    the local copy of the mirror is a "master" mirror and the one to be updated, 
+#    and the wasta-offline software mirror on the external USB drive at 
+#    /media/LM-UPDATES... will be synchronized with the local mirror after the 
+#    updates have been completed. The script syncs the ext drive by calling the
+#    sync_Wasta-Offline_to_Ext_Drive.sh script. If no local copy of the full wasta-
+#    offline software mirror is at /data/master/wasta-offline/apt-mirror/mirror/,
+#    the wasta-offline mirror on the external USB drive at /media/LM-UPDATES...
 #    (where this script is normally run from) will receive the software updates
 #    directly.
-# 3. Checks that the necessary *.sh files are available within the apt-mirror-setup 
+# 4. Checks that the necessary *.sh files are available within the apt-mirror-setup 
 #    subfolder - of the same external USB hard drive that is being used to invoke 
 #    this script.
-# 4. Checks to see if apt-mirror is installed on the user's computer. If not it
+# 5. Checks to see if apt-mirror is installed on the user's computer. If not it
 #    offers to install apt-mirror, or quit.
-# 5. It queries the user to determine where the apt-mirror software updates should 
+# 6. It queries the user to determine where the apt-mirror software updates should 
 #    come from, presenting the following menu of choices:
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # Where should the Wasta-Offline Mirror get its software updates?
@@ -61,12 +72,12 @@
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 #    If no response is given within 60 seconds, 4) Quit ... is automatically selected
 #    and the script will end without getting any software updates.
-# 6. Depending on the user's choice above, ensures that the user's /etc/apt/mirror.list
+# 7. Depending on the user's choice above, ensures that the user's /etc/apt/mirror.list
 #    file and the /media/LM-UPDATES/wasta-offline/apt-mirror/var/postmirror* script 
 #    files are configured properly to get software mirror updates from the user's
 #    selected source for obtaining the software updates: the Internet, a local 
 #    network FTP server, or a custom URL network path supplied by the user.
-# 7. Calls the apt-mirror program to download software updates to the full mirror.
+# 8. Calls the apt-mirror program to download software updates to the full mirror.
 #    After fetching the software updates, the apt-mirror program itself calls the
 #    postmirror.sh script (which may at the user's option call postmirror2.sh) to tidy 
 #    up the updated software mirror.
@@ -81,19 +92,22 @@
 #         at ftp://ftp.sil.org.pg/Software/CTS/Supported_Software/Ubuntu_Repository/mirror/
 #      <path-prefix> option: a different ftp:// or http:// URL address may be given
 #   Requires sudo/root privileges - password requested at run-time.
+
+SCRIPTVERSION="0.1"
 UPDATEMIRRORSCRIPT="update-mirror.sh"
 APTMIRROR="apt-mirror"
 DATADIR="/data"
+MASTERDIR="/master"
 APTMIRRORDIR="/$APTMIRROR" # /apt-mirror
 WASTAOFFLINE="wasta-offline"
 WASTAOFFLINEDIR="/$WASTAOFFLINE" # /wasta-offline
-MOUNTPOINT=`mount | grep LM-UPDATES | cut -d ' ' -f3` # normally MOUNTPOINT is /media/LM-UPDATES or /media/$USERNAME/LM-UPDATES
+MOUNTPOINT=`mount | grep LM-UPDATES | cut -d ' ' -f3` # normally MOUNTPOINT is /media/LM-UPDATES or /media/$USER/LM-UPDATES
 if [ "x$MOUNTPOINT" = "x" ]; then
   # $MOUNTPOINT for an LM-UPDATES USB drive was not found
   LMUPDATESDIR=""
   WASTAOFFLINEEXTERNALAPTMIRRORPATH=""
 else
-  LMUPDATESDIR=$MOUNTPOINT # normally MOUNTPOINT is /media/LM-UPDATES or /media/$USERNAME/LM-UPDATES
+  LMUPDATESDIR=$MOUNTPOINT # normally MOUNTPOINT is /media/LM-UPDATES or /media/$USER/LM-UPDATES
   WASTAOFFLINEEXTERNALAPTMIRRORPATH=$LMUPDATESDIR$WASTAOFFLINEDIR$APTMIRRORDIR # /media/LM-UPDATES/wasta-offline/apt-mirror
 fi
 WASTAOFFLINELOCALAPTMIRRORPATH=$DATADIR$WASTAOFFLINEDIR$APTMIRRORDIR # /data/wasta-offline/apt-mirror
@@ -190,6 +204,15 @@ DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 # ------------------------------------------------------------------------------
 # Main program starts here
 # ------------------------------------------------------------------------------
+
+# Determine if user still has mirror directly off /data dir rather than the better /data/master dir
+# If the user still has mirror at /data then offer to move (mv) it to /data/master
+if ! move_mirror_from_data_to_data_master ; then
+  # User opted not to move mirror from /data to /data/master
+  echo -e "\nUser opted not to move (mv) the master mirror directories to: $DATADIR$MASTERDIR"
+  echo "Aborting..."
+  exit 1
+fi
 
 # NOTE: If neither a local master mirror nor a USB drive labeled "LM-UPDATES" is found notify
 # the user of the problem and abort, otherwise continue.

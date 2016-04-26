@@ -5,7 +5,7 @@
 #   - 7 November 2014 Modified for Trusty mount points having embedded $USER 
 #      in $MOUNTPOINT path as: /media/$USER/LM-UPDATES whereas Precise has: 
 #      /media/LM-UPDATES
-#   - 17 April 2016 Revised to use a default source master mirror location of
+#   - 26 April 2016 Revised to use a default source master mirror location of
 #      /data/master/. If a master mirror still exists at the old /data location
 #      the script now offers to quickly move (mv) the master mirror from its
 #      /data location to the more recommended /data/master location.
@@ -75,16 +75,20 @@
 #      (after warning and prompting the user for permission) a new USB drive with
 #      Ext4 file system if required.
 #   5. Determines a base directory for the destination and source mirror trees.
-#   6. Checks to ensure that the source mirror path with an apt-mirror tree exists, 
+#   6. Determines whether there is a local copy of the wasta-offline software mirror
+#      at the old /data/wasta-offline/apt-mirror/mirror/ location. If one is found at
+#      the old location, the script offers to quickly move (mv) the master mirror
+#      from its /data location to the more recommended /data/master location. 
+#   7. Checks to ensure that the source mirror path with an apt-mirror tree exists, 
 #      if not aborts.
-#   7. Checks if a mirror exists at the destination, and if so whether the mirror is 
+#   8. Checks if a mirror exists at the destination, and if so whether the mirror is 
 #      older than the source mirror, and handles 7 possible check result scenarios.
-#   8. Ensures that there is a destination mirror structure (up to the apt-mirror
+#   9. Ensures that there is a destination mirror structure (up to the apt-mirror
 #      directory level) if it doesn't already exist.
-#   9. Sets the source mirror's owner:group properties to apt-mirror:apt-mirror, 
+#  10. Sets the source mirror's owner:group properties to apt-mirror:apt-mirror, 
 #      and sets the source mirror's content permissions to ugo+rw (read-write for
 #      everyone).
-#  10. Synchronizes/Copies all of the source mirror's "root" directory files to the
+#  11. Synchronizes/Copies all of the source mirror's "root" directory files to the
 #      destination's "root" directory. The "root" directory here refers to the 
 #      directory of the device or drive where the mirror begins. For example, the
 #      "root" directory of Bill's master copy is on a partition mounted at /data,
@@ -99,12 +103,12 @@
 #        f. wasta-offline*.deb packages
 #        g. postmirror.sh (in apt-mirror-setup and wasta-offline/apt-mirror/var subdirectories)
 #        h. postmirror2.sh (in apt-mirror-setup and wasta-offline/apt-mirror/var subdirectories)
-#  11. Sets the destination mirror's ownergroup properties to apt-mirror:apt-mirror
+#  12. Sets the destination mirror's ownergroup properties to apt-mirror:apt-mirror
 #      and sets the destination mirror's content permissions to ugo+rw (read-write 
 #      for everyone).
-#  12. Ensures the source mirror directory path to be used with rsync ends with slash, 
+#  13. Ensures the source mirror directory path to be used with rsync ends with slash, 
 #      and the destination directory path to be used with rsync does not end with slash.
-#  13. Makes the main rsync call to synchronize the mirror tree from the source tree 
+#  14. Makes the main rsync call to synchronize the mirror tree from the source tree 
 #      (normally the master copy's /data/master/wasta-offline/ directory) to the destination 
 #      tree (normally the external USB drive's mirror at /media/$USER/LM-UPDATES/wasta-offline). 
 #      This copy will usually go relatively fast if the full mirror existed already on 
@@ -112,7 +116,7 @@
 #      If the external USB drive was an empty drive the copy process to copy all 285+GB 
 #      of mirror data from the local computer to the USB external drive will probably 
 #      take about 4.5 hours for either a USB 2.0 or USB 3.0 connection.
-#  14. Reminds the user to label any new USB drive that was formatted.
+#  15. Reminds the user to label any new USB drive that was formatted.
 #
 # Usage:
 # 1. Before updating/synchronizing an attached external drive with this script, the user
@@ -159,10 +163,12 @@
 #      list of those USB drives currently mounted). Formatting a user-selected USB 
 #      drive will, of course, only be attemptd after the customary warnings and user 
 #      confirmation.
+#   Requires sudo/root privileges - password requested at run-time.
 
 # Note when set -e is uncommented, script stops immediately and no error codes are returned in "$?"
 #set -e
 
+SCRIPTVERSION="0.1"
 WASTAOFFLINEPKGURL="http://ppa.launchpad.net/wasta-linux/wasta-apps/ubuntu/pool/main/w/wasta-offline"
 DATADIR="/data"
 MASTERDIR="/master"
@@ -321,125 +327,11 @@ echo "MOUNTPOINT is: $MOUNTPOINT"
 
 # Determine if user still has mirror directly off /data dir rather than the better /data/master dir
 # If the user still has mirror at /data then offer to move (mv) it to /data/master
-
-# Check whether an older master mirror exists at:
-#   /data/wasta-offline/apt-mirror/mirror/
-# If so, offer to do a fast mv to relocate the older master mirror to the new location of:
-#   /data/master/wasta-offline/apt-mirror/mirror/
-# and adjust the user's mirror.list file
-# TODO: Could make the following if ... fi block into a function called
-#       move_mirror_from_data_to_data_master ()
-# TODO: Any changes to this block should also be made in make_Master_for_Wasta-Offline.sh
-# TODO: where the same function could be used.
-if [ -d $DATADIR$OFFLINEDIR$APTMIRRORDIR$MIRRORDIR ]; then
-  echo -e "\nThere appears to be a master mirror at: "
-  echo "   $DATADIR$OFFLINEDIR"
-  echo "Your current master mirror location can cause spurious launchings of the"
-  echo "wasta-offline program at bootup. We highly recommend you relocate your master"
-  echo "mirror into a sub-directory within the $DATADIR directory named 'master'."
-  echo "Do you want to do a fast (mv) relocation of your existing mirror to:"
-  echo "   $DATADIR$MASTERDIR$OFFLINEDIR [y/n]?"
-  for (( i=$WAIT; i>0; i--)); do
-      printf "\rPlease press the y or n key, or hit any key to abort - countdown $i "
-      read -s -n 1 -t 1 response
-      if [ $? -eq 0 ]
-      then
-          break
-      fi
-  done
-  if [ ! $response ]; then
-    echo -e "\nNo selection made, or no reponse within $WAIT seconds. Assuming response of n"
-    response="n"
-  fi
-  echo -e "\nYour choice was $response"
-  #read -r -n 1 -p "Replace it with the NEWER mirror from the external hard drive? [y/n] " response
-  case $response in
-    [yY][eE][sS]|[yY]) 
-        echo -e "\nCreating directory at $DATADIR$MASTERDIR"
-        # Don't use -p in the mkdir command here. If a 'master' dir exists in /data/ we want it to return an error.
-        mkdir $DATADIR$MASTERDIR
-        LASTERRORLEVEL=$?
-        if [ $LASTERRORLEVEL != 0 ]; then
-          echo -e "\nCannot create master mirror directories at $DATADIR$MASTERDIR"
-          echo "because a directory already exists at $DATADIR$MASTERDIR"
-          echo "Move the existing directory out of the way, then run this script again."
-          echo "Aborting..."
-          exit $LASTERRORLEVEL
-        fi
-        echo "Change ownership of master directory to apt-mirror:apt-mirror"
-        echo "Change permissions of master directory to ugo+rw"
-        chown -R apt-mirror:apt-mirror $DATADIR$MASTERDIR
-        chmod -R ugo+rw $DATADIR$MASTERDIR
-        echo "Relocating the master mirror to: $DATADIR$MASTERDIR"
-        #mv /data/wasta-offline /data/master/wasta-offline
-        mv $DATADIR$OFFLINEDIR $DATADIR$MASTERDIR$OFFLINEDIR
-        LASTERRORLEVEL=$?
-        if [ $LASTERRORLEVEL != 0 ]; then
-          echo -e "\nCannot move (mv) the master mirror directories to: $DATADIR$MASTERDIR"
-          echo "Aborting..."
-          exit $LASTERRORLEVEL
-        fi
-        echo "Relocating the master mirror scripts from: $DATADIR to: $DATADIR$MASTERDIR"
-        mv $DATADIR/*.sh $DATADIR$MASTERDIR
-        echo "Relocating the master mirror apt-mirror-setup dir and postmirror*.sh files..."
-        mv $DATADIR/$APTMIRRORSETUPDIR $DATADIR$MASTERDIR
-        echo "Relocating the master mirror wasta-offline packages..."
-        mv $DATADIR/wasta-offline_*.deb $DATADIR$MASTERDIR
-        echo "Relocating the master mirror ReadMe and README.md files..."
-        mv $DATADIR/ReadMe $DATADIR$MASTERDIR
-        #mv $DATADIR/README.md $DATADIR$MASTERDIR
-        echo "Modifying base_path in mirror.list file to use: "
-        echo "   $DATADIR$MASTERDIR$OFFLINEDIR$APTMIRRORDIR"
-        sed -i 's|'$DATADIR$OFFLINEDIR$APTMIRRORDIR'|'$DATADIR$MASTERDIR$OFFLINEDIR$APTMIRRORDIR'|g' /etc/apt/mirror.list
-        ;;
-     *)
-        echo -e "\nNo action taken! Aborting..."
-        exit 0
-        ;;
-  esac
-fi
-
-# Determine the direction of copy/sync operation
-# Either $COPYTODIR or $COPYFROMDIR could contain the .../LM-UPDATES path depending on
-# which direction the user wants to sync the data when calling this script.
-if [[ $COPYTODIR == */LM-UPDATES* ]]; then
-  # COPYTODIR has the .../LM-UPDATES mount point within it
-  # Use the MOUNTPOINT as the base dir
-  COPYTOBASEDIR=$MOUNTPOINT  # /media/LM-UPDATES or /media/<user>/LM-UPDATES
-  # Initially have COPYFROMBASEDIR assigned the value of COPYFROMDIR
-  COPYFROMBASEDIR=$COPYFROMDIR  # /data/master/wasta-offline/
-  # Strip off any '/', /apt-mirror, and /wasta-offline from right end of COPYFROMDIR
-  # to get COPYFROMBASEDIR
-  COPYFROMBASEDIR=${COPYFROMBASEDIR%"/"}  # /data/master/wasta-offline
-  COPYFROMBASEDIR=${COPYFROMBASEDIR%$APTMIRRORDIR}  # /data/master/wasta-offline
-  #echo "COPYFROMBASEDIR is: $COPYFROMBASEDIR"
-  COPYFROMBASEDIR=${COPYFROMBASEDIR%"/"}  # /data/master/wasta-offline
-  COPYFROMBASEDIR=${COPYFROMBASEDIR%$OFFLINEDIR}  # /data/master
-# whm Note: as of 17Apr2016 we make the /data/master dir be the COPYTOBASEDIR
-#  COPYFROMBASEDIR=${COPYFROMBASEDIR%$MASTERDIR}  # /data
-  echo "COPYFROMDIR is: $COPYFROMDIR"
-  echo "COPYFROMBASEDIR is: $COPYFROMBASEDIR"
-  echo "COPYTODIR is: $COPYTODIR"
-  echo "COPYTOBASEDIR is: $COPYTOBASEDIR"
-else
-  # COPYFROMDIR has the .../LM-UPDATES mount point within it
-  # Use the MOUNTPOINT as the base dir.
-  COPYFROMBASEDIR=$MOUNTPOINT  # /media/LM-UPDATES or /media/<user>/LM-UPDATES
-  # Initially have COPYTOBASEDIR assigned the value of COPYTODIR
-  COPYTOBASEDIR=$COPYTODIR
-  # Strip off any '/', /apt-mirror, and /wasta-offline from right end of COPYTODIR
-  # to get COPYTOBASEDIR
-  COPYTOBASEDIR=${COPYTOBASEDIR%"/"} # /data/master/wasta-offline
-  COPYTOBASEDIR=${COPYTOBASEDIR%$APTMIRRORDIR}  # /data/master/wasta-offline
-  #echo "COPYTOBASEDIR is: $COPYTOBASEDIR"
-  COPYTOBASEDIR=${COPYTOBASEDIR%"/"} # /data/master/wasta-offline
-  COPYTOBASEDIR=${COPYTOBASEDIR%$OFFLINEDIR}  # /data/master
-# whm Note: as of 17Apr2016 we make the /data/master dir be the COPYTOBASEDIR
-#  COPYTOBASEDIR=${COPYTOBASEDIR%$MASTERDIR}  # /data
-  echo "COPYFROMDIR is: $COPYFROMDIR"
-  echo "COPYFROMBASEDIR is: $COPYFROMBASEDIR"
-  echo "COPYTODIR is: $COPYTODIR"
-  echo "COPYTOBASEDIR is: $COPYTOBASEDIR"
+if ! move_mirror_from_data_to_data_master ; then
+  # User opted not to move mirror from /data to /data/master
+  echo -e "\nUser opted not to move (mv) the master mirror directories to: $DATADIR$MASTERDIR"
+  echo "Aborting..."
+  exit 1
 fi
 
 # Check that there is a wasta-offline mirror at the source location. If not there is no
