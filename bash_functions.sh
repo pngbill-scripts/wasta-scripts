@@ -12,10 +12,12 @@
 # Name: bash_functions.sh
 # Distribution: 
 # This script is included with all Wasta-Offline Mirrors supplied by Bill Martin.
+# The scripts are maintained on GitHub at:
+# https://github.com/pngbill-scripts/wasta-scripts
 # If you make changes to this script to improve it or correct errors, please send
 # your updated script to Bill Martin bill_martin@sil.org
 #
-# Purpose: This is a source repository script the contains the various bash functions
+# Purpose: This is a source repository script that contains the various bash functions
 # that are used by the other Wasta-Offline scripts, including the following scripts:
 # 1. update-mirror.sh
 # 2. sync_Wasta-Offline_to_Ext_Drive.sh

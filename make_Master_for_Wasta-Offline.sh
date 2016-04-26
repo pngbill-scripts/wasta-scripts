@@ -16,6 +16,8 @@
 # This script is included with all Wasta-Offline Mirrors supplied by Bill Martin.
 # If you make changes to this script to improve it or correct errors, please send
 # your updated script to Bill Martin bill_martin@sil.org
+# The scripts are maintained on GitHub at:
+# https://github.com/pngbill-scripts/wasta-scripts
 #
 # Purpose: 
 # The primary purpose of this script is to create a Master copy of the full 
