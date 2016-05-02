@@ -45,7 +45,7 @@
 # 2. Determines whether there is a local copy of the wasta-offline software mirror
 #    at the old /data/wasta-offline/apt-mirror/mirror/ location. If one is found at
 #    the old location, the script offers to quickly move (mv) the master mirror
-#    from its /data location to the more recommended /data/master location. 
+#    from its /data/... location to the more recommended /data/master/... location. 
 # 3. Determines whether there is a wasta-offline software mirror at the prescribed
 #    location of /data/master/wasta-offline/apt-mirror/mirror. If so, it assumes 
 #    the local copy of the mirror is a "master" mirror and the one to be updated, 
@@ -112,9 +112,9 @@ else
   LMUPDATESDIR=$MOUNTPOINT # normally MOUNTPOINT is /media/LM-UPDATES or /media/$USER/LM-UPDATES
   WASTAOFFLINEEXTERNALAPTMIRRORPATH=$LMUPDATESDIR$WASTAOFFLINEDIR$APTMIRRORDIR # /media/LM-UPDATES/wasta-offline/apt-mirror
 fi
-WASTAOFFLINELOCALAPTMIRRORPATH=$DATADIR$WASTAOFFLINEDIR$APTMIRRORDIR # /data/wasta-offline/apt-mirror
+WASTAOFFLINELOCALAPTMIRRORPATH=$DATADIR$MASTERDIR$WASTAOFFLINEDIR$APTMIRRORDIR # /data/master/wasta-offline/apt-mirror
 UPDATINGLOCALDATA="YES" # [may be changed below]
-LOCALMIRRORSPATH=$WASTAOFFLINELOCALAPTMIRRORPATH # default to /data/wasta-offline/apt-mirror [may be changed below]
+LOCALMIRRORSPATH=$WASTAOFFLINELOCALAPTMIRRORPATH # default to /data/master/wasta-offline/apt-mirror [may be changed below]
 MIRRORLIST="mirror.list"
 SOURCESLIST="sources.list"
 ETCAPT="/etc/apt/"
@@ -218,8 +218,8 @@ fi
 
 # NOTE: If neither a local master mirror nor a USB drive labeled "LM-UPDATES" is found notify
 # the user of the problem and abort, otherwise continue.
-# Updating the master wasta-offline mirror is handled a bit differently than the 
-# external USB drive's mirror. If there is a local /data/wasta-offline/apt-mirror directory, 
+# Updating the master wasta-offline mirror is handled a bit differently than the external
+# USB drive's mirror. If there is a local /data/master/wasta-offline/apt-mirror directory, 
 # $UPDATINGLOCALDATA="YES" and update-mirror.sh will update the local master wasta-offline 
 # mirror instead of the external USB drive's wasta-offline mirror. When the local master  
 # mirror is updated, update-mirror.sh will also call the sync_Wasta-Offline_to_Ext_Drive.sh 
@@ -229,8 +229,8 @@ fi
 # mirror is maintained. If more than one Wasta-Offline USB drive mirror is being maintained
 # it is more efficient to update a master mirror from the FTP or Internet repositories, and
 # then sync from it to any external USB mirror that is attached to the system. When 
-# there is no local master copy at /data/wasta-offline/apt-mirror (a possible use-case for  
-# field situations with poor/expensive Internet access), $UPDATINGLOCALDATA="NO" and the 
+# there is no local master copy at /data/master/wasta-offline/apt-mirror (a possible use-case  
+# for field situations with poor/expensive Internet access), $UPDATINGLOCALDATA="NO" and the 
 # update-mirror.sh script will simply update the external USB drive's wasta-offline mirror 
 # directly - and won't call the sync_Wasta-Offline_to_Ext_Drive.sh script.
 # If multiple Wasta-Offline USB drive mirrors are being maintained, subsequent USB drive
@@ -241,7 +241,7 @@ fi
 # may result in LM-UPDATES drives being mounted with underscores suffixed to the LM-UPDATES
 # label used in mount points.
 if [ -d $WASTAOFFLINELOCALAPTMIRRORPATH ]; then
-  LOCALMIRRORSPATH=$WASTAOFFLINELOCALAPTMIRRORPATH # /data/wasta-offline/apt-mirror
+  LOCALMIRRORSPATH=$WASTAOFFLINELOCALAPTMIRRORPATH # /data/master/wasta-offline/apt-mirror
   UPDATINGLOCALDATA="YES"
 else
   if [ "x$WASTAOFFLINEEXTERNALAPTMIRRORPATH" = "x" ]; then
@@ -257,12 +257,13 @@ echo -e "\nThe current working directory is: $CURRDIR"
 echo "The mirror to receive updates is at: $LOCALMIRRORSPATH"
 echo -e "\nAre we updating a master copy of the mirror? $UPDATINGLOCALDATA"
 
-# Check for some necessary files that are needed for this script.
-# Check that the needed files and scripts exist in a subfolder called apt-mirror-setup 
-# which is within the current directory (the directory in which this script is running).
+# Check for the postmirror.sh and postmirror2.sh scripts that are needed for this script.
+# These postmirror scripts should exist in a subfolder called apt-mirror-setup in the
+# $CURRDIR (the directory in which this script is running). Warn user if the scripts are
+# not found.
 # Check for existence of postmirror.sh in $CURRDIR$APTMIRRORSETUPDIR
 if [ ! -f $CURRDIR$APTMIRRORSETUPDIR/$POSTMIRRORSCRIPT ]; then
-  echo -e "\nSorry, the $POSTMIRRORSCRIPT file was not found. It should be at:"
+  echo -e "\nWARNING, the $POSTMIRRORSCRIPT file was not found. It should be at:"
   echo "  $CURRDIR$APTMIRRORSETUPDIR/$POSTMIRRORSCRIPT"
   echo "  in the $APTMIRRORSETUPDIR subfolder of the $CURRDIR directory."
   echo "Aborting $UPDATEMIRRORSCRIPT processing! Please try again..."
@@ -270,52 +271,93 @@ if [ ! -f $CURRDIR$APTMIRRORSETUPDIR/$POSTMIRRORSCRIPT ]; then
 fi
 # Check for existence of postmirror2.sh in $CURRDIR$/APTMIRRORSETUPDIR
 if [ ! -f $CURRDIR$APTMIRRORSETUPDIR/$POSTMIRROR2SCRIPT ]; then
-  echo -e "\nSorry, the $POSTMIRROR2SCRIPT file was not found. It should be at:"
+  echo -e "\nWARNING, the $POSTMIRROR2SCRIPT file was not found. It should be at:"
   echo "  $CURRDIR$APTMIRRORSETUPDIR/$POSTMIRROR2SCRIPT"
   echo "  in the $APTMIRRORSETUPDIR subfolder of the $CURRDIR directory."
   echo "Aborting $UPDATEMIRRORSCRIPT processing! Please try again..."
   exit 1
 fi
 # Ensure the postmirror.sh and postmirror2.sh scripts are freshly copied from the
-# $CURRDIR/apt-mirror-setup folder to the $CURRDIR/wasta-offline/apt-mirror/var folder.
-echo -e "\nCopying postmirror*.sh files to $CURRDIR$WASTAOFFLINEDIR$APTMIRRORDIR$VARDIR..."
-# Here is the main rsync command. The rsync options are:
-#   -a archive mode (recurses thru dirs, preserves symlinks, permissions, times, group, owner)
-#   -v verbose
-#   -z compress file data during transfer
-#   --progress show progress during transfer
-#   --update overwrite only if file is newer than existing file
-rsync -avz --progress --update $CURRDIR$APTMIRRORSETUPDIR/*.sh $CURRDIR$WASTAOFFLINEDIR$APTMIRRORDIR$VARDIR
-# Ensure that postmirror.sh and postmirror2.sh scripts are executable for everyone.
-chmod ugo+rwx $CURRDIR$WASTAOFFLINEDIR$APTMIRRORDIR$VARDIR/*.sh
+# $CURRDIR/apt-mirror-setup folder to the $CURRDIR/wasta-offline/apt-mirror/var folder,
+# but only if there is a wasta-offline directory in $CURRDIR. There will be a wasta-offline
+# dir if the user is running this script from either the master mirror at /data/master or
+# from a mirror on the external drive at /media/$USER/LM-UPDATES
+if [ -d $CURRDIR$WASTAOFFLINEDIR ]; then
+
+  echo -e "\nCopying postmirror*.sh files to $CURRDIR$WASTAOFFLINEDIR$APTMIRRORDIR$VARDIR..."
+  # Here is the main rsync command. The rsync options are:
+  #   -a archive mode (recurses thru dirs, preserves symlinks, permissions, times, group, owner)
+  #   -v verbose
+  #   -z compress file data during transfer
+  #   --progress show progress during transfer
+  #   --update overwrite only if file is newer than existing file
+  rsync -avz --progress --update $CURRDIR$APTMIRRORSETUPDIR/*.sh $CURRDIR$WASTAOFFLINEDIR$APTMIRRORDIR$VARDIR
+  # Ensure that postmirror.sh and postmirror2.sh scripts are executable for everyone.
+  chmod ugo+rwx $CURRDIR$WASTAOFFLINEDIR$APTMIRRORDIR$VARDIR/*.sh
+fi
 
 # Check and ensure that wasta-offline is installed. This may not be the
 # case initially for some users especially if they installed a custom mint 
 # OS before wasta-linux was fully developed, or otherwise don't have
 # wasta-offline installed. 
 # Since this updata-mirror.sh script would normally be executed from an
-# LM-UPDATES external USB drive, the latest 32bit and 64bit wasta-offline
-# debian packages should be available in the root dir of the LM-UPDATES
-# drive, and hence the appropriate wasta-offline package can be installed
-# using dpkg without needing to download one from the Internet.
+# LM-UPDATES external USB drive, the latest wasta-offline debian packages 
+# should be available in the root dir of the LM-UPDATES drive, and hence 
+# the appropriate wasta-offline package can be installed using dpkg without 
+# needing to download one from the Internet.
+#
 if is_program_installed $WASTAOFFLINE ; then
   echo -e "\n$WASTAOFFLINE is already installed on this computer."
 else
-  echo -e "\nInstalling $WASTAOFFLINE on this computer."
-  # Detect whether 32bit or 64bit package should be installed
-  # and use dpkg to install the package on the external drive
-  MACHINE_TYPE=`uname -m`
-  if [ ${MACHINE_TYPE} == 'x86_64' ]; then
-    echo "This is a 64bit machine"
-    DEB64=`find $CURRDIR/$WASTAOFFLINE*amd64.deb`
-    echo "Installing $WASTAOFFLINE via: dpkg -i $DEB64"
-    dpkg -i $DEB64
+  # Get the LTS version number, 12.04, 14.04 or 16.04 in order to select the
+  # appropriate wasta-offline deb file for possible installation
+  LTSVERNUM="UNKNOWN"
+  CODENAME=`lsb_release --short --codename`
+  # Get the LTS version number from the codenames
+  case "$CODENAME" in
+    "precise")
+        LTSVERNUM="12.04"
+        ;;
+    "maya")
+        LTSVERNUM="12.04"
+        ;;
+    "trusty")
+        LTSVERNUM="14.04"
+        ;;
+    "qiana")
+        LTSVERNUM="14.04"
+        ;;
+    "rebecca")
+        LTSVERNUM="14.04"
+        ;;
+    "rafaela")
+        LTSVERNUM="14.04"
+        ;;
+    "rosa")
+        LTSVERNUM="14.04"
+        ;;
+    "xenial")
+        LTSVERNUM="16.04"
+        ;;
+    "sarah")
+        LTSVERNUM="16.04"
+        ;;
+     *)
+        LTSVERNUM="UNKNOWN"
+        ;;
+  esac
+  echo -e "\nCodename is: $CODENAME LTS Version is: $LTSVERNUM"
+
+  # Use dpkg to install the wasta-offline package
+  echo "Find string: $CURRDIR/$WASTAOFFLINE*$LTSVERNUM*.deb"
+  DEB=`find $CURRDIR/$WASTAOFFLINE*$LTSVERNUM*.deb`
+  if [ "x$DEB" = "x" ]; then
+    echo "Cannot install wasta-offline. A local deb package was not found."
+    echo "You will need to install wasta-offline before you can use the mirror."
   else
-    echo "This is a 32bit machine"
-    DEB32=`find $CURRDIR/$WASTAOFFLINE*i386.deb`
-    echo "Installing $WASTAOFFLINE via: dpkg -i $DEB32"
-    dpkg -i $DEB32
-  fi
+    echo "Installing $WASTAOFFLINE via: dpkg -i $DEB"
+    dpkg -i $DEB
+  fi 
 fi
 
 # Here is the main menu:
@@ -376,15 +418,15 @@ case $SELECTION in
         # Note: Before apt-mirror finishes it will call postmirror.sh to clean the mirror and 
         # optionally call postmirror2.sh to correct any Hash Sum mismatches.
         # Ensure that ownership of the mirror tree is apt-mirror:apt-mirror (otherwise cron won't run) 
-        # The $LOCALMIRRORSPATH is determined in the generate_mirror_list_file() call above
+        # The $LOCALMIRRORSPATH is determined near the main beginning of this script
         echo "Make $LOCALMIRRORSPATH dir owner be $APTMIRROR:$APTMIRROR"
         chown -R $APTMIRROR:$APTMIRROR $LOCALMIRRORSPATH # chown -R apt-mirror:apt-mirror /media/LM-UPDATES/wasta-offline/apt-mirror
         
-        # If apt-mirror updated the master local mirror (at /data/wasta-offline/...), then sync 
+        # If apt-mirror updated the master local mirror (at /data/master/wasta-offline/...), then sync 
         # it to the external USB mirror.
         if [ "$UPDATINGLOCALDATA" = "YES" ]; then
           # Call sync_Wasta_Offline_to_Ext_Drive.sh without any parameters: 
-          #   the $COPYFROMDIR will be /data/wasta-offline/
+          #   the $COPYFROMDIR will be /data/master/wasta-offline/
           #   the $COPYTODIR will be /media/LM-UPDATES/wasta-offline
           bash $DIR/$SYNCWASTAOFFLINESCRIPT
         fi
@@ -448,14 +490,14 @@ case $SELECTION in
       # TODO: Error checking on apt-mirror call above???
       # Note: Before apt-mirror finishes it will call postmirror.sh to clean the mirror and 
       # optionally call postmirror2.sh to correct any Hash Sum mismatches.
-      # The $LOCALMIRRORSPATH is determined in the generate_mirror_list_file() call above
+      # The $LOCALMIRRORSPATH is determined near the main beginning of this script
       echo "Make $LOCALMIRRORSPATH dir owner be $APTMIRROR:$APTMIRROR"
       chown -R $APTMIRROR:$APTMIRROR $LOCALMIRRORSPATH # chown -R apt-mirror:apt-mirror /media/LM-UPDATES/wasta-offline/apt-mirror
-      # If apt-mirror updated the master local mirror (at /data/wasta-offline/...), then sync 
+      # If apt-mirror updated the master local mirror (at /data/master/wasta-offline/...), then sync 
       # it to the external USB mirror.
       if [ "$UPDATINGLOCALDATA" = "YES" ]; then
         # Call sync_Wasta_Offline_to_Ext_Drive.sh without any parameters: 
-        #   the $COPYFROMDIR will be /data/wasta-offline/
+        #   the $COPYFROMDIR will be /data/master/wasta-offline/
         #   the $COPYTODIR will be /media/LM-UPDATES/wasta-offline
         bash $DIR/$SYNCWASTAOFFLINESCRIPT
       fi
@@ -497,14 +539,14 @@ case $SELECTION in
           # TODO: Error checking on apt-mirror call above???
           # Note: Before apt-mirror finishes it will call postmirror.sh to clean the mirror and 
           # optionally call postmirror2.sh to correct any Hash Sum mismatches.
-          # The $LOCALMIRRORSPATH is determined in the generate_mirror_list_file() call above
+          # The $LOCALMIRRORSPATH is determined near the main beginning of this script
           echo "Make $LOCALMIRRORSPATH dir owner be $APTMIRROR:$APTMIRROR"
           chown -R $APTMIRROR:$APTMIRROR $LOCALMIRRORSPATH # chown -R apt-mirror:apt-mirror /media/LM-UPDATES/wasta-offline/apt-mirror
-          # If apt-mirror updated the master local mirror (at /data/wasta-offline/...), then sync 
+          # If apt-mirror updated the master local mirror (at /data/master/wasta-offline/...), then sync 
           # it to the external USB mirror.
           if [ "$UPDATINGLOCALDATA" = "YES" ]; then
             # Call sync_Wasta_Offline_to_Ext_Drive.sh without any parameters: 
-            #   the $COPYFROMDIR will be /data/wasta-offline/
+            #   the $COPYFROMDIR will be /data/master/wasta-offline/
             #   the $COPYTODIR will be /media/LM-UPDATES/wasta-offline
             bash $DIR/$SYNCWASTAOFFLINESCRIPT
           fi
