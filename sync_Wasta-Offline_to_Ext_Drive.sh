@@ -39,7 +39,7 @@
 # and or doing the copying, is called in such a way as to preserve the source and
 # destination mirrors' ownership, group and permissions. If an external USB drive
 # is to be used as the destination, and is currently formatted as a FAT or FAT32
-# (or any other non-Linux Ext file system) and has a capacity of at least 500GB, 
+# (or any other non-Linux Ext file system) and has a capacity of at least 1TB, 
 # the script will optionally offer to format the USB drive with an Ext4 file system.
 # This script may also be used to copy or sync the full mirror from any one location 
 # to another. Here are some example uses:
@@ -150,7 +150,7 @@
 #       wants to establish a local master copy of the full mirror to which updates are 
 #       then maintained (utilizing the supplied update-mirror.sh script) from a 
 #       zero-cost FTP network server, or even from an affordable (unlimited data) 
-#       Internet connection. Copying 400-500GB from an existing mirror to a new location 
+#       Internet connection. Copying 400-1TB from an existing mirror to a new location 
 #       through a USB cable to a local computer is much faster than attempting to 
 #       download the same amount of data through a DSL or wireless connection.
 #    If a thrid parameter is present [currently unimplemented] it must be "PREP_NEW_USB". 
@@ -269,6 +269,7 @@ DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 # Main program starts here
 # ------------------------------------------------------------------------------
 #echo -e "\nNumber of parameters: $#"
+echo -e "\nSUDO_USER is: $SUDO_USER"
 echo -e "\n"
 case $# in
     0) 

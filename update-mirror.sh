@@ -360,6 +360,16 @@ else
   fi 
 fi
 
+# Make sure there is an apt-mirror group on the user's computer and
+# add the non-root user to the apt-mirror group
+echo -e "\n"
+if ! ensure_user_in_apt_mirror_group "$SUDO_USER" ; then
+  # Issue a warning, but continue the script
+  echo "WARNING: Could not add user: $SUDO_USER to the apt-mirror group"
+else
+  echo "User $SUDO_USER is in the apt-mirror group"
+fi
+
 # Here is the main menu:
 # Query the user where to get software updates: from the Internet or from a local network FTP server.
 # The prompt counts down from 60 to 0 at which time it selects 4) unless user selects differently.

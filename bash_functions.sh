@@ -2,13 +2,14 @@
 # Author: Bill Martin <bill_martin@sil.org>
 # Date: 7 November 2014
 #   - 17 April 2016 Revised some functions to update them and correct logic errors:
-#     get_valid_LM_UPDATES_mount_point () drive space needed increased from 400 to 500GB
+#     get_valid_LM_UPDATES_mount_point () drive space needed increased from 400 to 1TB
 #     copy_mirror_root_files () to find the wasta-offline deb files (now .._all.deb),
 #       and remove any old _i386.deb and _amd64.deb files
 #     generate_mirror_list_file () removed older libreoffice distros and added new ones. Also
 #       added Linux Mint rosa to the repo lists, added ...-experimental to packages.sil.org list.
 #     is_there_a_wasta_offline_mirror_at () had some logic errors fixed, removed the libreoffice
 #       distros from UBUNTUMIRRORS to be scanned.
+#   - 3 May 2016 Added Sarah and Xenial repos to the generate_mirror_list_file () function
 # Name: bash_functions.sh
 # Distribution: 
 # This script is included with all Wasta-Offline Mirrors supplied by Bill Martin.
@@ -155,6 +156,8 @@ get_valid_LM_UPDATES_mount_point ()
       USBMOUNTPTARRAY=() # Create an empty array for mount points
       USBDEVICEARRAY=() # Create an empty array for devices
       USBSIZEARRAY=() # Create an empty array for sizes (in GB)
+      # TODO: hal and hal-find-by-capability is not installed on trusty systems so
+      # need to find replacement below for this USB drive detection to work there.
       for udi in $(/usr/bin/hal-find-by-capability --capability storage)
       do
         device=$(hal-get-property --udi $udi --key block.device)
@@ -202,7 +205,7 @@ get_valid_LM_UPDATES_mount_point ()
           echo -e "\nCould not find a USB drive on this system!"
           echo "Please connect an LM-UPDATES USB drive to receive software updates, or"
           echo "Alternately, connect an empty USB drive that meets these qualifications:"
-          echo "  Is large enough to contain the full wasta-offline mirror (at least 500GB)"
+          echo "  Is large enough to contain the full wasta-offline mirror (at least 1TB)"
           echo "  Can be formatted with a Linux Ext4 file system (destroying any existing data)"
           echo "  Can be renamed with this label: LM-UPDATES"
           echo "Then, run this script again. Aborting..."
@@ -222,7 +225,7 @@ get_valid_LM_UPDATES_mount_point ()
           echo "Unrecognized selection made, or no reponse within $WAIT seconds."
           echo "Please connect an LM-UPDATES USB drive to receive software updates, or"
           echo "Alternately, connect an empty USB drive that meets these qualifications:"
-          echo "  Is large enough to contain the full wasta-offline mirror (at least 500GB)"
+          echo "  Is large enough to contain the full wasta-offline mirror (at least 1TB)"
           echo "  Can be formatted with a Linux Ext4 file system (destroying any existing data)"
           echo "  Can be renamed with this label: LM-UPDATES"
           echo "Then, run this script again. Aborting..."
@@ -231,11 +234,11 @@ get_valid_LM_UPDATES_mount_point ()
         # If we get this far, the user has typed a valid selection
         echo -e "\n"
         echo "Your choice was $SELECTION"
-        # Check if USB drive has at least 500GB of space
+        # Check if USB drive has at least 1TB of space
         if [ ${USBSIZEARRAY[SELECTION-1]} -lt 500 ]; then
           echo "The selected USB drive has a capacity of ${USBSIZEARRAY[SELECTION-1]}GB"
-          echo "The selected USB drive is too small - it has less than 500GB of disk space."
-          echo "You need a USB hard drive that has at least 500GB of storage capacity."
+          echo "The selected USB drive is too small - it has less than 1TB of disk space."
+          echo "You need a USB hard drive that has at least 1TB of storage capacity."
           echo "Aborting..."
           return 1
         fi
@@ -627,6 +630,37 @@ set_mirror_ownership_and_permissions ()
   return 0
 }
 
+# A bash function that checks to see if an apt-mirror group exists and that the user 
+# is a member of the apt-mirror group.
+# Requires one parameter passed in which should be the name of the user. We cannot use
+# $USER here because the script is running as root and $USER will be root. The passed
+# in $1 parameter should be determined in the calling script before the calling script
+# is running as root.
+ensure_user_in_apt_mirror_group ()
+{
+  # Add apt-mirror to list of groups
+  addgroup apt-mirror
+  # The return value from addgroup will be 1 if the apt-mirror group already 
+  # exists, 0 if apt-mirror was successfully added, > 1 if it couldn't add the
+  # apt-mirror group. If the apt-mirror group already exists, the terminal 
+  # output will say: "addgroup: The group `apt-mirror' already exists."
+  # We'll ignore the return value of addgroup since it self-documents.
+  # Add the non-root user's name passed in as $1 to the apt-mirror group
+  # First, if passed-in parameter $1 ends up being 'root', return 0 early
+  # without making any calls.
+  if [ "$1" = "root" ]; then
+    echo "Parameter passed in to ensure_user_in_apt_mirror_group was: $1"
+    return 1  
+  fi
+  usermod -a -G apt-mirror $1
+  LASTERRORLEVEL=$?
+  if [ $LASTERRORLEVEL != 0 ]; then
+    #echo -e "\nWARNING: Could not add user: $1 to the apt-mirror group"
+    return $LASTERRORLEVEL
+  fi
+  return 0  
+}
+
 # A bash function that checks to see if the user has the old default location of /data
 # for their master mirror, rather than the new default location of /data/master. If not
 # the function just returns 0. If a master mirror was detected at the /data location,
@@ -803,7 +837,10 @@ generate_mirror_list_file ()
   #      remote Internet mirror).
   # Revised 22 March 2016 by Bill Martin:
   #   Change LibreOffice versions to include 4-2, 4-4, 5-0, 5-1
-  #   Add Linux Mint Rosa to list
+  #   Add Linux Mint Rosa to the list
+  # Revised 3 May 2016 by Bill Martin:
+  #   Added the Ubuntu Xenial and Linux Mint Sarah repos to the list
+  #   Note: LibreOffice versions 5-X and above only are supported in Xenial and Sarahl
 
   # If this is the first generation of mirror.list, first back up the user's existing mirror.list
   # to mirror.list.save. The existing mirror.list file won't have the $GENERATEDSIGNATURE in the
@@ -820,7 +857,7 @@ generate_mirror_list_file ()
   echo "LOCALMIRRORSPATH is $LOCALMIRRORSPATH"
   # Handle the irregularity in the Ukarumpa FTP repository that has precise-security
   # and trusty-security located in the archive.ubuntu.com rather than security.ubuntu.com
-  # as is the default for Linux Mint and Wasta-Linux.
+  # as is the default for Linux Mint and Wasta-Linux. The repos at ubuntu.com have both.
   # Note: According to Cambell Prince the packages.palaso.org repo no longer exists, so 
   # that all future palaso software will be released via the packages.sil.org repository.
   if [ $1 = $FTPUkarumpaURLPrefix ]; then
@@ -959,6 +996,49 @@ deb-amd64 $1packages.linuxmint.com/ rosa main upstream import
 deb-i386 $1packages.linuxmint.com/ rosa main upstream import
 deb-amd64 $1extra.linuxmint.com/ rosa main
 deb-i386 $1extra.linuxmint.com/ rosa main
+
+# whm added 3 May 2016 sarah and xenial repos below:
+deb-amd64 $1packages.linuxmint.com/ sarah main upstream import backport
+deb-i386 $1packages.linuxmint.com/ sarah main upstream import backport
+
+deb-amd64 $1archive.ubuntu.com/ubuntu xenial main restricted universe multiverse
+deb-i386 $1archive.ubuntu.com/ubuntu xenial main restricted universe multiverse
+deb-amd64 $1archive.ubuntu.com/ubuntu xenial-updates main restricted universe multiverse
+deb-i386 $1archive.ubuntu.com/ubuntu xenial-updates main restricted universe multiverse
+deb-amd64 $1archive.ubuntu.com/ubuntu xenial-backports main restricted universe multiverse
+deb-i386 $1archive.ubuntu.com/ubuntu xenial-backports main restricted universe multiverse
+
+deb-amd64 $1$ARCHIVESECURITY.ubuntu.com/ubuntu xenial-security main restricted universe multiverse
+deb-i386 $1$ARCHIVESECURITY.ubuntu.com/ubuntu xenial-security main restricted universe multiverse
+
+deb-amd64 $1archive.canonical.com/ubuntu xenial partner
+deb-i386 $1archive.canonical.com/ubuntu xenial partner
+
+# What about extras.ubuntu.com/ubuntu xenial partner?
+# Uncomment below if/when needed for Wasta 16.04
+#deb-amd64 $1extras.ubuntu.com/ubuntu xenial main
+#deb-i386 $1extras.ubuntu.com/ubuntu xenial main
+
+deb-amd64 $1packages.sil.org/ubuntu xenial main
+deb-i386 $1packages.sil.org/ubuntu xenial main
+deb-amd64 $1packages.sil.org/ubuntu xenial-experimental main
+deb-i386 $1packages.sil.org/ubuntu xenial-experimental main
+
+# Note: the following are referenced in separate .list files in /etc/apt/sources.list.d/
+# Note: the wasta-linux repos need the source code packages also included
+deb-amd64 $1ppa.launchpad.net/wasta-linux/wasta-apps/ubuntu xenial main
+deb-i386 $1ppa.launchpad.net/wasta-linux/wasta-apps/ubuntu xenial main
+deb-src $1ppa.launchpad.net/wasta-linux/wasta-apps/ubuntu xenial main
+deb-amd64 $1ppa.launchpad.net/wasta-linux/wasta/ubuntu xenial main
+deb-i386 $1ppa.launchpad.net/wasta-linux/wasta/ubuntu xenial main
+deb-src $1ppa.launchpad.net/wasta-linux/wasta/ubuntu xenial main
+
+# libreoffice version 5-0 is earliest version available in xenial
+deb-amd64 $1ppa.launchpad.net/libreoffice/libreoffice-5-0/ubuntu xenial main
+deb-i386 $1ppa.launchpad.net/libreoffice/libreoffice-5-0/ubuntu xenial main
+deb-amd64 $1ppa.launchpad.net/libreoffice/libreoffice-5-1/ubuntu xenial main
+deb-i386 $1ppa.launchpad.net/libreoffice/libreoffice-5-1/ubuntu xenial main
+
 
 clean $1packages.linuxmint.com/
 clean $1extra.linuxmint.com/

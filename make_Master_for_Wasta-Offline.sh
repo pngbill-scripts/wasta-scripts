@@ -180,6 +180,17 @@ if [ "$(whoami)" != "root" ]; then
 fi
 
 # ------------------------------------------------------------------------------
+# Include bash_functions.sh to source certain functions for this script
+# Note: This must follow the "Setup script to run with superuser permissions"
+# code above which starts up a new shell process, preventing exported variables 
+# to be visible to the code below.
+# ------------------------------------------------------------------------------
+#echo "BASH_SOURCE[0] is: ${BASH_SOURCE[0]}"
+DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+#echo "DIR is: $DIR"
+. $DIR/bash_functions.sh # $DIR is the path prefix to bash_functions.sh as well as to the current script
+
+# ------------------------------------------------------------------------------
 # Main program starts here
 # ------------------------------------------------------------------------------
 # This script calls the sync_Wasta-Offline_to_Ext_Drive.sh script to do its work,
@@ -226,8 +237,6 @@ esac
 
 # Check that the sync_Wasta-Offline_to_Ext_Drive.sh script is available in the
 # same directory and has execute permissions.
-# Get the path prefix of this executing script
-DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 if [ -x $DIR/$SYNCWASTAOFFLINESCRIPT ]; then
   echo -e "\n$DIR/$SYNCWASTAOFFLINESCRIPT exists, is executable"
 else
@@ -254,11 +263,20 @@ if ! move_mirror_from_data_to_data_master ; then
   exit 1
 fi
 
+# Make sure there is an apt-mirror group on the user's computer and
+# add the non-root user to the apt-mirror group
+echo -e "\n"
+if ! ensure_user_in_apt_mirror_group "$SUDO_USER" ; then
+  # Issue a warning, but continue the script
+  echo "WARNING: Could not add user: $SUDO_USER to the apt-mirror group"
+else
+  echo "User $SUDO_USER is in the apt-mirror group"
+fi
+
 # The sync_Wasta-Offline_to_Ext_Drive.sh script will require superuser permissions, so
 # we don't have to do it here in this script.
 # The sync_Wasta-Offline_to_Ext_Drive.sh script will do the necessary checks for the
 # existence of the mirrors at $COPYFROMDIR and $COPYTODIR.
-# We don't use any external functions from bash_functions.sh in this script.
 bash $DIR/$SYNCWASTAOFFLINESCRIPT $COPYFROMDIR $COPYTODIR $PREPNEWUSB
 
 echo -e "\nThe $MAKEMASTERCOPYSCRIPT script has finished."
