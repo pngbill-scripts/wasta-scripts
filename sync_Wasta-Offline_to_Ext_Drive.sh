@@ -11,6 +11,8 @@
 #      /data location to the more recommended /data/master location.
 #     Added a script version number "0.1" to the script to make future updates
 #      easier.
+#   - 29 September 2016 - COPYFROMBASEDIR and COPYTOBASEDIR were not being
+#      calculated properly, fixed by use of dirname on COPYFROMDIR and COPYTODIR.
 # Name: sync_Wasta-Offline_to_Ext_Drive.sh
 # Distribution: 
 # This script is included with all Wasta-Offline Mirrors supplied by Bill Martin.
@@ -550,6 +552,13 @@ if [ ! -d "$COPYTODIR" ]; then
   exit 1
 else
   echo -e "\nFound $COPYTODIR"
+  # Calculate the COPYFROMBASEDIR and COPYTOBASEDIR paths. This should be calculated by
+  # removing the wasta-offline dir from the end of the COPYFROMDIR and COPYTODIR paths
+  COPYFROMBASEDIR=`dirname $COPYFROMDIR`
+  COPYTOBASEDIR=`dirname $COPYTODIR`
+  echo -e "\nThe COPYFROMBASEDIR is: $COPYFROMBASEDIR"
+  echo "The COPYTOBASEDIR is: $COPYTOBASEDIR"
+  
   # Take care of any source and destination mirror ownership and permission issues at
   # the source and destination, in case they have changed.
   #
@@ -557,6 +566,7 @@ else
   # to work.
   # Make sure source mirror owner is apt-mirror:apt-mirror and everything in the mirror 
   # tree is read-write for everyone.
+  
   if set_mirror_ownership_and_permissions "$COPYFROMBASEDIR" ; then
     # All chown and chmod operations were successful
     echo -e "\nSet mirror ownership and permissions successfully at: $COPYFROMBASEDIR"
@@ -567,8 +577,6 @@ else
   # Before setting the destination's ownership and permissions, use rsync to copy all of
   # the necessary files from the source's base directory to the destination.
   # Parameters: # $COPYFROMBASEDIR (normally: /data/master) and $COPYTOBASEDIR (normally: /media/LM-UPDATES).
-  echo "The COPYFROMBASEDIR is: $COPYFROMBASEDIR"
-  echo "The COPYTOBASEDIR is: $COPYTOBASEDIR"
   if copy_mirror_root_files "$COPYFROMBASEDIR" "$COPYTOBASEDIR" ; then
     # All chown and chmod operations were successful
     echo -e "\nCopied source mirror's root directory files to destination mirror."
