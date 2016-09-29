@@ -546,11 +546,10 @@ copy_mirror_root_files ()
   rsync -avz --progress --update $1$APTMIRRORSETUPDIR/*.sh $1$OFFLINEDIR$APTMIRRORDIR$VARDIR
 
   # Copy other needed files to the external drive's root dir
-  # Find all Script files at base path $1 (-maxdepth 2 includes the $1 folder 
-  # and the apt-mirror-setup folder but will exclude Bill's /data/wasta-offline2/... 
-  # tree) and rsync them to $2
+  
+  # Find all Script files at base path $1 (-maxdepth 1 includes the $1 folder)  
   echo -e "\n"
-  for script in `find $1 -maxdepth 2 -name '*.sh'` ; do 
+  for script in `find $1 -maxdepth 1 -name '*.sh'` ; do 
     # The $script var will have the absolute path to the file in the source tree
     # We need to adjust the path to copy it to the same relative location in the 
     # destination tree. 
@@ -559,8 +558,8 @@ copy_mirror_root_files ()
     # rsync the script to the destination mirror at same relative location. Create the
     # directory structure at the destination if necessary.
     destscript=$2${script#$1}
-    echo "Found script in source tree at: $script"
-    echo "The destination script should be at: $destscript"
+    echo "Found script in Base DIR $1 at: $script"
+    echo "The destination script will be at: $destscript"
     DIROFSCRIPT=${destscript%/*}
     echo "Making directory at: $DIROFSCRIPT"
     mkdir -p "$DIROFSCRIPT"
@@ -570,18 +569,19 @@ copy_mirror_root_files ()
     rsync -avz --progress --update $script $destscript
   done
 
-  # Find all the other Script files at $1$OFFLINEDIR$APTMIRRORDIR (includes only 
-  # the $1/var/ folder) and rsync them to $2
-  for script in `find $1$OFFLINEDIR$APTMIRRORDIR -name '*.sh'` ; do 
+  # Find all Script files in the apt-mirror-setup folder and rsync them to #2
+  echo -e "\n"
+  for script in `find $1$APTMIRRORSETUPDIR -maxdepth 1 -name '*.sh'` ; do 
     # The $script var will have the absolute path to the file in the source tree
     # We need to adjust the path to copy it to the same relative location in the 
     # destination tree. 
     # We remove the $1 part of the $script path and substitute the $2 part.
-    # Handle any find failure that leaves tje $script variables empty, and if no failures,
-    # rsync the script to the destination mirror at same relative location.
+    # Handle any find failure that leaves the $script variables empty, and if no failures,
+    # rsync the script to the destination mirror at same relative location. Create the
+    # directory structure at the destination if necessary.
     destscript=$2${script#$1}
-    echo "Found script in source tree at: $script"
-    echo "The destination script should be at: $destscript"
+    echo "Found script in $1$APTMIRRORSETUPDIR at: $script"
+    echo "The destination script will be at: $destscript"
     DIROFSCRIPT=${destscript%/*}
     echo "Making directory at: $DIROFSCRIPT"
     mkdir -p "$DIROFSCRIPT"
@@ -590,11 +590,34 @@ copy_mirror_root_files ()
     # which updates the destination only if the source file is newer
     rsync -avz --progress --update $script $destscript
   done
-  echo "Synchronizing the ReadMe and README.md files to $2..."
+
+  # Find all the other Script files at $1$OFFLINEDIR$APTMIRRORDIR$VARDIR (includes only 
+  # the clean.sh postmirror.sh and postmirror2.sh scripts in the 
+  # $1/wasta-offline/apt-mirror/var/ folder) and rsync them to $2
+  for script in `find $1$OFFLINEDIR$APTMIRRORDIR$VARDIR -maxdepth 1 -name '*.sh'` ; do 
+    # The $script var will have the absolute path to the file in the source tree
+    # We need to adjust the path to copy it to the same relative location in the 
+    # destination tree. 
+    # We remove the $1 part of the $script path and substitute the $2 part.
+    # Handle any find failure that leaves tje $script variables empty, and if no failures,
+    # rsync the script to the destination mirror at same relative location.
+    destscript=$2${script#$1}
+    echo "Found script in $1$OFFLINEDIR$APTMIRRORDIR$VARDIR dir of source tree at: $script"
+    echo "The destination script will be at: $destscript"
+    DIROFSCRIPT=${destscript%/*}
+    echo "Making directory at: $DIROFSCRIPT"
+    mkdir -p "$DIROFSCRIPT"
+    echo -e "\nSynchronizing the script file $script to $destscript"
+    # For these "root" level files we use --update option instead of the --delete option
+    # which updates the destination only if the source file is newer
+    rsync -avz --progress --update $script $destscript
+  done
+  
+  echo "Synchronizing the ReadMe file to $2..."
   # For these "root" level files we use --update option instead of the --delete option
   # which updates the destination only if the source file is newer
   rsync -avz --progress --update $1/ReadMe $2
-  rsync -avz --progress --update $1/README.md $2
+  #rsync -avz --progress --update $1/README.md $2
   echo "Synchronizing the .git and .gitignore files to $2..."
   rsync -avz --progress --update $1/.git* $2
   return 0
@@ -622,7 +645,17 @@ set_mirror_ownership_and_permissions ()
     echo "Setting content at $1 read-write for everyone"
     chmod -R ugo+rw $1
     # Find all Script files at $1 and set them read-write-executable
-    for script in `find $1 -name '*.sh'` ; do 
+    # Note: The for loops with find command below should echo those in the last half of the 
+    # copy_mirror_root_files () function above.
+    for script in `find $1 -maxdepth 1 -name '*.sh'` ; do 
+      echo "Setting $script executable"
+      chmod ugo+rwx $script
+    done
+    for script in `find $1$APTMIRRORSETUPDIR -maxdepth 1 -name '*.sh'` ; do 
+      echo "Setting $script executable"
+      chmod ugo+rwx $script
+    done
+    for script in `find $1$OFFLINEDIR$APTMIRRORDIR$VARDIR -maxdepth 1 -name '*.sh'` ; do 
       echo "Setting $script executable"
       chmod ugo+rwx $script
     done
@@ -781,7 +814,7 @@ move_mirror_from_data_to_data_master ()
           mv $DATADIR/wasta-offline_*.deb $DATADIR$MASTERDIR
         fi
         if [ -f $DATADIR/ReadMe ]; then
-          echo "Relocating master mirror ReadMe and README.md files to: $DATADIR$MASTERDIR"
+          echo "Relocating master mirror ReadMe file to: $DATADIR$MASTERDIR"
           mv $DATADIR/ReadMe $DATADIR$MASTERDIR
         fi
         #mv $DATADIR/README.md $DATADIR$MASTERDIR
