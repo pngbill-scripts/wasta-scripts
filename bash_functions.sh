@@ -512,26 +512,13 @@ copy_mirror_root_files ()
   if [[ "x$DEBS" == "x" ]]; then
     echo -e "\nCould not find the wasta-offline deb packages in source mirror"
   else
-    if [ -f $1/wasta-offline_*_i386.deb ]; then
-      echo -e "\nRemoving any old $1/wasta-offline_*_i386.deb package(s)"
-      rm $1/wasta-offline_*_i386.deb
-    fi
-    if [ -f $1/wasta-offline_*_amd64.deb ]; then
-      echo -e "\nRemoving any old $1/wasta-offline_*_amd64.deb package(s)"
-      rm $1/wasta-offline_*_amd64.deb
-    fi
+    # Remove any old/existing deb files
+    rm $1/wasta-offline*.deb
     echo "Copying packages from source mirror tree to: $1"
     # For these "root" level files we use --update option instead of the --delete option
     # which updates the destination only if the source file is newer
     rsync -avz --progress --update $DEBS $1
-    if [ -f $2/wasta-offline_*_i386.deb ]; then
-      echo "Removing any existing $2/wasta-offline_*_i386.deb file"
-      rm $2/wasta-offline_*_i386.deb
-    fi
-    if [ -f $2/wasta-offline_*_amd64.deb ]; then
-      echo "Removing any existing $2/wasta-offline_*_amd64.deb file"
-      rm $2/wasta-offline_*_amd64.deb
-    fi
+    rm $2/wasta-offline*.deb
     echo "Copying packages from source mirror tree to: $2"
     # For these "root" level files we use --update option instead of the --delete option
     # which updates the destination only if the source file is newer
