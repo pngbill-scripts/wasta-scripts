@@ -10,6 +10,8 @@
 #     is_there_a_wasta_offline_mirror_at () had some logic errors fixed, removed the libreoffice
 #       distros from UBUNTUMIRRORS to be scanned.
 #   - 3 May 2016 Added Sarah and Xenial repos to the generate_mirror_list_file () function
+#   - 20 June 2017 Added the LibreOffice libreoffice-5-2 and libreoffice-5-3 repos to Trusty and Xenial
+#   -   Added the Linux Mint Serena and Sonya repos to the list
 # Name: bash_functions.sh
 # Distribution: 
 # This script is included with all Wasta-Offline Mirrors supplied by Bill Martin.
@@ -18,13 +20,32 @@
 # If you make changes to this script to improve it or correct errors, please send
 # your updated script to Bill Martin bill_martin@sil.org
 #
-# Purpose: This is a source repository script that contains the various bash functions
-# that are used by the other Wasta-Offline scripts, including the following scripts:
+# Purpose: This is a source repository script that defines the following bash functions:
+#   is_dir_available ()
+#   is_program_installed ()
+#   is_program_running ()
+#   get_valid_LM_UPDATES_mount_point ()
+#   get_sources_list_protocol ()
+#   smart_install_program ()
+#   copy_mirror_root_files ()
+#   set_mirror_ownership_and_permissions ()
+#   ensure_user_in_apt_mirror_group ()
+#   move_mirror_from_data_to_data_master ()
+#   generate_mirror_list_file ()
+#   is_there_a_wasta_offline_mirror_at ()
+#   is_this_mirror_older_than_that_mirror ()
+#   get_sources_list_protocol () [currently unused]
+#   date2stamp () [currently unused]
+#   stamp2date () [currently unused]
+#   dateDiff () [currently unused]
+#
+# The above functions are used by the other Wasta-Offline scripts, including the following (other) 
+# wasta-offline related scripts:
 # 1. update-mirror.sh
 # 2. sync_Wasta-Offline_to_Ext_Drive.sh
 # 3. make_Master_for_Wasta-Offline.sh (calls the sync_Wasta-Offline_to_Ext_Drive.sh script)
 #
-# Usage: This bash_functions.sh script should be in the same directory as the calling
+# Usage: This bash_functions.sh script file should be in the same directory as the calling
 # bash scripts, or referenced with a "source <relative-path>/bash_functions.sh" call is used
 # to include any functions in a script that is located
 
@@ -235,7 +256,7 @@ get_valid_LM_UPDATES_mount_point ()
         echo -e "\n"
         echo "Your choice was $SELECTION"
         # Check if USB drive has at least 1TB of space
-        if [ ${USBSIZEARRAY[SELECTION-1]} -lt 500 ]; then
+        if [ ${USBSIZEARRAY[SELECTION-1]} -lt 900 ]; then
           echo "The selected USB drive has a capacity of ${USBSIZEARRAY[SELECTION-1]}GB"
           echo "The selected USB drive is too small - it has less than 1TB of disk space."
           echo "You need a USB hard drive that has at least 1TB of storage capacity."
@@ -861,6 +882,9 @@ generate_mirror_list_file ()
   # Revised 3 May 2016 by Bill Martin:
   #   Added the Ubuntu Xenial and Linux Mint Sarah repos to the list
   #   Note: LibreOffice versions 5-X and above only are supported in Xenial and Sarah
+  # Revised 20 June 2017 by Bill Martin:
+  #   Added the LibreOffice libreoffice-5-2 and libreoffice-5-3 repos to Trusty and Xenial
+  #   Added the Linux Mint Serena and Sonya repos to the list
 
   # If this is the first generation of mirror.list, first back up the user's existing mirror.list
   # to mirror.list.save. The existing mirror.list file won't have the $GENERATEDSIGNATURE in the

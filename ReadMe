@@ -1,14 +1,19 @@
-Subject: Full Wasta-Offline Mirror for Precise and Trusty
+Subject: Full Wasta-Offline Mirror for Precise, Trusty, Xenial, Linux Mint, SIL (PSO),
+LibreOffice, Wasta, and Wasta-
 Author:  Bill Martin
 Date:    17 November 2014
-Revised: 21 April 2016
+Revised: 20 June 2017
 
 This external hard drive contains the full wasta-offline software mirrors for the 
-Ubuntu, Linux Mint, SIL, LibreOffice, and Wasta-Linux distributions. The Ubuntu 
-mirrors include all LTS packages for both Precise and Trusty. The Linux Mint mirrors 
-include the LTS packages for Maya, Qiana, Rebecca, Rafaela, and Rosa. Both 32-bit 
-and 64-bit packages are included for all repos. All together this represents 
-approximately 430GB of data on this USB hard drive.
+Ubuntu, Linux Mint, SIL, LibreOffice, Wasta, and Wasta-Apps distributions. The Ubuntu 
+mirrors include all LTS packages for both Precise, Trusty and Xenial. The Linux Mint 
+mirrors include the LTS packages for Maya, Qiana, Rebecca, Rafaela, Rosa, Sarah, Serena
+and Sonya. By default, both 32-bit and 64-bit packages are included for all repos. 
+All together this represents approximately 600GB of data on this USB hard drive.
+Note: The generate_mirror_list_file () function located in the bash_functions.sh file
+can be tweaked to add or remove repositories - see the last "How to..." below titled
+"How to Tweak the update-mirror.sh Script to Add or Remove a Repository from the 
+apt-mirror Updating Process" for more information.
 
 As of November 2014, the mirrors and repositories contained on this hard drive are:
    Mirror                                        Repos
@@ -23,6 +28,8 @@ As of November 2014, the mirrors and repositories contained on this hard drive a
    ppa.launchpad.net/libreoffice/libreoffice-4-4 main
    ppa.launchpad.net/libreoffice/libreoffice-5-0 main
    ppa.launchpad.net/libreoffice/libreoffice-5-1 main
+   ppa.launchpad.net/libreoffice/libreoffice-5-2 main
+   ppa.launchpad.net/libreoffice/libreoffice-5-3 main
    ppa.launchpad.net/wasta-linux/wasta           main
    ppa.launchpad.net/wasta-linux/wasta-apps      main
    security.ubuntu.com                           main multiverse restricted universe
@@ -52,7 +59,7 @@ How to update your Linux computer's software with this "Full Wasta-Offline Mirro
 - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
 This "How to" tells how to use a "Full Wasta-Offline Mirror" hard drive together with 
 the wasta-offline program to update the software of a Wasta-Linux computer
-See: http://tiki.lingtransoft.info/tiki-index.php?page_ref_id=253#Consultant-SoftwareImprovements:HowtoUpdateSoftwareeasilybyMemoryStick 
+https://lingtran.net/The+Consultant+-+Advisor#Consultant-SoftwareImprovements\:HowtoUpdateSoftwareeasilybyMemoryStick 
 for an illustrated tutorial for using the Wasta-Offline program. 
 Here is a basic outline of the steps:
 1. Simply plug this drive into any Wasta-Linux computer. The wasta-offline program 
@@ -65,18 +72,20 @@ Here is a basic outline of the steps:
    They will work from 30 seconds to 2 minutes, and close automatically when 
    finished.
 5. The "wasta [Offline]: Ready" dialog will appear. You will leave this window open 
-   while using other programs such as "Update Manager" or "Synaptic Package Manager" 
-   to complete any software updates or installs. No Internet connection will be used 
-   as this is an entirely "offline" process.
-6. Start up the Update Manager by clicking on the Update Manager's icon in the panel 
-   or by selecting it from the Administration menu.
-7. Enter the computer user's password and click OK. The Update Manager's main window 
+   while using other programs such as "Software Updater", "Update Manager", "Software
+   Center" or "Synaptic Package Manager" to do any software updates or installs. 
+   No Internet connection will be used as this is an entirely "offline" process.
+6. Start up the Software Updater (Wasta 16.04), Update Manager (Wasta 14.04, 12.04),  
+   Ubuntu Software Center (Ubuntu), or Synaptic Package Manager by clicking on the 
+   Updater/Manager's icon in the panel or by selecting it from the Administration menu.
+7. Enter the computer user's password and click OK. The Updater/Manager's main window 
    appears.
-8. If Update Manager's main window shows that software updates are available, click 
-   on the "Install Updates" button on the tool bar. The updates will then be quickly
-   downloaded (from the external hard drive to the computer - not from the Internet), 
-   and then they will be installed. The install process may take a few minutes 
-   depending on the number of updates.
+8. If the Updater/Manager's main window shows that software updates are available, click 
+   on the "Install Updates" button on the tool bar or "Install Now" button at the bottom
+   of the Software Updater. The updates will then be quickly downloaded (from the 
+   external hard drive to the computer - not from the Internet), and then they will be 
+   installed. The install process may take a few minutes depending on the number of 
+   updates.
 9. When the "Update is complete" message appears, click on the "Close" button. The 
    Update Manager automatically closes.
 10. If you are not going to install any new software, you can click on the "Finished" 
@@ -86,24 +95,30 @@ Here is a basic outline of the steps:
 11. If you want to install new software from the external hard drive mirror, leave 
     the "wasta [Offline]: Ready" window open.
 12. To install new software from the external hard drive, start up the Synaptic 
-    Package Manager by selecting it from the Administration menu.
+    Package Manager or Software Center by selecting it from the Administration menu.
 13. Enter the computer user's password and click OK. The Synaptic Package Manager's 
-    main window appears.
-14. Click on the "Search" button on the tool bar, and enter the name (or part of a 
+    (or Software Center's) main window appears.
+14. Click on the "Search" button/box on the tool bar, and enter the name (or part of a 
     name) of the software you want to install. After a few seconds you should see a 
     list of software packages that were found matching your search criteria.
 15. If the software you want to install is listed, click in the check box next to 
-    the software package, and select the "Mark for Installation" option. A tick mark 
-    will appear in the check box. If a dialog appears asking "Mark additional 
-    required changes?" click on the "Mark" button.
-16. Click on the "Apply" button in the main tool bar. Another dialog may open asking 
-    "Apply the following changes?". Click on the "Apply" button on this dialog. The 
-    package manager then quickly downloads the software program from the external 
-    hard drive to the computer - not the Internet, and the new software will be 
-    installed. After the installation has finished the package manager will show the 
-    program in its main window listed with the check box showing it as installed 
-    (a green filled check box means the software is currently installed).
-17. Close the Synaptic Package Manager.
+    the software package (or on the software title), and select the "Mark for 
+    Installation" option (if using the Synaptic Package Manager) or "Install" (if using
+    the Software Center). You will be asked for your password. 
+16a. When using the Software Center, the program will be quickly downloaded from the 
+     external hard drive to the computer - not the Internet, and the new software will
+     be installed. When installation is finished the "Install" button will change to a 
+     "Remove" button.
+16b. When using the Synaptic Package Manager, a tick mark will appear in the check box. 
+     If a dialog appears asking "Mark additional required changes?" click on the "Mark" 
+     button. Click on the "Apply" button in the main tool bar. Another dialog may open 
+     asking "Apply the following changes?". Click on the "Apply" button on this dialog. 
+     The package manager then quickly downloads the software program from the external 
+     hard drive to the computer - not the Internet, and the new software will be installed. 
+     After the installation has finished the package manager will show the program in 
+     its main window listed with the check box showing it as installed (a green filled 
+     check box means the software is currently installed).
+17. Close the Synaptic Package Manager or the Software Center.
 18. When all updates and installs are finished, remember to click on the "Finished" 
     button on the "wasta [Offline]: Ready" message window, to close it. Before 
     wasta-offline ends, it will silently point your software sources back to their 
@@ -115,8 +130,8 @@ How to update a Wasta-Offline Mirror on a USB external Drive and bring it up to 
     script):
 - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
 This "How to" tells how to synchronize a slightly out-of-date Wasta-Offline Mirror that 
-resides on an external USB drive up-to-date against an up-to-date master mirror that
-resides on a local computer:
+resides on an external USB drive, and bring it up-to-date against an up-to-date master 
+mirror that resides on a local computer:
 1. Plug the slightly out-of-date Full Wasta-Offline Mirror for Precise and Trusty 
    into the USB port of the computer that has an up-to-date master copy of the 
    Wasta-Offline Mirror.
@@ -164,7 +179,7 @@ resides on a local computer:
    mirror on the external USB drive is at: /media/LM-UPDATES/wasta-offline/apt-mirror
    (if running Precise 12.04 version of Wasta-Linux), or the mirror on the external
    USB drive will be at: /media/$USER/LM-UPDATES/wasta-offline/apt-mirror (if running
-   Trusty 14.04 version of Wasta-Linux.
+   Trusty 14.04 version of Wasta-Linux).
    If your mirror locations are not at these defaults, you will need to launch the
    sync_Wasta-Offline_to_Ext_Drive.sh script from the command line and provide it
    with parameters that specify the source and destination apt-mirror directories
@@ -201,8 +216,8 @@ resides on a local computer:
     hard drive will indicate it is "Busy" when you try to safely remove it.
 
 - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
-How to update the "Full Wasta-Offline Mirror for Precise & Trusty" with the latest 
-   software updates from the Internet or from the Ukarumpa FTP site (using the
+How to update the "Full Wasta-Offline Mirror for Precise, Trusty, Xenial..." with the
+   latest software updates from the Internet or from the Ukarumpa FTP site (using the
    update-mirror.sh script):
 - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
 This "How to" tells how to update the mirror using any Linux computer that has access 
@@ -215,7 +230,7 @@ the speed of your connection to the Internet (or to the FTP server), the update
 process could take many hours (or even days). Hence, do the updating process on a 
 computer that can be left to run unattended for a long time - perhaps overnight is
 often a convenient time.
-1. Plug the Full Wasta-Offline Mirror for Precise and Trusty into the USB port of the 
+1. Plug the Full Wasta-Offline Mirror external USB drive into the USB port of the 
    computer that has a connection to the server or Internet.
 2. After about 10 seconds the wasta-offline program will start automatically (if the 
    computer is running Wasta-Linux and wasta-offline is pre-installed), and 
@@ -281,9 +296,9 @@ often a convenient time.
    If you are in a country with cheap/unlimited data access to the Internet, and 
    have a broadband connection, then you would choose 2) Get software updates 
    directly from the Internet. Be forewarned - updating the full mirror may involve 
-   downloading anywhere from a few hundred Magabytes to tens of Gigabytes of data 
-   and take hours (if not days) to complete - especially if it has been a long time 
-   since the full mirror was updated.
+   downloading anywhere from a few hundred Magabytes to tens/hundreds of Gigabytes of 
+   data and take hours (if not days) to complete - especially if it has been a long 
+   time since the full mirror was updated.
    If you are in a country/location that has access to a local software mirror that 
    you can access without cost, you might choose option 3) and enter a network path 
    to the mirror. The path you enter will need to be the full path to the directory 
@@ -369,11 +384,11 @@ mirrors mentioned above, or (if cheap "unlimited" Internet is available) from
 the Internet. 
    IMPORTANT: Before you create a full Wasta-Offline master mirror, be sure that
 the computer has enough space available to hold a full mirror. It should have at
-least 500GB of free space for the mirror (and future updates).
+least 600GB of free space (preferably 1TB) for the mirror (and future updates).
 The make_Master_for_Wasta-Offline.sh script is provided for this purpose. 
 Here are the steps:
-1. Plug the Full Wasta-Offline Mirror for Precise and Trusty into the USB port of the 
-   computer that has a connection to the server or Internet.
+1. Plug the Full Wasta-Offline Mirror for Precise, Trusty, Xenial... into the USB 
+   port of the computer that has a connection to the server or Internet.
 2. After about 10 seconds the wasta-offline program will start automatically (if the 
    computer is running wasta-linux), and display a dialog asking for your password. 
    This time click on "Cancel" to close the dialog and stop the wasta-offline program 
@@ -441,7 +456,7 @@ Here are the steps:
    the make_Master_for_Wasta-Offline.sh script manually from the command line in a
    Terminal with a call like this (made from the /media/LM-UPDATES directory if using
    Wasta-Linux Precise 12.04, or from the /media/<user-name>/LM-UPDATES directory if 
-   using Wasta-Linux Trusty 14.04):
+   using Wasta-Linux Trusty 14.04 or Wasta-Linux Xenial 16.04):
 
         cd /media/LM-UPDATES  [ or: cd /media/<user-name>/LM-UPDATES ]
         bash make_Master_for_Wasta-Offline.sh <destination-path> 
@@ -449,15 +464,15 @@ Here are the steps:
    where the <destination-path> should be the path to the destination mirror tree's
    apt-mirror directory. For example, if the destination is to be in the /home/bill/
    directory, the <destination-path> would be: /home/bill/wasta-offline/apt-mirror
-   and the actual command line command would be (on a Trusty system):
+   and the actual command line command would be (on a Trusty or Xenial system):
 
         cd /media/bill/LM-UPDATES
         bash make_Master_for_Wasta-Offline.sh /home/bill/wasta-offline/apt-mirror
 
    See the script file itself for how to use other parameter configurations when
    manually invoking the script from a command line.
-7. The script uses rsync to create the master mirror (or update if one already
-   existed). The creation of a new mirror at the destination will take 4-6
+7. The script uses rsync to create the master mirror (or update the master mirror if 
+   one already exists). The creation of a new mirror at the destination will take 4-6
    hours to complete regardless of whether you are using a USB 2.0 or USB 3.0 
    connection. 
 8. When the make_Master_for_Wasta-Offline.sh and sync_Wasta-Offline_to_Ext_Drive.sh 
@@ -480,7 +495,7 @@ drive.
 1. Plug in a new or empty external USB hard drive into the USB port of the local 
    computer that has an existing master copy of Wasta-Offline Mirror on its hard 
    drive (the default location of the master mirror is /data/master/wasta-offline/apt-mirror). 
-   This new/empty USB hard drive should have at least 500GB of capacity. 
+   This new/empty USB hard drive should have at least 1TB of storage capacity. 
 2. Open the File Manager (Nemo) on the local computer and locate the wasta-offline
    mirror. The default location for it would be /data/master/wasta-offline/apt-mirror/.
    Navigate to the base directory of the mirror (in our case the /data/master directory), 
@@ -525,7 +540,7 @@ drive.
    this:
 
      Seaching for USB storage drive(s) on this computer...
-      1) WDC WD50:00LPVX-22V0TT0:/dev/sdd:/media/MyData:MyData:500GB 
+      1) WDC WD...:/dev/sdd:/media/MyData:MyData:1TB 
      Type the number of the USB drive to use, or hit any key to abort - countdown 60
 
    If the countdown goes to 0 before a response is given, no USB drive will be
@@ -534,7 +549,7 @@ drive.
    displayed:
 
    You have selected this USB device mounted at /dev/sdd:
-     WDC WD50:00LPVX-22V0TT0:/dev/sdd:/media/MyData:MyData:500GB
+     WDC WD...:/dev/sdd:/media/MyData:MyData:1TB
 
    WARNING: This USB drive will be formatted - ALL data on it erased. OK (y/n)? 
    Type 'y' to proceed with formatting, any other key to abort - countdown 60
@@ -544,7 +559,7 @@ drive.
    aborted.
 
 6. Once the external hard drive is deemed eligible to receive the mirror data (has
-   the required Linux file system, and a capacity of at least 500GB), the
+   the required Linux file system, and a capacity of at least 600GB), the
    sync process will proceed.
 7. When the sync_Wasta-Offline_to_Ext_Drive.sh script finishes the terminal will 
    display these lines:
@@ -564,8 +579,8 @@ Mirror to update their computer, it means that some of the mirror's metadata fil
 were not properly synchronized or updated when the apt-mirror program attempted to 
 update the mirror. This situation can usually be rectified by allowing the postmirror2.sh
 script to run at the end of an apt-mirror update. Follow these steps:
-1. Plug the Full Wasta-Offline Mirror for Precise and Trusty into the USB port of the 
-   computer that has a connection to the server or Internet.
+1. Plug the Full Wasta-Offline Mirror for Precise, Trusty, Xenial... into the USB port 
+   of the computer that has a connection to the server or Internet.
 2. After about 10 seconds the wasta-offline program will start automatically (if the 
    computer is running wasta-linux), and display a dialog asking for your password. 
    This time click on "Cancel" to close the dialog and stop the wasta-offline program 
@@ -685,13 +700,13 @@ job:
 How to Tweak the update-mirror.sh Script to Add or Remove a Repository from the 
    apt-mirror Updating Process:
 - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
-The content of an apt-mirror generated software mirror is determined by the contents of
-a configuration file called mirror.list that is located at: /etc/apt/mirror.list on the 
-computer that runs the apt-mirror program. The provided script called update-mirror.sh takes 
-care of adjusting the computer's mirror.list file - ensuring that it points to the 
-appropriate external software mirrors. Where the mirror.list file's software sources point 
-to, depend on the user's choice at the following menu when the update-mirror.sh script is 
-run:
+The content of an apt-mirror generated software mirror (the "master mirror") is determined 
+by the contents of a configuration file called mirror.list that is located at: 
+/etc/apt/mirror.list on the computer that runs the apt-mirror program. The provided script 
+called update-mirror.sh takes care of adjusting the computer's mirror.list file - ensuring 
+that it points to the appropriate external software mirrors. Where the mirror.list file's 
+software sources point to, depend on the user's choice at the following menu when the 
+update-mirror.sh script is run:
 
    Where should the Wasta-Offline Mirror get its software updates?
      1) Get software updates from the SIL Ukarumpa local network FTP server.
@@ -722,8 +737,8 @@ mirror.list file by adding new software repositories to this "here-document" tem
 by commenting out existing software repositories. For example, here are two lines from
 the middle of that "here-document":
 
-deb-amd64 $1packages.sil.org/ubuntu precise main
-deb-i386 $1packages.sil.org/ubuntu precise main
+deb-amd64 $1packages.sil.org/ubuntu xenial main
+deb-i386 $1packages.sil.org/ubuntu xenial main
 
 The $1 variable will be substituted with a string of characters that was used as a 
 parameter when the generate_mirror_list_file () function was called from the
@@ -731,23 +746,27 @@ update-mirror.sh script. That parameter was either "http://" or the much longer 
 "ftp://ftp.sil.org.pg/Software/CTS/Supported_Software/Ubuntu_Repository/mirror/".
 If one wanted to remove this repository from the mirror, one could put a # character
 at the beginning of each of the above two lines. That effectively "comments out" those
-two lines from being read by the apt-mirror program. 
+two lines from being read by the apt-mirror program, and the apt-mirror program won't
+download the software packages for any repository lines that are commented out of the
+generate_mirror_list_file() function, nor the local /etc/apt/mirror.list configuration
+file that the function creates/updates when the update-mirror.sh script is executed.
 
 Including more repositories is fairly simple. You just add them to the "here-document"
-or uncomment any that are there but are currently commented out. For example, there are
-two lines (for each of the precise and trusty) sections of the template that refer to the 
-virtualbox repositories, but they are initially commented out when they are written to
-the user's mirror.list file. If a user desires to include the virtualbox repositories in 
-the mirror, they could modify the lines in the "here-document" by removing the initial # 
-characters ("uncommenting" them), so that instead of being:
+of the generate_mirror-list() bash function, or uncomment any that are there but are 
+currently commented out. For example, there are two lines (for each of the precise, 
+trusty, and xenial) sections of the template that refer to the virtualbox repositories, 
+but they are initially commented out when they are written to the user's mirror.list file. 
+If a user desires to include the virtualbox repositories in the mirror, they could modify 
+the lines in the "here-document" by removing the initial # characters ("uncommenting" them), 
+so that instead of being:
 
-  #deb-amd64 $1download.virtualbox.org/virtualbox/debian precise contrib
-  #deb-i386 $1download.virtualbox.org/virtualbox/debian precise contrib
+  #deb-amd64 $1download.virtualbox.org/virtualbox/debian xenial contrib
+  #deb-i386 $1download.virtualbox.org/virtualbox/debian xenial contrib
 
 they would become:
 
-  deb-amd64 $1download.virtualbox.org/virtualbox/debian precise contrib
-  deb-i386 $1download.virtualbox.org/virtualbox/debian precise contrib
+  deb-amd64 $1download.virtualbox.org/virtualbox/debian xenial contrib
+  deb-i386 $1download.virtualbox.org/virtualbox/debian xenial contrib
 
 in the "here-document", and would consequently be activated when written out to the user's 
 mirror.list file on-the-fly at the time the update-mirror.sh script is run.
