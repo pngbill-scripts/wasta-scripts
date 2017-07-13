@@ -1,8 +1,7 @@
-Subject: Full Wasta-Offline Mirror for Precise, Trusty, Xenial, Linux Mint, SIL (PSO),
-LibreOffice, Wasta, and Wasta-
+Subject: Full Wasta-Offline Mirror for Precise, Trusty, Xenial, Linux Mint, SIL (PSO)
 Author:  Bill Martin
 Date:    17 November 2014
-Revised: 20 June 2017
+Revised: 5 July 2017
 
 This external hard drive contains the full wasta-offline software mirrors for the 
 Ubuntu, Linux Mint, SIL, LibreOffice, Wasta, and Wasta-Apps distributions. The Ubuntu 
@@ -37,11 +36,12 @@ As of November 2014, the mirrors and repositories contained on this hard drive a
 This ReadMe file outlines the following How To topics (see detail below):
 - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
 How to update your Linux computer's software with this "Full Wasta-Offline Mirror for 
-   Precise & Trusty"
+   Precise, Trusty, Xenial, Linux Mint, SIL (PSO)"
 How to update a USB external Drive and bring it up to date - synchronizing it with
    a master mirror
-How to update the "Full Wasta-Offline Mirror for Precise & Trusty" with the latest 
-   software updates from the Internet or from the Ukarumpa FTP site
+How to update the "Full Wasta-Offline Mirror for Precise, Trusty, Xenial, Linux Mint, 
+   SIL (PSO)" with the latest software updates from the Internet or from the Ukarumpa 
+   FTP site
 How to Make a Master or Backup Wasta-Offline Mirror by Copying all of the data from 
    the Existing Mirror on the External USB Drive to the local computer
 How to clone a new Wasta-Offline Mirror to a New External USB Hard Drive, Copying 
@@ -55,7 +55,7 @@ How to Tweak the update-mirror.sh Script to Add or Remove a Repository from the
 - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
 - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
 How to update your Linux computer's software with this "Full Wasta-Offline Mirror for 
-   Precise & Trusty"
+   Precise, Trusty, Xenial, Linux Mint, SIL (PSO)"
 - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
 This "How to" tells how to use a "Full Wasta-Offline Mirror" hard drive together with 
 the wasta-offline program to update the software of a Wasta-Linux computer
@@ -216,9 +216,9 @@ mirror that resides on a local computer:
     hard drive will indicate it is "Busy" when you try to safely remove it.
 
 - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
-How to update the "Full Wasta-Offline Mirror for Precise, Trusty, Xenial..." with the
-   latest software updates from the Internet or from the Ukarumpa FTP site (using the
-   update-mirror.sh script):
+How to update the "Full Wasta-Offline Mirror for Precise, Trusty, Xenial, Linux Mint, 
+   SIL (PSO)" with the latest software updates from the Internet or from the Ukarumpa 
+   FTP site (using the update-mirror.sh script):
 - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
 This "How to" tells how to update the mirror using any Linux computer that has access 
 to the Internet, or access to a local FTP server that has up-to-date versions of the 

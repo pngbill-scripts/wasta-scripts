@@ -545,6 +545,32 @@ copy_mirror_root_files ()
     # which updates the destination only if the source file is newer
     rsync -avz --progress --update $DEBS $2
   fi
+  
+  # whm 13July2017 added wasta-offline-setup deb packages to root dir files
+  # $PKGPATH is assigned the path to the wasta-offline directory containing the deb packages 
+  # deep in the ppa.launchpad.net part of the source mirror's "pool" repo:
+  # Note: Since COPYFROMDIR generally has a final /, append $APPMIRROR to it rather than $APPMIRRORDIR
+  PKGPATH=$1$OFFLINEDIR$APTMIRRORDIR"/mirror/ppa.launchpad.net/wasta-linux/wasta-apps/ubuntu/pool/main/w/wasta-offline-setup"
+  # Store the found deb files, along with their absolute paths prefixed in a DEBS variable
+  DEBS=`find "$PKGPATH" -type f -name wasta-offline-setup_*_all.deb -printf '%T@ %p\n' | sort -n | cut -f2 -d" "`
+  # Handle any find failure that leaves the DEBS variable empty and, if no failures,
+  # copy the deb packages to the root dir of both the source and destination locations.
+  if [[ "x$DEBS" == "x" ]]; then
+    echo -e "\nCould not find the wasta-offline-setup deb packages in source mirror"
+  else
+    # Remove any old/existing deb files
+    rm $1/wasta-offline-setup*.deb
+    echo "Copying packages from source mirror tree to: $1"
+    # For these "root" level files we use --update option instead of the --delete option
+    # which updates the destination only if the source file is newer
+    rsync -avz --progress --update $DEBS $1
+    rm $2/wasta-offline-setup*.deb
+    echo "Copying packages from source mirror tree to: $2"
+    # For these "root" level files we use --update option instead of the --delete option
+    # which updates the destination only if the source file is newer
+    rsync -avz --progress --update $DEBS $2
+  fi
+  
   cd $OLDDIR # Restore the working dir to what it was
 
   # Copy the *.sh file in the $1$APTMIRRORSETUPDIR to their ultimate 
