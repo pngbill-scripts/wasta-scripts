@@ -12,6 +12,7 @@
 #   - 3 May 2016 Added Sarah and Xenial repos to the generate_mirror_list_file () function
 #   - 20 June 2017 Added the LibreOffice libreoffice-5-2 and libreoffice-5-3 repos to Trusty and Xenial
 #   -   Added the Linux Mint Serena and Sonya repos to the list
+#   - 13 July 2017 added wasta-offline-setup deb packages to root dir files
 # Name: bash_functions.sh
 # Distribution: 
 # This script is included with all Wasta-Offline Mirrors supplied by Bill Martin.
