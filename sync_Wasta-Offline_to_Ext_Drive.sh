@@ -630,6 +630,9 @@ if [ $LASTERRORLEVEL != 0 ]; then
   return $LASTERRORLEVEL
 fi
 
+# Flush the file system copy buffers
+sync
+
 # The DRIVEWASFORMATTED var was determined in the get_valid_LM_UPDATES_mount_point () function earlier above
 if [ "$DRIVEWASFORMATTED" = "TRUE" ]; then
   echo -e "\nThe USB drive was formatted with the Linux Ext4 file system"
