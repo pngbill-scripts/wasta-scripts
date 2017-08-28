@@ -660,10 +660,24 @@ copy_mirror_root_files ()
   echo "Synchronizing the .git and .gitignore files to $2..."
   rsync -avz --progress --update $1/.git* $2
   
-  echo "Synchronizing the $BILLSWASTADOCSDIR dir and contents to $2$BILLSWASTADOCSDIR..."
-  # Here again use --update option instead of the --delete option
-  # which updates the destination only if the source file is newer
-  rsync -avz --progress --update $1$BILLSWASTADOCSDIR/ $2$BILLSWASTADOCSDIR/
+  if [ -d $1$BILLSWASTADOCSDIR ]; then
+    echo "Synchronizing the $BILLSWASTADOCSDIR dir and contents to $2$BILLSWASTADOCSDIR..."
+    # Here again use --update option instead of the --delete option
+    # which updates the destination only if the source file is newer
+    rsync -avz --progress --update $1$BILLSWASTADOCSDIR/ $2$BILLSWASTADOCSDIR/
+    if [ -L $1/docs-index ]; then
+      echo -e "\nSymbolic link docs-index already exists at $1"
+    else
+      echo -e "\nCreating symbolic link docs-index at $1"
+      ln -s $1$BILLSWASTADOCSDIR/index.html $1/docs-index
+    fi
+    if [ -L $2/docs-index ]; then
+      echo -e "\nSymbolic link docs-index already exists at $2"
+    else
+      echo -e "\nCreating symbolic link docs-index at $2"
+      ln -s $2$BILLSWASTADOCSDIR/index.html $2/docs-index
+    fi
+  fi
   
   return 0
 }
