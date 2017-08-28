@@ -13,6 +13,8 @@
 #   - 20 June 2017 Added the LibreOffice libreoffice-5-2 and libreoffice-5-3 repos to Trusty and Xenial
 #   -   Added the Linux Mint Serena and Sonya repos to the list
 #   - 13 July 2017 added wasta-offline-setup deb packages to root dir files
+#   - 28 August 2017 Changed apt-mirror ownersip top level dir to wasta-offline dir
+#      and made ownership of apt-mirror-setup dir also be apt-mirror in set_mirror_ownership_and_permissions ()
 # Name: bash_functions.sh
 # Distribution: 
 # This script is included with all Wasta-Offline Mirrors supplied by Bill Martin.
@@ -492,9 +494,11 @@ smart_install_program ()
 # This function takes two parameters: $1 a source mirror's base path, and $2 a destination 
 # mirror's base path.
 # The calling script needs to export the following variables:
+#   $BILLSWASTADOCSDIR
 #   $OFFLINEDIR
 #   $APTMIRRORDIR
 #   $APTMIRRORSETUPDIR
+# This function is currently only used within the sync_Wasta-Offline_to_Ext_Drive.sh script.
 copy_mirror_root_files ()
 {
   VARDIR="/var"
@@ -655,6 +659,12 @@ copy_mirror_root_files ()
   #rsync -avz --progress --update $1/README.md $2
   echo "Synchronizing the .git and .gitignore files to $2..."
   rsync -avz --progress --update $1/.git* $2
+  
+  echo "Synchronizing the $BILLSWASTADOCSDIR dir and contents to $2$BILLSWASTADOCSDIR..."
+  # Here again use --update option instead of the --delete option
+  # which updates the destination only if the source file is newer
+  rsync -avz --progress --update $1$BILLSWASTADOCSDIR/ $2$BILLSWASTADOCSDIR/
+  
   return 0
 }
 
@@ -664,6 +674,7 @@ copy_mirror_root_files ()
 # This function must have one parameter $1 passed to it, which is the base directory where the chown and
 # chmod operations are to initiate.
 # The calling script needs to export the following variables:
+#   $BILLSWASTADOCSDIR
 #   $OFFLINEDIR
 #   $APTMIRROR
 #   $APTMIRRORDIR
@@ -674,14 +685,24 @@ set_mirror_ownership_and_permissions ()
   # directories and files that exist, in case something has changed them. We don't want ownership
   # or permissions issues on any existing content there to foul up the sync operation.
   if [ $1 ]; then
-    # Set ownership of the mirror tree starting at the apt-mirror directory
-    echo -e "\nSetting $1$OFFLINEDIR$APTMIRRORDIR owner: $APTMIRROR:$APTMIRROR"
-    chown -R $APTMIRROR:$APTMIRROR $1$OFFLINEDIR$APTMIRRORDIR
+    # Set ownership of the mirror tree starting at the wasta-offline directory
+    echo -e "-n"
+    echo "Setting $1$OFFLINEDIR owner: $APTMIRROR:$APTMIRROR"
+    chown -R $APTMIRROR:$APTMIRROR $1$OFFLINEDIR
+    # Set ownership of the mirror tree at the apt-mirror-setup directory
+    echo "Setting $1$APTMIRRORSETUPDIR owner: $APTMIRROR:$APTMIRROR"
+    chown -R $APTMIRROR:$APTMIRROR $1$APTMIRRORSETUPDIR
+    # Set ownership of the mirror tree at the bills-wasta-docs directory
+    # Update: Don't make docs owned by apt-mirror but keep rw permissions read-write for all
+    #echo -e "\nSetting $1$BILLSWASTADOCSDIR owner: $APTMIRROR:$APTMIRROR"
+    #chown -R $APTMIRROR:$APTMIRROR $1$BILLSWASTADOCSDIR
+    echo -e "-n"
     echo "Setting content at $1 read-write for everyone"
     chmod -R ugo+rw $1
     # Find all Script files at $1 and set them read-write-executable
     # Note: The for loops with find command below should echo those in the last half of the 
     # copy_mirror_root_files () function above.
+    echo -e "-n"
     for script in `find $1 -maxdepth 1 -name '*.sh'` ; do 
       echo "Setting $script executable"
       chmod ugo+rwx $script

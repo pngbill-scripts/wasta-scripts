@@ -11,8 +11,11 @@
 #      /data location to the more recommended /data/master location.
 #     Added a script version number "0.1" to the script to make future updates
 #      easier.
-#   - 29 September 2016 - COPYFROMBASEDIR and COPYTOBASEDIR were not being
+#   - 29 September 2016 COPYFROMBASEDIR and COPYTOBASEDIR were not being
 #      calculated properly, fixed by use of dirname on COPYFROMDIR and COPYTODIR.
+#   - 28 August 2017 Adjusted the copy_mirror_root_files () function to include
+#      copying the bills-wasta-docs dir to the Ext drive.
+
 # Name: sync_Wasta-Offline_to_Ext_Drive.sh
 # Distribution: 
 # This script is included with all Wasta-Offline Mirrors supplied by Bill Martin.
@@ -177,6 +180,7 @@ WASTAOFFLINEPKGURL="http://ppa.launchpad.net/wasta-linux/wasta-apps/ubuntu/pool/
 DATADIR="/data"
 MASTERDIR="/master"
 export APTMIRROR="apt-mirror"
+export BILLSWASTADOCSDIR="/bills-wasta-docs"
 export OFFLINEDIR="/wasta-offline"
 export APTMIRRORDIR="/apt-mirror"
 export APTMIRRORSETUPDIR="/apt-mirror-setup"
@@ -460,7 +464,7 @@ if is_there_a_wasta_offline_mirror_at "$COPYTODIR" ; then
       #read -r -n 1 -p "Replace it anyway with the mirror from the external hard drive? [y/n] " response
       case $response in
         [yY][eE][sS]|[yY]) 
-            echo -e "\nReplacing the full Wasta-Offline Mirror at: $COPYTODIR..."
+            echo -e "\nReplacing full Wasta-Offline Mirror at: $COPYTODIR..."
             # The main rsync command is called below
             ;;
          *)
@@ -578,7 +582,7 @@ else
   # the necessary files from the source's base directory to the destination.
   # Parameters: # $COPYFROMBASEDIR (normally: /data/master) and $COPYTOBASEDIR (normally: /media/LM-UPDATES).
   if copy_mirror_root_files "$COPYFROMBASEDIR" "$COPYTOBASEDIR" ; then
-    # All chown and chmod operations were successful
+    # All copy operations were successful
     echo -e "\nCopied source mirror's root directory files to destination mirror."
   else
     echo -e "\nNot all source mirror's root directory files could be copied!"
