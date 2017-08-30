@@ -519,6 +519,7 @@ copy_mirror_root_files ()
   # Note: Since COPYFROMDIR generally has a final /, append $APPMIRROR to it rather than $APPMIRRORDIR
   PKGPATH=$1$OFFLINEDIR$APTMIRRORDIR"/mirror/ppa.launchpad.net/wasta-linux/wasta-apps/ubuntu/pool/main/w/wasta-offline"
 
+  echo -e "\nExecuting copy_mirror_root_files function..."
   echo "The 1 parameter is: $1"
   echo "The 2 parameter is: $2"
   echo "The PKGPATH is: $PKGPATH"
@@ -539,13 +540,17 @@ copy_mirror_root_files ()
     echo -e "\nCould not find the wasta-offline deb packages in source mirror"
   else
     # Remove any old/existing deb files
-    rm $1/wasta-offline*.deb
-    echo "Copying packages from source mirror tree to: $1"
+    if ls $1/wasta-offline*.deb 1> /dev/null 2>&1; then
+      rm $1/wasta-offline*.deb
+    fi
+    echo -e "\nCopying packages from source mirror tree to: $1"
     # For these "root" level files we use --update option instead of the --delete option
     # which updates the destination only if the source file is newer
     rsync -avz --progress --update $DEBS $1
-    rm $2/wasta-offline*.deb
-    echo "Copying packages from source mirror tree to: $2"
+    if ls $2/wasta-offline*.deb 1> /dev/null 2>&1; then
+      rm $2/wasta-offline*.deb
+    fi
+    echo -e "\nCopying packages from source mirror tree to: $2"
     # For these "root" level files we use --update option instead of the --delete option
     # which updates the destination only if the source file is newer
     rsync -avz --progress --update $DEBS $2
@@ -564,13 +569,17 @@ copy_mirror_root_files ()
     echo -e "\nCould not find the wasta-offline-setup deb packages in source mirror"
   else
     # Remove any old/existing deb files
-    rm $1/wasta-offline-setup*.deb
-    echo "Copying packages from source mirror tree to: $1"
+    if ls $1/wasta-offline-setup*.deb 1> /dev/null 2>&1; then
+      rm $1/wasta-offline-setup*.deb
+    fi
+    echo -e "\nCopying packages from source mirror tree to: $1"
     # For these "root" level files we use --update option instead of the --delete option
     # which updates the destination only if the source file is newer
     rsync -avz --progress --update $DEBS $1
-    rm $2/wasta-offline-setup*.deb
-    echo "Copying packages from source mirror tree to: $2"
+    if ls $2/wasta-offline-setup*.deb 1> /dev/null 2>&1; then
+      rm $2/wasta-offline-setup*.deb
+    fi
+    echo -e "\nCopying packages from source mirror tree to: $2"
     # For these "root" level files we use --update option instead of the --delete option
     # which updates the destination only if the source file is newer
     rsync -avz --progress --update $DEBS $2
@@ -597,12 +606,14 @@ copy_mirror_root_files ()
     # rsync the script to the destination mirror at same relative location. Create the
     # directory structure at the destination if necessary.
     destscript=$2${script#$1}
-    echo "Found script in Base DIR $1 at: $script"
-    echo "The destination script will be at: $destscript"
+    echo -e "\nFound script in Base DIR $1"
+    echo "  at: $script"
+    echo "Dest at: $destscript"
     DIROFSCRIPT=${destscript%/*}
     echo "Making directory at: $DIROFSCRIPT"
     mkdir -p "$DIROFSCRIPT"
-    echo -e "\nSynchronizing the script file $script to $destscript"
+    echo "Synchronizing the script $script"
+    echo "  to $destscript"
     # For these "root" level files we use --update option instead of the --delete option
     # which updates the destination only if the source file is newer
     rsync -avz --progress --update $script $destscript
@@ -672,13 +683,13 @@ copy_mirror_root_files ()
       ln -s $1$BILLSWASTADOCSDIR/index.html $1/docs-index
     fi
     if [ -L $2/docs-index ]; then
-      echo -e "\nSymbolic link docs-index already exists at $2"
+      echo "Symbolic link docs-index already exists at $2"
     else
-      echo -e "\nCreating symbolic link docs-index at $2"
+      echo "Creating symbolic link docs-index at $2"
       ln -s $2$BILLSWASTADOCSDIR/index.html $2/docs-index
     fi
   fi
-  
+  echo "Exiting copy_mirror_root_files function."
   return 0
 }
 
@@ -698,10 +709,14 @@ set_mirror_ownership_and_permissions ()
   # we can go ahead and take care of any mirror ownership and permissions issues for those
   # directories and files that exist, in case something has changed them. We don't want ownership
   # or permissions issues on any existing content there to foul up the sync operation.
+  echo -e "\nExecuting set_mirror_ownership_and_permissions function..."
+  echo "The 1 parameter is: $1"
+  
   if [ $1 ]; then
     # Set ownership of the mirror tree starting at the wasta-offline directory
-    echo "SUDO_USER is: $SUDO_USER - calling from set_mirror_ownership_and_permissons()"
-    echo -e "-n"
+    echo -e "\n"
+    echo "SUDO_USER is: $SUDO_USER"
+    echo -e "\n"
     echo "Setting $1$OFFLINEDIR owner: $APTMIRROR:$APTMIRROR"
     chown -R $APTMIRROR:$APTMIRROR $1$OFFLINEDIR
     # Set ownership of the mirror tree at the apt-mirror-setup directory
@@ -715,13 +730,12 @@ set_mirror_ownership_and_permissions ()
     chown $SUDO_USER:$SUDO_USER $1/ReadMe
     echo "Setting $1$BILLSWASTADOCSDIR owner: $SUDO_USER:$SUDO_USER"
     chown -R $SUDO_USER:$SUDO_USER $1$BILLSWASTADOCSDIR
-    echo -e "-n"
+    echo -e "\n"
     echo "Setting content at $1 read-write for everyone"
     chmod -R ugo+rw $1
     # Find all Script files at $1 and set them read-write-executable
     # Note: The for loops with find command below should echo those in the last half of the 
     # copy_mirror_root_files () function above.
-    echo -e "-n"
     for script in `find $1 -maxdepth 1 -name '*.sh'` ; do 
       echo "Setting $script executable"
       chmod ugo+rwx $script
@@ -735,6 +749,7 @@ set_mirror_ownership_and_permissions ()
       chmod ugo+rwx $script
     done
   fi
+  echo "Exiting set_mirror_ownership_and_permissions function."
   return 0
 }
 
@@ -965,6 +980,7 @@ generate_mirror_list_file ()
     cp -f $ETCAPT$MIRRORLIST $ETCAPT$MIRRORLIST$SAVEEXT
   fi
 
+  echo -e "\n"
   echo "LOCALMIRRORSPATH is $LOCALMIRRORSPATH"
   # Handle the irregularity in the Ukarumpa FTP repository that has precise-security
   # and trusty-security located in the archive.ubuntu.com rather than security.ubuntu.com

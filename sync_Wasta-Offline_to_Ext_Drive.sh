@@ -617,8 +617,11 @@ COPYTODIR=${COPYTODIR%/}
 # Sync the data from the updated mirror to the USB external drive's mirror
 # Note: The rsync call below should preserve all ownership and permissions
 # from the source mirror's tree (set above) to the destination mirror's tree.
+echo -e "\n"
+echo "*******************************************************************************"
 echo "Synchronizinging data via the following rsync command:"
 echo "rsync -avzP --delete $COPYFROMDIR $COPYTODIR"
+echo "*******************************************************************************"
 # Here is the main rsync command. The rsync options are:
 #   -a archive mode (recurses thru dirs, preserves symlinks, permissions, times, group, owner)
 #   -v verbose

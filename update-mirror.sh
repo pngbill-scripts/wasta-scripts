@@ -112,7 +112,7 @@ MASTERDIR="/master"
 APTMIRRORDIR="/$APTMIRROR" # /apt-mirror
 WASTAOFFLINE="wasta-offline"
 WASTAOFFLINEDIR="/$WASTAOFFLINE" # /wasta-offline
-MOUNTPOINT=`mount | grep LM-UPDATES | cut -d ' ' -f3` # normally MOUNTPOINT is /media/LM-UPDATES or /media/$USER/LM-UPDATES
+MOUNTPOINT=`mount | grep LM-UPDATES | cut -d ' ' -f3` # normally MOUNTPOINT is /media/$USER/LM-UPDATES
 if [ "x$MOUNTPOINT" = "x" ]; then
   # $MOUNTPOINT for an LM-UPDATES USB drive was not found
   LMUPDATESDIR=""
@@ -358,6 +358,9 @@ else
     "sarah")
         LTSVERNUM="16.04"
         ;;
+    "serena")
+        LTSVERNUM="16.04"
+        ;;
      *)
         LTSVERNUM="UNKNOWN"
         ;;
@@ -389,12 +392,14 @@ fi
 # Here is the main menu:
 # Query the user where to get software updates: from the Internet or from a local network FTP server.
 # The prompt counts down from 60 to 0 at which time it selects 4) unless user selects differently.
-#echo -e "\n"
+echo -e "\n"
+echo "*******************************************************************************"
 echo "Where should the Wasta-Offline Mirror get its software updates?"
 echo "  1) Get software updates from the SIL Ukarumpa local network FTP server."
 echo "  2) Get software updates directly from the Internet (might be expensive!)"
 echo "  3) Get software updates from a custom network path that I will provide."
 echo "  4) Quit - I don't want to get any software updates at this time."
+echo "*******************************************************************************"
 for (( i=$WAIT; i>0; i--)); do
     printf "\rPlease press the 1, 2, 3, or 4 key, or hit any key to abort - countdown $i "
     read -s -n 1 -t 1 SELECTION
@@ -429,13 +434,17 @@ case $SELECTION in
         echo -e "\nThe $APTMIRROR program is installed"
         # Create a custom mirror.list config file for this option
         if generate_mirror_list_file $FTPUkarumpaURLPrefix ; then
-          echo -e "\nSuccessfully generated $MIRRORLIST at $MIRRORLISTPATH."
+          echo "Successfully generated $MIRRORLIST at $MIRRORLISTPATH."
         else
           echo -e "\nError: Could not generate $MIRRORLIST at $MIRRORLISTPATH. Aborting..."
           exit $LASTERRORLEVEL
         fi
-        echo -e "\nCalling apt-mirror - getting data from local Ukarumpa FTP site at:"
-        echo "$FTPUkarumpaURLPrefix..."
+        echo -e "\n"
+        echo "*******************************************************************************"
+        echo "Calling apt-mirror - getting data from local Ukarumpa FTP site"
+        echo "  URL Prefix: $FTPUkarumpaURLPrefix"
+        echo "*******************************************************************************"
+        echo -e "\n"
         # Note: For this option, the user's /etc/apt/mirror.list file now points to repositories with 
         # this path prefix:
         # ftp://ftp.sil.org.pg/Software/CTS/Supported_Software/Ubuntu_Repository/mirror/..."
@@ -464,6 +473,7 @@ case $SELECTION in
    ;;
   "2")
     # Check if the full wasta-offline mirror is running and plugged in - we can install apt-mirror from it
+    echo -e "\n"
     if is_program_running $WASTAOFFLINE ; then
       echo "$WASTAOFFLINE is running"
       # Check if it's the LM-UPDATES full USB mirror that is plugged in
@@ -496,7 +506,7 @@ case $SELECTION in
       # First, ensure that apt-mirror is installed
       if smart_install_program $APTMIRROR -q ; then
         # The apt-mirror program is installed
-        echo -e "\nThe $APTMIRROR program is installed"
+        echo "The $APTMIRROR program is installed"
       else
         # We cannot continue if apt-mirror is not/cannot be installed
         echo -e "\nError: Could not install $APTMIRROR. Aborting..."
@@ -504,12 +514,17 @@ case $SELECTION in
       fi
       # Create a custom mirror.list config file for this option
       if generate_mirror_list_file $InternetURLPrefix ; then
-        echo -e "\nSuccessfully generated $MIRRORLIST at $MIRRORLISTPATH."
+        echo "Successfully generated $MIRRORLIST at $MIRRORLISTPATH."
       else
         echo -e "\nError: Could not generate $MIRRORLIST at $MIRRORLISTPATH. Aborting..."
         exit $LASTERRORLEVEL
       fi
-      echo -e "\nCalling apt-mirror - getting data from Internet ($InternetURLPrefix)"
+      echo -e "\n"
+      echo "*******************************************************************************"
+      echo "Calling apt-mirror - getting data from Internet"
+      echo "  URL Prefix: $InternetURLPrefix"
+      echo "*******************************************************************************"
+      echo -e "\n"
       # Note: For this option, the user's /etc/apt/mirror.list file now points to repositories with this path prefix:
       # http://..."
       apt-mirror
@@ -520,9 +535,16 @@ case $SELECTION in
       
       # whm added code below to update the wasta-scripts and bills-wasta-docs repos
       # Make sure git is installed
-      echo "Ensure git is installed"
-      apt-get install git -q -y
+      if smart_install_program "git" -q ; then
+        # The git program is installed
+        echo "The git program is installed"
+      else
+        # We cannot continue if git is not/cannot be installed
+        echo -e "\nError: Could not install git. Aborting..."
+        exit $LASTERRORLEVEL
+      fi
       # Update latest git repos for wasta-scripts and bills-wasta-docs
+      echo -e "\n"
       echo "The LOCALBASEDIR is: $LOCALBASEDIR"
       cd $LOCALBASEDIR
       if [ -d ".git" ]; then
@@ -608,12 +630,17 @@ EOF
           echo -e "\nAccess to the $CustomURLPrefix server appears to be available!"
           # Create a custom mirror.list config file for this option
           if generate_mirror_list_file $CustomURLPrefix ; then
-            echo -e "\nSuccessfully generated $MIRRORLIST at $MIRRORLISTPATH."
+            echo "Successfully generated $MIRRORLIST at $MIRRORLISTPATH."
           else
             echo -e "\nError: Could not generate $MIRRORLIST at $MIRRORLISTPATH. Aborting..."
             exit $LASTERRORLEVEL
           fi
-          echo -e "\nCalling apt-mirror - getting data from Internet ($InternetURLPrefix)"
+          echo -e "\n"
+          echo "*******************************************************************************"
+          echo "Calling apt-mirror - getting data from custom server site"
+          echo "  URL Prefix: $CustomURLPrefix"
+          echo "*******************************************************************************"
+          echo -e "\n"
           # Note: For this option, the user's /etc/apt/mirror.list file now points to repositories with this path prefix:
           # "$CustomURLPrefix..."
           apt-mirror
