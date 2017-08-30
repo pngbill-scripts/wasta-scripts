@@ -203,6 +203,8 @@ if [ "$(whoami)" != "root" ]; then
     exit $LASTERRORLEVEL
 fi
 
+echo "SUDO_USER is: $SUDO_USER"
+
 # ------------------------------------------------------------------------------
 # Include bash_functions.sh to source certain functions for this script
 # Note: This must follow the "Setup script to run with superuser permissions"
@@ -525,9 +527,10 @@ case $SELECTION in
       cd $LOCALBASEDIR
       if [ -d ".git" ]; then
         echo "The local wasta-scripts repo .git file exists"
-        echo "Throw away any changes and pull in updates"
-        git reset --hard
+        echo "Pull in any updates"
         git pull
+        chown $SUDO_USER:$SUDO_USER *.sh
+        chown $SUDO_USER:$SUDO_USER ReadMe
       else
         echo "No local wasta-scripts repo .git file exists"
         echo "Clone the wasta-scripts repo to tmp"
@@ -538,6 +541,8 @@ case $SELECTION in
         rm -rf tmp
         echo "Get wasta-scripts repo updates"
         git reset --hard
+        chown $SUDO_USER:$SUDO_USER *.sh
+        chown $SUDO_USER:$SUDO_USER ReadMe
       fi
       echo "Create a .gitignore file for wasta-scripts"
       # User heredoc to create a .gitignore file with content below
@@ -550,14 +555,16 @@ wasta-offline-setup_1.*.deb
 docs-index
 .gitignore
 EOF
+      chown $SUDO_USER:$SUDO_USER $GITIGNORE
       echo "The BILLSWASTADOCS path is: $LOCALBASEDIR/$BILLSWASTADOCS"
       if [ -d $LOCALBASEDIR/$BILLSWASTADOCS ]; then
         echo "The $BILLSWASTADOCS dir exists"
         cd $LOCALBASEDIR/$BILLSWASTADOCS
-        git reset --hard
         git pull
+        chown -R $SUDO_USER:$SUDO_USER $LOCALBASEDIR/$BILLSWASTADOCS
       else
         git clone https://github.com/pngbill-scripts/bills-wasta-docs.git
+        chown -R $SUDO_USER:$SUDO_USER $LOCALBASEDIR/$BILLSWASTADOCS
       fi
       # No need for a .gitignore file in bills-wasta-docs repo
       
@@ -566,7 +573,7 @@ EOF
       
       # The $LOCALMIRRORSPATH is determined near the main beginning of this script
       echo "Make $LOCALMIRRORSPATH dir owner be $APTMIRROR:$APTMIRROR"
-      chown -R $APTMIRROR:$APTMIRROR $LOCALMIRRORSPATH # chown -R apt-mirror:apt-mirror /media/LM-UPDATES/wasta-offline/apt-mirror
+      chown -R $APTMIRROR:$APTMIRROR $LOCALMIRRORSPATH # chown -R apt-mirror:apt-mirror /media/$USER/LM-UPDATES/wasta-offline/apt-mirror
       # If apt-mirror updated the master local mirror (at /data/master/wasta-offline/...), then sync 
       # it to the external USB mirror.
       if [ "$UPDATINGLOCALDATA" = "YES" ]; then
