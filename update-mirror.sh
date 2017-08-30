@@ -11,6 +11,10 @@
 #      /data location to the more recommended /data/master location.
 #     Added a script version number "0.1" to the script to make future updates
 #      easier.
+#   - 29 August 2017 Added some code to update the wasta-scripts files from 
+#      the external GitHub repo - if Internet access is chosed as the update
+#      method. Also the added code clones/updates the bills-wasta-docs files
+#      from its external GitHub repo.
 # Name: update-mirror.sh
 # Distribution:
 # This script is the main script that is included with all full Wasta-Offline 
@@ -83,6 +87,11 @@
 #    After fetching the software updates, the apt-mirror program itself calls the
 #    postmirror.sh script (which may at the user's option call postmirror2.sh) to tidy 
 #    up the updated software mirror.
+# 9. If there is a local /data/master/wasta-offline/apt-mirror directory, 
+#    $UPDATINGLOCALDATA="YES" and update-mirror.sh will first update the local master 
+#    wasta-offline mirror. After the local master mirror is updated, update-mirror.sh 
+#    will then call the sync_Wasta-Offline_to_Ext_Drive.sh script to synchronize the 
+#    external USB drive's mirror with the newly updated master copy of the mirror.
 #
 # Usage: 
 #   Automatic: bash update-mirror.sh - or, use the File Manager to navigate to the
@@ -136,6 +145,8 @@ FTPURLPrefix="ftp://"
 FileURLPrefix="file:"
 VARDIR="/var"
 PathToCleanScript=$BasePath"/var/clean.sh"
+BILLSWASTADOCS="bills-wasta-docs"
+GITIGNORE=".gitignore"
 
 CURRDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
@@ -242,6 +253,7 @@ fi
 # label used in mount points.
 if [ -d $WASTAOFFLINELOCALAPTMIRRORPATH ]; then
   LOCALMIRRORSPATH=$WASTAOFFLINELOCALAPTMIRRORPATH # /data/master/wasta-offline/apt-mirror
+  LOCALBASEDIR=$DATADIR$MASTERDIR # /data/master
   UPDATINGLOCALDATA="YES"
 else
   if [ "x$WASTAOFFLINEEXTERNALAPTMIRRORPATH" = "x" ]; then
@@ -249,12 +261,14 @@ else
     echo "Cannot update Wasta-Offline Mirror. Aborting..."
     exit 1
   fi
-  LOCALMIRRORSPATH=$WASTAOFFLINEEXTERNALAPTMIRRORPATH # /media/LM-UPDATES/wasta-offline/apt-mirror or /media/$USER/LM-UPDATES/wasta-offline/apt-mirror
+  LOCALMIRRORSPATH=$WASTAOFFLINEEXTERNALAPTMIRRORPATH # /media/$USER/LM-UPDATES/wasta-offline/apt-mirror
+  LOCALBASEDIR=$LMUPDATESDIR # /media/$USER/LM-UPDATES
   UPDATINGLOCALDATA="NO"
 fi
 
 echo -e "\nThe current working directory is: $CURRDIR"
 echo "The mirror to receive updates is at: $LOCALMIRRORSPATH"
+echo "The base directory to receive wasta-scripts updates is: $LOCALBASEDIR"
 echo -e "\nAre we updating a master copy of the mirror? $UPDATINGLOCALDATA"
 
 # Check for the postmirror.sh and postmirror2.sh scripts that are needed for this script.
@@ -497,9 +511,59 @@ case $SELECTION in
       # Note: For this option, the user's /etc/apt/mirror.list file now points to repositories with this path prefix:
       # http://..."
       apt-mirror
+      
       # TODO: Error checking on apt-mirror call above???
       # Note: Before apt-mirror finishes it will call postmirror.sh to clean the mirror and 
       # optionally call postmirror2.sh to correct any Hash Sum mismatches.
+      
+      # whm added code below to update the wasta-scripts and bills-wasta-docs repos
+      # Make sure git is installed
+      echo "Ensure git is installed"
+      apt-get install git -q -y
+      # Update latest git repos for wasta-scripts and bills-wasta-docs
+      echo "The LOCALBASEDIR is: $LOCALBASEDIR"
+      cd $LOCALBASEDIR
+      if [ -d ".git" ]; then
+        echo "The local wasta-scripts repo .git file exists"
+        echo "Throw away any changes and pull in updates"
+        git reset --hard
+        git pull
+      else
+        echo "No local wasta-scripts repo .git file exists"
+        echo "Clone the wasta-scripts repo to tmp"
+        git clone https://github.com/pngbill-scripts/wasta-scripts.git tmp
+        echo "Move the .git folder to current folder"
+        mv tmp/.git .
+        echo "Remove the tmp folder"
+        rm -rf tmp
+        echo "Get wasta-scripts repo updates"
+        git reset --hard
+      fi
+      echo "Create a .gitignore file for wasta-scripts"
+      # User heredoc to create a .gitignore file with content below
+cat > $GITIGNORE <<EOF
+.Trash-1000/
+bills-wasta-docs/
+wasta-offline/
+wasta-offline_1.*.deb
+wasta-offline-setup_1.*.deb
+docs-index
+.gitignore
+EOF
+      echo "The BILLSWASTADOCS path is: $LOCALBASEDIR/$BILLSWASTADOCS"
+      if [ -d $LOCALBASEDIR/$BILLSWASTADOCS ]; then
+        echo "The $BILLSWASTADOCS dir exists"
+        cd $LOCALBASEDIR/$BILLSWASTADOCS
+        git reset --hard
+        git pull
+      else
+        git clone https://github.com/pngbill-scripts/bills-wasta-docs.git
+      fi
+      # No need for a .gitignore file in bills-wasta-docs repo
+      
+      echo "Change back to $CURRDIR"
+      cd $CURRDIR
+      
       # The $LOCALMIRRORSPATH is determined near the main beginning of this script
       echo "Make $LOCALMIRRORSPATH dir owner be $APTMIRROR:$APTMIRROR"
       chown -R $APTMIRROR:$APTMIRROR $LOCALMIRRORSPATH # chown -R apt-mirror:apt-mirror /media/LM-UPDATES/wasta-offline/apt-mirror
