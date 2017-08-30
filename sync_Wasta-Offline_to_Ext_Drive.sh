@@ -375,11 +375,13 @@ if is_there_a_wasta_offline_mirror_at "$COPYTODIR" ; then
       # An OLDER copy of the wasta-offline mirror already exists!
       # Replace it with the newer mirror from the external hard drive? [y/n]
       # Have the timer on the prompt default to 'y'
+      echo "*******************************************************************************"
       echo "An OLDER copy of the wasta-offline mirror already exists at the destination!"
       # An automatic default response to a newer mirror updating an older mirror should be "Yes"
       # so, have a 60 second countdown that auto selects 'y' at the end of the countdown, but if
       # a user is in attendance, the user can opt for 'n' by choice. 
       echo "Replace it with the NEWER mirror from the source location? [y/n]"
+      echo "*******************************************************************************"
       for (( i=$WAIT; i>0; i--)); do
           printf "\rPlease press the y or n key, or hit any key to abort - countdown $i "
           read -s -n 1 -t 1 response
@@ -409,11 +411,13 @@ if is_there_a_wasta_offline_mirror_at "$COPYTODIR" ; then
       # A NEWER copy of the wasta-offline mirror already exists!
       # Replace it with the older mirror from the external hard drive? [y/n] 
       # Have the timer on the prompt default to 'n'
+      echo "*******************************************************************************"
       echo "A NEWER copy of the wasta-offline mirror already exists at the destination!"
       # An automatic default response to an older mirror updating a newer mirror should be "No"
       # so, have a 60 second countdown that auto selects 'n' at the end of the countdown, but if
       # a user is in attendance, the user can opt for 'y' by choice. 
       echo "Replace it with the OLDER mirror from the source location? [y/n]"
+      echo "*******************************************************************************"
       for (( i=$WAIT; i>0; i--)); do
           printf "\rPlease press the y or n key, or hit any key to abort - countdown $i "
           read -s -n 1 -t 1 response
@@ -443,11 +447,13 @@ if is_there_a_wasta_offline_mirror_at "$COPYTODIR" ; then
       # The same copy of the wasta-offline mirror already exists!
       # Replace it with the older mirror from the external hard drive? [y/n] 
       # Have the timer on the prompt default to 'n'
+      echo "*******************************************************************************"
       echo "The SAME copy of the wasta-offline mirror already exists at the destination!"
       # An automatic default response to a mirror updating the "same" mirror should be "No"
       # so, have a 60 second countdown that auto selects 'n' at the end of the countdown, but if
       # a user is in attendance, the user can opt for 'y' by choice. 
       echo "Replace it with the mirror from the source location? [y/n]"
+      echo "*******************************************************************************"
       for (( i=$WAIT; i>0; i--)); do
           printf "\rPlease press the y or n key, or hit any key to abort - countdown $i "
           read -s -n 1 -t 1 response
@@ -498,12 +504,14 @@ if is_there_a_wasta_offline_mirror_at "$COPYTODIR" ; then
       exit 1
       ;;
       "7")
+      echo "*******************************************************************************"
       echo "No Timestamp file found at destination, assuming the mirror there is older."
       # A mirror without our Timestamp is probably older mirror. Hence, an automatic default 
       # response to a mirror updating a mirror with no Timestamp probably should be "Yes".
       # so, have a 60 second countdown that auto selects 'y' at the end of the countdown, but if
       # a user is in attendance, the user can opt for 'n' by choice. 
       echo "Replace it with the mirror from the source location? [y/n]"
+      echo "*******************************************************************************"
       for (( i=$WAIT; i>0; i--)); do
           printf "\rPlease press the y or n key, or hit any key to abort - countdown $i "
           read -s -n 1 -t 1 response
