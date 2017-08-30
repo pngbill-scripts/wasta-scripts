@@ -546,14 +546,14 @@ copy_mirror_root_files ()
     echo -e "\nCopying packages from source mirror tree to: $1"
     # For these "root" level files we use --update option instead of the --delete option
     # which updates the destination only if the source file is newer
-    rsync -avz --progress --update $DEBS $1
+    rsync -avz --update $DEBS $1
     if ls $2/wasta-offline*.deb 1> /dev/null 2>&1; then
       rm $2/wasta-offline*.deb
     fi
     echo -e "\nCopying packages from source mirror tree to: $2"
     # For these "root" level files we use --update option instead of the --delete option
     # which updates the destination only if the source file is newer
-    rsync -avz --progress --update $DEBS $2
+    rsync -avz --update $DEBS $2
   fi
   
   # whm 13July2017 added wasta-offline-setup deb packages to root dir files
@@ -575,14 +575,14 @@ copy_mirror_root_files ()
     echo -e "\nCopying packages from source mirror tree to: $1"
     # For these "root" level files we use --update option instead of the --delete option
     # which updates the destination only if the source file is newer
-    rsync -avz --progress --update $DEBS $1
+    rsync -avz --update $DEBS $1
     if ls $2/wasta-offline-setup*.deb 1> /dev/null 2>&1; then
       rm $2/wasta-offline-setup*.deb
     fi
     echo -e "\nCopying packages from source mirror tree to: $2"
     # For these "root" level files we use --update option instead of the --delete option
     # which updates the destination only if the source file is newer
-    rsync -avz --progress --update $DEBS $2
+    rsync -avz --update $DEBS $2
   fi
   
   cd $OLDDIR # Restore the working dir to what it was
@@ -591,7 +591,7 @@ copy_mirror_root_files ()
   # destination of $1$OFFLINEDIR$APTMIRRORDIR$VARDIR
   echo -e "\ncopying the *.sh files from: $1$APTMIRRORSETUPDIR/*.sh"
   echo "                                to $1$OFFLINEDIR$APTMIRRORDIR$VARDIR"
-  rsync -avz --progress --update $1$APTMIRRORSETUPDIR/*.sh $1$OFFLINEDIR$APTMIRRORDIR$VARDIR
+  rsync -avz --update $1$APTMIRRORSETUPDIR/*.sh $1$OFFLINEDIR$APTMIRRORDIR$VARDIR
 
   # Copy other needed files to the external drive's root dir
   
@@ -616,7 +616,7 @@ copy_mirror_root_files ()
     echo "  to $destscript"
     # For these "root" level files we use --update option instead of the --delete option
     # which updates the destination only if the source file is newer
-    rsync -avz --progress --update $script $destscript
+    rsync -avz --update $script $destscript
   done
 
   # Find all Script files in the apt-mirror-setup folder and rsync them to #2
@@ -638,7 +638,7 @@ copy_mirror_root_files ()
     echo -e "\nSynchronizing the script file $script to $destscript"
     # For these "root" level files we use --update option instead of the --delete option
     # which updates the destination only if the source file is newer
-    rsync -avz --progress --update $script $destscript
+    rsync -avz --update $script $destscript
   done
 
   # Find all the other Script files at $1$OFFLINEDIR$APTMIRRORDIR$VARDIR (includes only 
@@ -660,22 +660,22 @@ copy_mirror_root_files ()
     echo -e "\nSynchronizing the script file $script to $destscript"
     # For these "root" level files we use --update option instead of the --delete option
     # which updates the destination only if the source file is newer
-    rsync -avz --progress --update $script $destscript
+    rsync -avz --update $script $destscript
   done
   
   echo "Synchronizing the ReadMe file to $2..."
   # For these "root" level files we use --update option instead of the --delete option
   # which updates the destination only if the source file is newer
-  rsync -avz --progress --update $1/ReadMe $2
+  rsync -avz --update $1/ReadMe $2
   #rsync -avz --progress --update $1/README.md $2
   echo "Synchronizing the .git and .gitignore files to $2..."
-  rsync -avz --progress --update $1/.git* $2
+  rsync -avz --update $1/.git* $2
   
   if [ -d $1$BILLSWASTADOCSDIR ]; then
     echo "Synchronizing the $BILLSWASTADOCSDIR dir and contents to $2$BILLSWASTADOCSDIR..."
     # Here again use --update option instead of the --delete option
     # which updates the destination only if the source file is newer
-    rsync -avz --progress --update $1$BILLSWASTADOCSDIR/ $2$BILLSWASTADOCSDIR/
+    rsync -avz --update $1$BILLSWASTADOCSDIR/ $2$BILLSWASTADOCSDIR/
     if [ -L $1/docs-index ]; then
       echo -e "\nSymbolic link docs-index already exists at $1"
     else
@@ -714,23 +714,19 @@ set_mirror_ownership_and_permissions ()
   
   if [ $1 ]; then
     # Set ownership of the mirror tree starting at the wasta-offline directory
-    echo -e "\n"
     echo "SUDO_USER is: $SUDO_USER"
-    echo -e "\n"
     echo "Setting $1$OFFLINEDIR owner: $APTMIRROR:$APTMIRROR"
     chown -R $APTMIRROR:$APTMIRROR $1$OFFLINEDIR
     # Set ownership of the mirror tree at the apt-mirror-setup directory
     echo "Setting $1$APTMIRRORSETUPDIR owner: $APTMIRROR:$APTMIRROR"
     chown -R $APTMIRROR:$APTMIRROR $1$APTMIRRORSETUPDIR
     # Set ownership of scripts, ReadMe file, and bills-wasta-docs directory to $SUDO_USER
-    echo -e "\n"
     echo "Setting $1/*.sh owner: $SUDO_USER:$SUDO_USER"
     chown $SUDO_USER:$SUDO_USER $1/*.sh
     echo "Setting $1/ReadMe owner: $SUDO_USER:$SUDO_USER"
     chown $SUDO_USER:$SUDO_USER $1/ReadMe
     echo "Setting $1$BILLSWASTADOCSDIR owner: $SUDO_USER:$SUDO_USER"
     chown -R $SUDO_USER:$SUDO_USER $1$BILLSWASTADOCSDIR
-    echo -e "\n"
     echo "Setting content at $1 read-write for everyone"
     chmod -R ugo+rw $1
     # Find all Script files at $1 and set them read-write-executable
