@@ -700,16 +700,21 @@ set_mirror_ownership_and_permissions ()
   # or permissions issues on any existing content there to foul up the sync operation.
   if [ $1 ]; then
     # Set ownership of the mirror tree starting at the wasta-offline directory
+    echo "SUDO_USER is: $SUDO_USER - calling from set_mirror_ownership_and_permissons()"
     echo -e "-n"
     echo "Setting $1$OFFLINEDIR owner: $APTMIRROR:$APTMIRROR"
     chown -R $APTMIRROR:$APTMIRROR $1$OFFLINEDIR
     # Set ownership of the mirror tree at the apt-mirror-setup directory
     echo "Setting $1$APTMIRRORSETUPDIR owner: $APTMIRROR:$APTMIRROR"
     chown -R $APTMIRROR:$APTMIRROR $1$APTMIRRORSETUPDIR
-    # Set ownership of the mirror tree at the bills-wasta-docs directory
-    # Update: Don't make docs owned by apt-mirror but keep rw permissions read-write for all
-    #echo -e "\nSetting $1$BILLSWASTADOCSDIR owner: $APTMIRROR:$APTMIRROR"
-    #chown -R $APTMIRROR:$APTMIRROR $1$BILLSWASTADOCSDIR
+    # Set ownership of scripts, ReadMe file, and bills-wasta-docs directory to $SUDO_USER
+    echo -e "\n"
+    echo "Setting $1/*.sh owner: $SUDO_USER:$SUDO_USER"
+    chown $SUDO_USER:$SUDO_USER $1/*.sh
+    echo "Setting $1/ReadMe owner: $SUDO_USER:$SUDO_USER"
+    chown $SUDO_USER:$SUDO_USER $1/ReadMe
+    echo "Setting $1$BILLSWASTADOCSDIR owner: $SUDO_USER:$SUDO_USER"
+    chown -R $SUDO_USER:$SUDO_USER $1$BILLSWASTADOCSDIR
     echo -e "-n"
     echo "Setting content at $1 read-write for everyone"
     chmod -R ugo+rw $1

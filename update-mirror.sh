@@ -145,7 +145,7 @@ FTPURLPrefix="ftp://"
 FileURLPrefix="file:"
 VARDIR="/var"
 PathToCleanScript=$BasePath"/var/clean.sh"
-BILLSWASTADOCS="bills-wasta-docs"
+BILLSWASTADOCSDIR="/bills-wasta-docs"
 GITIGNORE=".gitignore"
 
 CURRDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -556,15 +556,15 @@ docs-index
 .gitignore
 EOF
       chown $SUDO_USER:$SUDO_USER $GITIGNORE
-      echo "The BILLSWASTADOCS path is: $LOCALBASEDIR/$BILLSWASTADOCS"
-      if [ -d $LOCALBASEDIR/$BILLSWASTADOCS ]; then
-        echo "The $BILLSWASTADOCS dir exists"
-        cd $LOCALBASEDIR/$BILLSWASTADOCS
+      echo "The BILLSWASTADOCS path is: $LOCALBASEDIR$BILLSWASTADOCSDIR"
+      if [ -d $LOCALBASEDIR$BILLSWASTADOCSDIR ]; then
+        echo "The BILLSWASTADOCS dir exists"
+        cd $LOCALBASEDIR$BILLSWASTADOCSDIR
         git pull
-        chown -R $SUDO_USER:$SUDO_USER $LOCALBASEDIR/$BILLSWASTADOCS
+        chown -R $SUDO_USER:$SUDO_USER $LOCALBASEDIR$BILLSWASTADOCSDIR
       else
         git clone https://github.com/pngbill-scripts/bills-wasta-docs.git
-        chown -R $SUDO_USER:$SUDO_USER $LOCALBASEDIR/$BILLSWASTADOCS
+        chown -R $SUDO_USER:$SUDO_USER $LOCALBASEDIR$BILLSWASTADOCSDIR
       fi
       # No need for a .gitignore file in bills-wasta-docs repo
       
