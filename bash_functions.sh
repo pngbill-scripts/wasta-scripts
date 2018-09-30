@@ -963,6 +963,11 @@ generate_mirror_list_file ()
   # Revised 20 June 2017 by Bill Martin:
   #   Added the LibreOffice libreoffice-5-2 and libreoffice-5-3 repos to Trusty and Xenial
   #   Added the Linux Mint Serena and Sonya repos to the list
+  # Revised 30 September 2018 by Bill Martin:
+  #   Added the Ubuntu Bionic repos to the list
+  #   Removed (commented out) the precise/maya repos as they are no longer supported
+  #   Added the LibreOffice libreoffice-5-4 and libreoffice-6-0 repos 
+  #   Added the Linux Mint Sylvia 18.3 Tara 19 and Tessa 19.1 repos to the list
 
   # If this is the first generation of mirror.list, first back up the user's existing mirror.list
   # to mirror.list.save. The existing mirror.list file won't have the $GENERATEDSIGNATURE in the
@@ -1023,43 +1028,43 @@ set _tilde 0
 
 # whm modified 24Mar14 to add Linux Mint repro, remove src repos, include both 32-bit and 64-bit packages
 # Note: the following are referenced in /etc/apt/sources.list
-deb-amd64 $1packages.linuxmint.com/ maya main upstream import backport
-deb-i386 $1packages.linuxmint.com/ maya main upstream import backport
-deb-amd64 $1archive.ubuntu.com/ubuntu precise main restricted universe multiverse
-deb-i386 $1archive.ubuntu.com/ubuntu precise main restricted universe multiverse
+#deb-amd64 $1packages.linuxmint.com/ maya main upstream import backport
+#deb-i386 $1packages.linuxmint.com/ maya main upstream import backport
+#deb-amd64 $1archive.ubuntu.com/ubuntu precise main restricted universe multiverse
+#deb-i386 $1archive.ubuntu.com/ubuntu precise main restricted universe multiverse
 # Note: Our external mirror points to the security.ubuntu.com/ubuntu precise-security repository.
 # The Ukarumpa FTP mirrors point to archive.ubuntu.com/ubuntu precise-security. Presumably, both 
 # remote mirrors contain the same packages and updates.
-deb-amd64 $1$ARCHIVESECURITY.ubuntu.com/ubuntu precise-security main restricted universe multiverse
-deb-i386 $1$ARCHIVESECURITY.ubuntu.com/ubuntu precise-security main restricted universe multiverse
-deb-amd64 $1archive.ubuntu.com/ubuntu precise-updates main restricted universe multiverse
-deb-i386 $1archive.ubuntu.com/ubuntu precise-updates main restricted universe multiverse
-deb-amd64 $1extras.ubuntu.com/ubuntu precise main
-deb-i386 $1extras.ubuntu.com/ubuntu precise main
+#deb-amd64 $1$ARCHIVESECURITY.ubuntu.com/ubuntu precise-security main restricted universe multiverse
+#deb-i386 $1$ARCHIVESECURITY.ubuntu.com/ubuntu precise-security main restricted universe multiverse
+#deb-amd64 $1archive.ubuntu.com/ubuntu precise-updates main restricted universe multiverse
+#deb-i386 $1archive.ubuntu.com/ubuntu precise-updates main restricted universe multiverse
+#deb-amd64 $1extras.ubuntu.com/ubuntu precise main
+#deb-i386 $1extras.ubuntu.com/ubuntu precise main
 # Note: The following two archive.canonical.com partner repos may not be in the Ukarumpa FTP mirror
 # If so, one may comment out the following two entries
-deb-amd64 $1archive.canonical.com/ubuntu precise partner
-deb-i386 $1archive.canonical.com/ubuntu precise partner
-deb-amd64 $1packages.sil.org/ubuntu precise main
-deb-i386 $1packages.sil.org/ubuntu precise main
-deb-amd64 $1packages.sil.org/ubuntu precise-experimental main
-deb-i386 $1packages.sil.org/ubuntu precise-experimental main
+#deb-amd64 $1archive.canonical.com/ubuntu precise partner
+#deb-i386 $1archive.canonical.com/ubuntu precise partner
+#deb-amd64 $1packages.sil.org/ubuntu precise main
+#deb-i386 $1packages.sil.org/ubuntu precise main
+#deb-amd64 $1packages.sil.org/ubuntu precise-experimental main
+#deb-i386 $1packages.sil.org/ubuntu precise-experimental main
 #deb-amd64 $1download.virtualbox.org/virtualbox/debian precise contrib
 #deb-i386 $1download.virtualbox.org/virtualbox/debian precise contrib
 # Note: the following are referenced in separate .list files in /etc/apt/sources.list.d/
 # Note: the wasta-linux repos need the source code packages also included
-deb-amd64 $1ppa.launchpad.net/wasta-linux/wasta-apps/ubuntu precise main
-deb-i386 $1ppa.launchpad.net/wasta-linux/wasta-apps/ubuntu precise main
-deb-src $1ppa.launchpad.net/wasta-linux/wasta-apps/ubuntu precise main
-deb-amd64 $1ppa.launchpad.net/wasta-linux/wasta/ubuntu precise main
-deb-i386 $1ppa.launchpad.net/wasta-linux/wasta/ubuntu precise main
-deb-src $1ppa.launchpad.net/wasta-linux/wasta/ubuntu precise main
-deb-amd64 $1ppa.launchpad.net/libreoffice/libreoffice-4-2/ubuntu precise main
-deb-i386 $1ppa.launchpad.net/libreoffice/libreoffice-4-2/ubuntu precise main
-deb-amd64 $1ppa.launchpad.net/libreoffice/libreoffice-4-4/ubuntu precise main
-deb-i386 $1ppa.launchpad.net/libreoffice/libreoffice-4-4/ubuntu precise main
-deb-amd64 $1ppa.launchpad.net/libreoffice/libreoffice-5-0/ubuntu precise main
-deb-i386 $1ppa.launchpad.net/libreoffice/libreoffice-5-0/ubuntu precise main
+#deb-amd64 $1ppa.launchpad.net/wasta-linux/wasta-apps/ubuntu precise main
+#deb-i386 $1ppa.launchpad.net/wasta-linux/wasta-apps/ubuntu precise main
+#deb-src $1ppa.launchpad.net/wasta-linux/wasta-apps/ubuntu precise main
+#deb-amd64 $1ppa.launchpad.net/wasta-linux/wasta/ubuntu precise main
+#deb-i386 $1ppa.launchpad.net/wasta-linux/wasta/ubuntu precise main
+#deb-src $1ppa.launchpad.net/wasta-linux/wasta/ubuntu precise main
+#deb-amd64 $1ppa.launchpad.net/libreoffice/libreoffice-4-2/ubuntu precise main
+#deb-i386 $1ppa.launchpad.net/libreoffice/libreoffice-4-2/ubuntu precise main
+#deb-amd64 $1ppa.launchpad.net/libreoffice/libreoffice-4-4/ubuntu precise main
+#deb-i386 $1ppa.launchpad.net/libreoffice/libreoffice-4-4/ubuntu precise main
+#deb-amd64 $1ppa.launchpad.net/libreoffice/libreoffice-5-0/ubuntu precise main
+#deb-i386 $1ppa.launchpad.net/libreoffice/libreoffice-5-0/ubuntu precise main
 # It appears that libreoffice-5-0 is the last version available for precise
 # Note: Ubuntu 12.04 Precise reached end-of-life on April 28, 2017 so the
 # existing packages for 12.04 won't change after April 2017. 
@@ -1108,6 +1113,10 @@ deb-amd64 $1ppa.launchpad.net/libreoffice/libreoffice-5-2/ubuntu trusty main
 deb-i386 $1ppa.launchpad.net/libreoffice/libreoffice-5-2/ubuntu trusty main
 deb-amd64 $1ppa.launchpad.net/libreoffice/libreoffice-5-3/ubuntu trusty main
 deb-i386 $1ppa.launchpad.net/libreoffice/libreoffice-5-3/ubuntu trusty main
+deb-amd64 $1ppa.launchpad.net/libreoffice/libreoffice-5-4/ubuntu trusty main
+deb-i386 $1ppa.launchpad.net/libreoffice/libreoffice-5-4/ubuntu trusty main
+deb-amd64 $1ppa.launchpad.net/libreoffice/libreoffice-6-0/ubuntu trusty main
+deb-i386 $1ppa.launchpad.net/libreoffice/libreoffice-6-0/ubuntu trusty main
 
 # Note: the following are for wasta 14.04.2 / Linux Mint 17.1 Rebecca
 deb-amd64 $1packages.linuxmint.com/ rebecca main upstream import
@@ -1139,6 +1148,18 @@ deb-i386 $1packages.linuxmint.com/ serena main upstream import backport
 # whm added 16 June 2017 Linux Mint 18.2 Sonya
 deb-amd64 $1packages.linuxmint.com/ sonya main upstream import backport
 deb-i386 $1packages.linuxmint.com/ sonya main upstream import backport
+
+# whm added 30 September 2018 Linux Mint 18.3 Sylvia
+deb-amd64 $1packages.linuxmint.com/ sylvia main upstream import backport
+deb-i386 $1packages.linuxmint.com/ sylvia main upstream import backport
+
+# whm added 30 September 2018 Linux Mint 19 Tara
+deb-amd64 $1packages.linuxmint.com/ tara main upstream import backport
+deb-i386 $1packages.linuxmint.com/ tara main upstream import backport
+
+# whm added 30 September 2018 Linux Mint 19.1 Tessa
+deb-amd64 $1packages.linuxmint.com/ tessa main upstream import backport
+deb-i386 $1packages.linuxmint.com/ tessa main upstream import backport
 
 # whm added 3 May 2016 xenial repos below:
 deb-amd64 $1archive.ubuntu.com/ubuntu xenial main restricted universe multiverse
@@ -1177,7 +1198,52 @@ deb-amd64 $1ppa.launchpad.net/libreoffice/libreoffice-5-2/ubuntu xenial main
 deb-i386 $1ppa.launchpad.net/libreoffice/libreoffice-5-2/ubuntu xenial main
 deb-amd64 $1ppa.launchpad.net/libreoffice/libreoffice-5-3/ubuntu xenial main
 deb-i386 $1ppa.launchpad.net/libreoffice/libreoffice-5-3/ubuntu xenial main
+deb-amd64 $1ppa.launchpad.net/libreoffice/libreoffice-5-4/ubuntu xenial main
+deb-i386 $1ppa.launchpad.net/libreoffice/libreoffice-5-4/ubuntu xenial main
+deb-amd64 $1ppa.launchpad.net/libreoffice/libreoffice-6-0/ubuntu xenial main
+deb-i386 $1ppa.launchpad.net/libreoffice/libreoffice-6-0/ubuntu xenial main
 
+# whm added 30 September 2016 bionic repos below:
+deb-amd64 $1archive.ubuntu.com/ubuntu bionic main restricted universe multiverse
+deb-i386 $1archive.ubuntu.com/ubuntu bionic main restricted universe multiverse
+deb-amd64 $1archive.ubuntu.com/ubuntu bionic-updates main restricted universe multiverse
+deb-i386 $1archive.ubuntu.com/ubuntu bionic-updates main restricted universe multiverse
+deb-amd64 $1archive.ubuntu.com/ubuntu bionic-backports main restricted universe multiverse
+deb-i386 $1archive.ubuntu.com/ubuntu bionic-backports main restricted universe multiverse
+
+deb-amd64 $1$ARCHIVESECURITY.ubuntu.com/ubuntu bionic-security main restricted universe multiverse
+deb-i386 $1$ARCHIVESECURITY.ubuntu.com/ubuntu bionic-security main restricted universe multiverse
+
+deb-amd64 $1archive.canonical.com/ubuntu bionic partner
+deb-i386 $1archive.canonical.com/ubuntu bionic partner
+
+deb-amd64 $1packages.sil.org/ubuntu bionic main
+deb-i386 $1packages.sil.org/ubuntu bionic main
+deb-amd64 $1packages.sil.org/ubuntu bionic-experimental main
+deb-i386 $1packages.sil.org/ubuntu bionic-experimental main
+
+# Note: the following are referenced in separate .list files in /etc/apt/sources.list.d/
+# Note: the wasta-linux repos need the source code packages also included
+deb-amd64 $1ppa.launchpad.net/wasta-linux/wasta-apps/ubuntu bionic main
+deb-i386 $1ppa.launchpad.net/wasta-linux/wasta-apps/ubuntu bionic main
+deb-src $1ppa.launchpad.net/wasta-linux/wasta-apps/ubuntu bionic main
+deb-amd64 $1ppa.launchpad.net/wasta-linux/wasta/ubuntu bionic main
+deb-i386 $1ppa.launchpad.net/wasta-linux/wasta/ubuntu bionic main
+deb-src $1ppa.launchpad.net/wasta-linux/wasta/ubuntu bionic main
+
+# libreoffice version 5-0 is earliest version available in xenial
+deb-amd64 $1ppa.launchpad.net/libreoffice/libreoffice-5-0/ubuntu bionic main
+deb-i386 $1ppa.launchpad.net/libreoffice/libreoffice-5-0/ubuntu bionic main
+deb-amd64 $1ppa.launchpad.net/libreoffice/libreoffice-5-1/ubuntu bionic main
+deb-i386 $1ppa.launchpad.net/libreoffice/libreoffice-5-1/ubuntu bionic main
+deb-amd64 $1ppa.launchpad.net/libreoffice/libreoffice-5-2/ubuntu bionic main
+deb-i386 $1ppa.launchpad.net/libreoffice/libreoffice-5-2/ubuntu bionic main
+deb-amd64 $1ppa.launchpad.net/libreoffice/libreoffice-5-3/ubuntu bionic main
+deb-i386 $1ppa.launchpad.net/libreoffice/libreoffice-5-3/ubuntu bionic main
+deb-amd64 $1ppa.launchpad.net/libreoffice/libreoffice-5-4/ubuntu bionic main
+deb-i386 $1ppa.launchpad.net/libreoffice/libreoffice-5-4/ubuntu bionic main
+deb-amd64 $1ppa.launchpad.net/libreoffice/libreoffice-6-0/ubuntu bionic main
+deb-i386 $1ppa.launchpad.net/libreoffice/libreoffice-6-0/ubuntu bionic main
 
 clean $1packages.linuxmint.com/
 clean $1extra.linuxmint.com/
@@ -1195,6 +1261,8 @@ clean $1ppa.launchpad.net/libreoffice/libreoffice-5-0/ubuntu
 clean $1ppa.launchpad.net/libreoffice/libreoffice-5-1/ubuntu
 clean $1ppa.launchpad.net/libreoffice/libreoffice-5-2/ubuntu
 clean $1ppa.launchpad.net/libreoffice/libreoffice-5-3/ubuntu
+clean $1ppa.launchpad.net/libreoffice/libreoffice-5-4/ubuntu
+clean $1ppa.launchpad.net/libreoffice/libreoffice-6-0/ubuntu
 
 EOF
   LASTERRORLEVEL=$?
@@ -1210,7 +1278,7 @@ EOF
 # /data/master/wasta-offline or /media/LM-UPDATES/wasta-offline or /media/$USER/LM-UPDATES/wasta-offline.
 # A "full" wasta-offline mirror should have the following mirrors:
 # List of Mirrors and Repos:
-# As of June 2017 these are the mirrors and the repositories that we use in the
+# As of September 2018 these are the mirrors and the repositories that we use in the
 # full Wasta-Linux Mirror as supplied by Bill Martin:
 #   Mirror                                        Repos
 #   --------------------------------------------------------------------------------
@@ -1225,6 +1293,8 @@ EOF
 #   *ppa.launchpad.net/libreoffice/libreoffice-5-1 main
 #   *ppa.launchpad.net/libreoffice/libreoffice-5-2 main
 #   *ppa.launchpad.net/libreoffice/libreoffice-5-3 main
+#   *ppa.launchpad.net/libreoffice/libreoffice-5-4 main
+#   *ppa.launchpad.net/libreoffice/libreoffice-6-0 main
 #   ppa.launchpad.net/wasta-linux/wasta           main
 #   ppa.launchpad.net/wasta-linux/wasta-apps      main
 #   security.ubuntu.com                           main multiverse restricted universe
@@ -1240,9 +1310,9 @@ is_there_a_wasta_offline_mirror_at ()
   echo -e "\nParameter is $1"
   echo "WASTAOFFLINEDIR is $WASTAOFFLINEDIR"
   UBUNTUMIRRORS=("archive.ubuntu.com" "extras.ubuntu.com" "packages.sil.org" "ppa.launchpad.net/wasta-linux/wasta" "ppa.launchpad.net/wasta-linux/wasta-apps")
-  UBUNTUDISTS=("precise" "trusty")
-  LINUXMINTDISTS=("maya" "qiana")
-  UBUNTUSECUREDISTS=("precise-security" "trusty-security")
+  UBUNTUDISTS=("trusty" "xenial" "bionic")
+  LINUXMINTDISTS=("qiana" "rebecca" "rafaela" "rosa" "sarah" "serena" "sonya" "sylvia" "tara" "tessa")
+  UBUNTUSECUREDISTS=("trusty-security" "xenial-security")
   UBUNTUREPOS=("main" "multiverse" "restricted" "universe")
   LINUXMINTREPOS=("backport" "import" "main" "upstream")
   ARCHS=("binary-amd64" "binary-i386")
