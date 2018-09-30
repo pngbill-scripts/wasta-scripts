@@ -1231,17 +1231,7 @@ deb-amd64 $1ppa.launchpad.net/wasta-linux/wasta/ubuntu bionic main
 deb-i386 $1ppa.launchpad.net/wasta-linux/wasta/ubuntu bionic main
 deb-src $1ppa.launchpad.net/wasta-linux/wasta/ubuntu bionic main
 
-# libreoffice version 5-0 is earliest version available in xenial
-deb-amd64 $1ppa.launchpad.net/libreoffice/libreoffice-5-0/ubuntu bionic main
-deb-i386 $1ppa.launchpad.net/libreoffice/libreoffice-5-0/ubuntu bionic main
-deb-amd64 $1ppa.launchpad.net/libreoffice/libreoffice-5-1/ubuntu bionic main
-deb-i386 $1ppa.launchpad.net/libreoffice/libreoffice-5-1/ubuntu bionic main
-deb-amd64 $1ppa.launchpad.net/libreoffice/libreoffice-5-2/ubuntu bionic main
-deb-i386 $1ppa.launchpad.net/libreoffice/libreoffice-5-2/ubuntu bionic main
-deb-amd64 $1ppa.launchpad.net/libreoffice/libreoffice-5-3/ubuntu bionic main
-deb-i386 $1ppa.launchpad.net/libreoffice/libreoffice-5-3/ubuntu bionic main
-deb-amd64 $1ppa.launchpad.net/libreoffice/libreoffice-5-4/ubuntu bionic main
-deb-i386 $1ppa.launchpad.net/libreoffice/libreoffice-5-4/ubuntu bionic main
+# libreoffice version 6-0 is earliest version available in bionic
 deb-amd64 $1ppa.launchpad.net/libreoffice/libreoffice-6-0/ubuntu bionic main
 deb-i386 $1ppa.launchpad.net/libreoffice/libreoffice-6-0/ubuntu bionic main
 
