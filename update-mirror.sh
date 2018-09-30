@@ -325,18 +325,18 @@ fi
 if is_program_installed $WASTAOFFLINE ; then
   echo -e "\n$WASTAOFFLINE is already installed on this computer."
 else
-  # Get the LTS version number, 12.04, 14.04 or 16.04 in order to select the
+  # Get the LTS version number, 12.04, 14.04, 16.04 or 18.04 in order to select the
   # appropriate wasta-offline deb file for possible installation
   LTSVERNUM="UNKNOWN"
   CODENAME=`lsb_release --short --codename`
   # Get the LTS version number from the codenames
   case "$CODENAME" in
-    "precise")
-        LTSVERNUM="12.04"
-        ;;
-    "maya")
-        LTSVERNUM="12.04"
-        ;;
+#    "precise")
+#        LTSVERNUM="12.04"
+#        ;;
+#    "maya")
+#        LTSVERNUM="12.04"
+#        ;;
     "trusty")
         LTSVERNUM="14.04"
         ;;
@@ -360,6 +360,21 @@ else
         ;;
     "serena")
         LTSVERNUM="16.04"
+        ;;
+    "sonya")
+        LTSVERNUM="16.04"
+        ;;
+    "sylvia")
+        LTSVERNUM="16.04"
+        ;;
+    "bionic")
+        LTSVERNUM="18.04"
+        ;;
+    "tara")
+        LTSVERNUM="18.04"
+        ;;
+    "tessa")
+        LTSVERNUM="18.04"
         ;;
      *)
         LTSVERNUM="UNKNOWN"
