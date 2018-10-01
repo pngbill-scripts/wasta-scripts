@@ -1299,9 +1299,9 @@ is_there_a_wasta_offline_mirror_at ()
   WASTAOFFLINEDIR=$1
   echo -e "\nParameter is $1"
   echo "WASTAOFFLINEDIR is $WASTAOFFLINEDIR"
-  UBUNTUMIRRORS=("archive.ubuntu.com" "extras.ubuntu.com" "packages.sil.org" "ppa.launchpad.net/wasta-linux/wasta" "ppa.launchpad.net/wasta-linux/wasta-apps")
-  UBUNTUDISTS=("trusty" "xenial" "bionic")
-  LINUXMINTDISTS=("qiana" "rebecca" "rafaela" "rosa" "sarah" "serena" "sonya" "sylvia" "tara" "tessa")
+  UBUNTUMIRRORS=("archive.ubuntu.com" "packages.sil.org" "ppa.launchpad.net/wasta-linux/wasta" "ppa.launchpad.net/wasta-linux/wasta-apps")
+  UBUNTUDISTS=("trusty" "xenial")
+  LINUXMINTDISTS=("qiana" "rebecca" "rafaela" "rosa" "sarah")
   UBUNTUSECUREDISTS=("trusty-security" "xenial-security")
   UBUNTUREPOS=("main" "multiverse" "restricted" "universe")
   LINUXMINTREPOS=("backport" "import" "main" "upstream")
