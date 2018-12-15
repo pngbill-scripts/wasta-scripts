@@ -3,7 +3,7 @@
 # Date: 7 November 2014
 #   - 17 April 2016 Revised some functions to update them and correct logic errors:
 #     get_valid_LM_UPDATES_mount_point () drive space needed increased from 400 to 1TB
-#     copy_mirror_root_files () to find the wasta-offline deb files (now .._all.deb),
+#     copy_mirror_base_dir_files () to find the wasta-offline deb files (now .._all.deb),
 #       and remove any old _i386.deb and _amd64.deb files
 #     generate_mirror_list_file () removed older libreoffice distros and added new ones. Also
 #       added Linux Mint rosa to the repo lists, added ...-experimental to packages.sil.org list.
@@ -15,6 +15,15 @@
 #   - 13 July 2017 added wasta-offline-setup deb packages to root dir files
 #   - 28 August 2017 Changed apt-mirror ownersip top level dir to wasta-offline dir
 #      and made ownership of apt-mirror-setup dir also be apt-mirror in set_mirror_ownership_and_permissions ()
+#   - 23 November 2018 Revised to remove hard coded "LM-UPDATES" disk label and make the main scripts more 
+#      generalized. Removed the "PREP_NEW_USB" parameter option from which was unused. 
+#      Streamlined the detection of the USB drive's mount point using echoed output from the new
+#      get_wasta_offline_usb_mount_point () function.
+#      Added a new get_file_system_type_of_usb_partition () function.
+#      Added a new get_device_name_of_usb_mount_point () function.
+#      Added a new get_a_default_path_for_COPYFROMDIR () function.
+#      Added a new get_a_default_path_for_COPYTODIR () function.
+#      Did a general cleanup of the scripts and comments.
 # Name: bash_functions.sh
 # Distribution: 
 # This script is included with all Wasta-Offline Mirrors supplied by Bill Martin.
@@ -27,30 +36,40 @@
 #   is_dir_available ()
 #   is_program_installed ()
 #   is_program_running ()
-#   get_valid_LM_UPDATES_mount_point ()
-#   get_sources_list_protocol ()
+#   get_file_system_type_of_usb_partition ()
+#   get_device_name_of_usb_mount_point ()
+#	get_wasta_offline_usb_mount_point ()
 #   smart_install_program ()
-#   copy_mirror_root_files ()
+#   get_base_path_of_mirror_list_file ()
+#   get_a_default_path_for_COPYFROMDIR ()
+#   get_a_default_path_for_COPYTODIR ()
+#   copy_mirror_base_dir_files ()
 #   set_mirror_ownership_and_permissions ()
 #   ensure_user_in_apt_mirror_group ()
 #   move_mirror_from_data_to_data_master ()
 #   generate_mirror_list_file ()
 #   is_there_a_wasta_offline_mirror_at ()
 #   is_this_mirror_older_than_that_mirror ()
-#   get_sources_list_protocol () [currently unused]
+#   get_sources_list_protocol ()
 #   date2stamp () [currently unused]
 #   stamp2date () [currently unused]
 #   dateDiff () [currently unused]
 #
-# The above functions are used by the other Wasta-Offline scripts, including the following (other) 
+# The above functions are used by the main Wasta-Offline scripts, including the following 
 # wasta-offline related scripts:
-# 1. update-mirror.sh
+# 1. update-mirror.sh  (may call the sync_Wasta-Offline_to_Ext_Drive.sh script)
 # 2. sync_Wasta-Offline_to_Ext_Drive.sh
 # 3. make_Master_for_Wasta-Offline.sh (calls the sync_Wasta-Offline_to_Ext_Drive.sh script)
 #
 # Usage: This bash_functions.sh script file should be in the same directory as the calling
-# bash scripts, or referenced with a "source <relative-path>/bash_functions.sh" call is used
-# to include any functions in a script that is located
+# bash scripts, and/or referenced with one of the following syntax:
+#  source <relative-path>/bash_functions.sh
+#  .  <relative-path>/bash_functions.sh
+# Hence, the bash functions in this file are made available to a given script (which should
+# be in the same directory as this bash_functions.sh file) by including the following
+# two lines at the beginning of the given script file:
+#   DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+#   . $DIR/bash_functions.sh # $DIR is the path prefix to bash_functions.sh as well as to the current script
 
 # ------------------------------------------------------------------------------
 # Bash script functions
@@ -112,250 +131,106 @@ is_program_running ()
   fi
 }
 
-# A bash function that checks whether a USB drive is mounted that has "LM-UPDATES" as a label. 
-# Returns a zero value if a USB "LM-UPDATES" drive was found mounted on the system (could be an
-# empty LM-UPDATES labeled drive); returns non-zero (1) if a USB device having a "LM-UPDATES" 
-# label was not found, or (if a parameter is passed in) could not be formatted and labeled as 
-# such.
-# By uncommenting an if test (see below) a single parameter can be passed to this function 
-# (it must be "PREP_NEW_USB"), to make the function check to see if any USB drives are 
-# attached that have the capacity to be used to make a clone of the Wasta-Offline full mirror, 
-# and gives the user a list of them to possibly choose from. If the user chooses one, and the 
-# USB drive has a non-Linux file system a warning is issued that the drive will be formatted 
-# and any existing data on it destroyed. 
-# If the user gives permission to continue, the drive is formatted to a Linux Ext4 file system, 
-# and thus made ready for use to receive a rsync copy of a Wasta-Offline full mirror. When this 
-# function has completed a return value of 0 means that an external USB drive is either mounted 
-# and has an existing LM-UPDATES mirror on it, or it is empty and ready to receive such a mirror 
-# copied to it. 
-get_valid_LM_UPDATES_mount_point ()
+# A bash function that echos the file system type of the USB mount point.
+# The $USBMOUNTPOINT must be passed to this function as the first parameter $1.
+# If $USBMOUNTPOINT parameter is not found, this function echos an empty string,
+# otherwise, if mount point was found, it echos the file system type, i.e., ext4.
+# No echo statements should appear in this function other than the echo "$FSTYPE" 
+# at the last line of the function.
+get_file_system_type_of_usb_partition ()
 {
-  # Get the mount point for any plugged in external USB drive containing LM-UPDATES label that is 
-  # part of the $COPYTODIR or $COPYFROMDIR paths
-  export MOUNTPOINT=`mount | grep LM-UPDATES | cut -d ' ' -f3` # normally MOUNTPOINT is /media/LM-UPDATES
-  #echo "MOUNTPOINT is: $MOUNTPOINT"
-
-  # Handle situation in which the external LM-UPDATES gets mounted at .../LM-UPDATES_ with one
-  # or more trailing underscore(s) rather than at /media/LM-UPDATES, or /media/$USER/LM-UPDATES as 
-  # required for this script to run properly.
-  if [[ $MOUNTPOINT == */LM-UPDATES_* ]]; then
-    CORRECTMOUNTPOINT=${MOUNTPOINT%"/LM-UPDATES*"}
-    CORRECTMOUNTPOINT=$CORRECTMOUNTPOINT"/LM-UPDATES"
-    echo -e "\n******** WARNING *********** WARINING ********* WARNING ********"
-    echo "The external USB drive is mounting at: $MOUNTPOINT"
-    echo "(note the trailing underscore) instead of $CORRECTMOUNTPOINT."
-    echo "Make sure that you do NOT have two USB LM-UPDATES drives mounted at"
-    echo "the same time (both having the LM-UPDATES label). If two such drives"
-    echo "are mounted at the same time, safely remove both USB drives, and then"
-    echo "plug in only one of the LM-UPDATES drives, and try running this script"
-    echo "again. If this warning message keeps appearing you will need to do the"
-    echo "following steps to fix this problem:"
-    echo "  1. Safely remove all UBS drives from the computer"
-    echo "  2. Open a new terminal from the Accessories menu or by typing: Ctrl+Alt+T"
-    echo "  3. In the terminal type this command: sudo rmdir $CORRECTMOUNTPOINT*"
-    echo "  4. Type your password when prompted (blindly, as nothing will be shown)"
-    echo "  5. Plug in the LM-UPDATES USB drive, and Cancel at the wasta-offline prompt."
-    echo "  6. Try running this script again..."
-    echo "Note: This script must Exit before you can safely remove this USB drive, and"
-    echo "Correct the problem as described above."
-    echo "Write down the command in step 3 (this terminal session will disappear)"
-    echo "- then press ENTER to Exit this script."
-    return 1
-  fi
-
-  # Handle situation if LM-UPDATES is not found as mount point. This might happen if a new
-  # USB hard drive is being used that hasn't had its label changed to LM-UPDATES.
-  if [ -z "$MOUNTPOINT" ] && [ "x$MOUNTPOINT" = "x" ]; then
-    # The $MOUNTPOINT variable exists but is empty, i.e., the LM-UPDATES mount point was not found
-    echo -e "\nThe LM-UPDATES USB drive was NOT found"
-
-    # By uncommenting the if test below, the remainder of this block would only be 
-    # available for callers who might want the USB hard drive formatting option to
-    # be available to the script. When uncommented a caller would call this function 
-    # with a single parameter consisting of "PREP_NEW_USB".
-    #if [ "$1" = "PREP_NEW_USB" ]; then
-      # S "PREP_NEW_USB" parameter was passed by the caller so make the following checks
-      echo -e "\nSeaching for USB storage drive(s) on this computer..."
-      USBINFOARRAY=() # Create an empty array for device info strings generated below
-      USBMOUNTPTARRAY=() # Create an empty array for mount points
-      USBDEVICEARRAY=() # Create an empty array for devices
-      USBSIZEARRAY=() # Create an empty array for sizes (in GB)
-      # TODO: hal and hal-find-by-capability is not installed on trusty systems so
-      # need to find replacement below for this USB drive detection to work there.
-      for udi in $(/usr/bin/hal-find-by-capability --capability storage)
-      do
-        device=$(hal-get-property --udi $udi --key block.device)
-        USBDEVICEARRAY+=("$device")
-        vendor=$(hal-get-property --udi $udi --key storage.vendor)
-        model=$(hal-get-property --udi $udi --key storage.model)
-        if [[ $(hal-get-property --udi $udi --key storage.bus) = "usb" ]]; then
-            parent_udi=$(hal-find-by-property --key block.storage_device --string $udi)
-            mount=$(hal-get-property --udi $parent_udi --key volume.mount_point)
-            MOUNTPTARRAY+=("$mount")
-            label=$(hal-get-property --udi $parent_udi --key volume.label)
-            media_size=$(hal-get-property --udi $udi --key storage.removable.media_size)
-            size=$(( media_size/(1000*1000*1000) ))
-            USBSIZEARRAY+=("$size")
-            USBINFOARRAY+=("$vendor:$model:$device:$mount:$label:${size}GB")
-        fi
-      done
-      index=0
-      total=0
-      for item in "${USBINFOARRAY[@]}"; do
-        let index=index+1
-        printf " $index) $item \n"
-        # Determine if $item has the "LM-UPDATES" string. If so, the drive is plugged in but not mounted
-        if [ "${item/"LM-UPDATES"}" != "$item" ]; then
-          echo -e "\nUSB device $index) above has 'LM-UPDATES' but is not mounted!"
-          dev=$(echo $item | cut -d ':' -f3)
-          echo "Attempting to mount 'LM-UPDATES' USB drive on device $dev""1"
-          mkdir -p $LMUPDATESDIR # Create the /media/LM-UPDATES directory in case it doesn't exist
-          mount $dev"1" $LMUPDATESDIR
-          LASTERRORLEVEL=$?
-          if [ $LASTERRORLEVEL != 0 ]; then
-             echo -e "\nCould not mount the USB device at $LMUPDATESDIR."
-             echo "Remove the USB drive and plug it back in again to see if it will"
-             echo "automatically mount at $LMUPDATESDIR, then run this script again."
-             return $LASTERRORLEVEL
-          fi
-          # If we get here we succeeded in mounting the USB drive, and we can return early
-          echo "LM-UPDATES Mount Point is: $LMUPDATESDIR"
-          return 0 # Success
-        fi
-        let total=total+1
-      done
-      # Note: arrays such as USBINFOARRAY() are zero based
-      if [ $index -eq 0 ]; then
-          echo -e "\nCould not find a USB drive on this system!"
-          echo "Please connect an LM-UPDATES USB drive to receive software updates, or"
-          echo "Alternately, connect an empty USB drive that meets these qualifications:"
-          echo "  Is large enough to contain the full wasta-offline mirror (at least 1TB)"
-          echo "  Can be formatted with a Linux Ext4 file system (destroying any existing data)"
-          echo "  Can be renamed with this label: LM-UPDATES"
-          echo "Then, run this script again. Aborting..."
-          return 1
-      else
-        for (( i=$WAIT; i>0; i--)); do
-          printf "\rType the number of the USB drive to use, or hit any key to abort - countdown $i "
-          read -s -n 1 -t 1 SELECTION
-          if [ $? -eq 0 ]; then
-              break
-          fi
-        done
-
-        if [[ ! $SELECTION ]] || [[ $SELECTION > $total ]] || [[ $SELECTION < 1 ]]; then
-          echo -e "\n"
-          echo "You typed $SELECTION"
-          echo "Unrecognized selection made, or no reponse within $WAIT seconds."
-          echo "Please connect an LM-UPDATES USB drive to receive software updates, or"
-          echo "Alternately, connect an empty USB drive that meets these qualifications:"
-          echo "  Is large enough to contain the full wasta-offline mirror (at least 1TB)"
-          echo "  Can be formatted with a Linux Ext4 file system (destroying any existing data)"
-          echo "  Can be renamed with this label: LM-UPDATES"
-          echo "Then, run this script again. Aborting..."
-          return 1
-        fi
-        # If we get this far, the user has typed a valid selection
-        echo -e "\n"
-        echo "Your choice was $SELECTION"
-        # Check if USB drive has at least 1TB of space
-        if [ ${USBSIZEARRAY[SELECTION-1]} -lt 900 ]; then
-          echo "The selected USB drive has a capacity of ${USBSIZEARRAY[SELECTION-1]}GB"
-          echo "The selected USB drive is too small - it has less than 1TB of disk space."
-          echo "You need a USB hard drive that has at least 1TB of storage capacity."
-          echo "Aborting..."
-          return 1
-        fi
-        # Warn the user that this USB drive will be formatted and all data wiped out
-        echo "- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -"
-        # Arrays are zero-based so current index is SELECTION-1
-        echo "You have selected this USB device mounted at ${USBDEVICEARRAY[SELECTION-1]}:"
-        echo "  ${USBINFOARRAY[SELECTION-1]}"
-        echo -e "\nWARNING: This USB drive will be formatted - ALL data on it erased. OK (y/n)? "
-        response='n'
-        for (( i=$WAIT; i>0; i--)); do
-          printf "\rType 'y' to proceed with formatting, any other key to abort - countdown $i "
-          read -s -n 1 -t 1 response
-          if [ $? -eq 0 ]; then
-              break
-          fi
-        done
-        printf "\rType 'y' to proceed with formatting, any other key to abort - countdown $i "
-        case $response in
-          [yY][eE][sS]|[yY]) 
-            # Unmount the device - it must be unmounted before it can be formatted and labeled
-            # Suffix a 1 to the device to unmount partition 1, eg, if device is sdd unmount sdd1.
-            echo "Unmounting the USB drive..."
-            umount ${USBDEVICEARRAY[SELECTION-1]}1
-            LASTERRORLEVEL=$?
-            if [ $LASTERRORLEVEL != 0 ]; then
-               echo -e "\nCould not unmount the USB device."
-               echo "If a program or terminal session is keeping it busy, close them and try again."
-               return $LASTERRORLEVEL
-            fi
-            # Format the drive with Ext4 file system and assign the LM-UPDATES label by calling mkfs.ext4
-            echo -e "\n\nFormatting the USB drive with a Linux Ext4 file system..."
-            mkfs.ext4 -L "LM-UPDATES" ${USBDEVICEARRAY[SELECTION-1]}1
-            LASTERRORLEVEL=$?
-            if [ $LASTERRORLEVEL != 0 ]; then
-               echo -e "\nCould not format the USB drive (Error #$LASTERRORLEVEL)."
-               echo "You might try using the Disk Utility or Parted to format the drive with"
-               echo "an Ext4 file system, then try running this script again."
-               return $LASTERRORLEVEL
-            fi
-            # Mount the drive again - this time at /media/LM-UPDATES
-            mkdir -p $LMUPDATESDIR # Create the /media/LM-UPDATES directory in case it doesn't exist
-            mount ${USBDEVICEARRAY[SELECTION-1]}1 $LMUPDATESDIR
-            LASTERRORLEVEL=$?
-            if [ $LASTERRORLEVEL != 0 ]; then
-               echo -e "\nCould not mount the USB device at $LMUPDATESDIR."
-               echo "Remove the USB drive and plug it back in again to see if it will"
-               echo "automatically mount at $LMUPDATESDIR, then run this script again."
-               return $LASTERRORLEVEL
-            fi
-            export DRIVEWASFORMATTED="TRUE"
-            ;;
-          *)
-            echo -e "\nProcess aborted by user!"
-            return 1
-            ;;
-        esac
-      fi
-    #else  # uncomment this else block if want to include USB disk formatting option
-    #  # LM-UPDATES not found and No "PREP_NEW_USB" parameter received, so abort
-    #  return 1
-    #fi
-  else
-    echo -e "\nThe LM-UPDATES USB drive was found"
-  fi
-  echo "LM-UPDATES Mount Point is: $MOUNTPOINT"
-  return 0 # Success
+	MNTPT=$1 # Passed in $USBMOUNTPOINT
+	# Note: The lsblk command's MOUNTPOINT option never has a / at the end of its output string,
+	# so remove any final / from MNTPT (esp since Tab auto-completion puts a final / on path)
+	MNTPT=${MNTPT%/}
+    # Note on lsblk options/switches below: 
+    #   -o FSTYPE,NAME,MOUNTPOINT selects the 3 columns listed with FSTYPE first, separated by a space
+    #     and having the MOUNTPOINT (which may have spaces) allows better delimiter selection
+    #     of FSTYPE and NAME [i.e., /dev/sdb1] which won't have internal spaces
+    #   -p (full path) optionlists full device as, for example, /dev/sdb1
+    #   -r (raw output) eliminates graphic tree chars prefixing device path
+	FSTYPE=`lsblk -o FSTYPE,NAME,MOUNTPOINT -pr | grep $MNTPT | cut -f1 -d" "`
+	# Note: Use of lsblk doesn't require sudo and is more flexible than blkid
+	# A less reliable, more obscure way using blkid is given below:
+	#BLKID=`blkid ! grep $MNTPT`
+	#FSTYPE=`echo $BLKID | grep -oP 'TYPE="\K[^"]+'`
+	echo "$FSTYPE"
 }
 
-# A bash function that checks the user's /etc/apt/sources.list file to determine what URL protocol
-# is currently being used.
-# This function takes no parameters.
-# This function simply echoes the string protocol as one of these possibilities:
-#   http://
-#   ftp://
-#   file:
-get_sources_list_protocol ()
+# A bash function that echos the device name of the USB mount point.
+# The $USBDEVICENAME (from the get_file_system_type_of_usb_partition function above) must be 
+# passed to this function as the first parameter $1.
+# No echo statements should appear in this function other than the echo "$DEVNAME" line
+# at the last line of the function.
+get_device_name_of_usb_mount_point ()
 {
-  grep -Fq "$InternetURLPrefix" $ETCAPT$SOURCESLIST
-  GREPRESULTINT=$?
-  if [ $GREPRESULTINT -eq 0 ]; then
-     echo "$InternetURLPrefix"
-  fi
-  grep -Fq "$FTPURLPrefix" $ETCAPT$SOURCESLIST
-  GREPRESULTFTP=$?
-  if [ $GREPRESULTFTP -eq 0 ]; then
-     echo "$FTPURLPrefix"
-  fi
-  grep -Fq "$FileURLPrefix" $ETCAPT$SOURCESLIST
-  GREPRESULTFILE=$?
-  if [ $GREPRESULTFILE -eq 0 ]; then
-     echo "$FileURLPrefix"
-  fi
+    MNTPT=$1
+    # Note on lsblk options/switches below: 
+    #   -o FSTYPE,NAME,MOUNTPOINT selects the 3 columns listed with FSTYPE first, separated by a space
+    #     and having the MOUNTPOINT (which may have spaces) allows better delimiter selection
+    #     of FSTYPE and NAME [i.e., /dev/sdb1] which won't have internal spaces
+    #   -p (full path) optionlists full device as, for example, /dev/sdb1
+    #   -r (raw output) eliminates graphic tree chars prefixing device path
+    # NOTE: The MOUNTPOINT stored in the lsblk output only includes the path up to the main/root 
+    # dir, i.e., /media/$USER/<DISK_LABEL>. So first we need to remove any /wasta-offline from 
+    # right end of incoming $1 parameter MNTPT
+    if [[ $MNTPT == *"wasta-offline"* ]]; then 
+      MNTPT=$(dirname "$MNTPT")
+    fi
+	# Note: The lsblk command's MOUNTPOINT option never has a / at the end of its output string,
+	# so remove any final / from MNTPT (esp since Tab auto-completion puts a final / on path)
+	MNTPT=${MNTPT%/}
+    DEVNAME=`lsblk -o FSTYPE,NAME,MOUNTPOINT -pr | grep $MNTPT | cut -f2 -d" "`
+    # Note: Use of lsblk is more flexible and reliable than df -h 
+    # A less reliable way using df is given below:
+    #DEVNAME=`df -h | grep $MNTPT | cut -f1 -d" "`
+    echo "$DEVNAME"
+}
+
+# A bash function that checks whether a USB drive is mounted that has a subdirectory called
+# 'wasta-offline' at /media/*/*/wasta-offline, or /media/*/wasta-offline. Returns non-zero (1) 
+# if a USB device mounted at /media/... is not found with a .../wasta-offline subdirectory.
+# If two or more USB drives on /media/... are found (with identical disk labels such as UPDATES
+# - in which the second drive's label gets renamed to UPDATES1), the | sort -r pipe option
+# causes the output to only detect the first non-numerically-suffixed one that is found. 
+# For example if two USB drives each labeled UPDATES are plugged in, the second one will have
+# its label become UPDATES1, and this function will detect only the first drive plugged it 
+# (UPDATES rather than UPDATES1).
+# Returns zero (0) if such directory is found and exports the absolute path prefix up to, 
+# and including the /wasta-offline folder, to the exported variable USBMOUNTPOINT. For example, 
+# it might return /media/bill/<DISK_LABEL>/wasta-offline as the value stored in USBMOUNTPOINT.
+# Note: whm 23 November 2018 revised to echo the value of $USBMOUNTPOINT so the function
+# can be used within back ticks to return the $USBMOUNTPOINT value as a string, for example:
+# USBMOUNTPOINT=`get_wasta_offline_usb_mount_point`
+# No echo statements should appear in this function other than the echo "$USBMOUNTPOINT" line.
+get_wasta_offline_usb_mount_point ()
+{
+    START_FOLDER=""
+	# whm Note: code below borrowed from the wasta-offline program script.
+    # first, look for wasta-offline folder under /media/$USER (12.10 and newer)
+    # 2014-04-24 rik: $USER, $(logname), $(whoami), $(who) all not working when
+    #   launch with gksu.  So, just setting to /media/*/*/wasta-offline :-(
+    START_FOLDER=$(ls -1d /media/*/*/wasta-offline 2> /dev/null | sort -r | head -1)
+    
+    if [ -z "$START_FOLDER" ]
+    then
+        # second, look for wasta-offline folder under /media (12.04 and older)
+        START_FOLDER=$(ls -1d /media/*/wasta-offline 2>/dev/null | sort -r | head -1)
+    fi
+    
+    export USBMOUNTPOINT=$START_FOLDER
+    # The following echo returns the $USBMOUNTPOINT as a string when the function is
+    # assigned to a variable, i.e., START_FOLDER=`get_wasta_offline_usb_mount_point`
+    # No other echo statements should appear in this function.
+    echo "$USBMOUNTPOINT"
+
+	# Handle situation where no wasta-offline subdirectory was found, in which case USBMOUNTPOINT
+	# will be an empty string.
+	if [ "x$USBMOUNTPOINT" = "x" ]; then
+		# The $USBMOUNTPOINT variable is empty, i.e., a wasta-offline subdirectory on /media/... was not found
+		return 1 # failure - no USBMOUNTPOINT found
+	fi
+	return 0 # Success
 }
 
 # A bash function that first checks whether a program $1 is installed by calling the bash 
@@ -364,11 +239,11 @@ get_sources_list_protocol ()
 # $1  the program to be installed
 # $2  -q (quiet - don't prompt to install, go ahead and install the program)
 # If the program is not installed, it installs the program using either wasta-offline (if 
-# wasta-offline is running and is the full mirror), local FTP server, or the Internet (after 
-# prompting if OK to access the Internet).
+# wasta-offline is running and is the full mirror), the local Ukarumpa server, or the Internet 
+# (after prompting if OK to access the Internet).
 # The function takes a single parameter which should be the name of the program as it would
 # be invoked at a command line. For example: smart_install_program "apt-mirror".
-# If wasta-offline is running and using the full mirror (LM-UPDATES), it installs program from 
+# If wasta-offline is running and using the full mirror USB drive, it installs program from 
 # the full wasta-offline mirror, otherwise, if Internet is available, it prompts the user if
 # the program should be downloaded and installed from the Internet instead.
 # Note: The $1 used within this funtion is the parameter invoked with this install_program, bash
@@ -389,17 +264,52 @@ smart_install_program ()
     # We can help guide the user through the installation if we know what the current URL protocol
     # is being used in their /etc/apt/sources.list file. The URL protocol should be one of three
     # possibilities:
-    # 1. http:// This protocol would indicate that the user would currently need to access the 
-    #    Internet to install the $1 program.
+    # 1. http:// This protocol would indicate that the user currently has access the 
+    #    Internet or, if http:// is followed by linuxrepo.sil.org.pg/mirror, has access to
+    #    Linux mirrors on the SIL PNG LAN, to install the $1 program.
     # 2. file:   This protocol would indicate that the user is currently running the wasta-offline
-    #    program, and if LM-UPDATES drive is mounted, the program can be installed offline from
-    #    the full mirror on the external hard drive.
+    #    program, and if the full wasta-offline USB drive is mounted, the program can be installed 
+    #    offline from the full mirror on the external hard drive.
     # 3. ftp://  This protocol would indicate that the user would currently need to access a ftp 
     #    LAN server such as the FTP server at Ukarumpa to install the $1 program.
 
     # call our get_sources_list_protocol () function to determine the current sources.list protocol
     PROTOCOL=`get_sources_list_protocol`
     case $PROTOCOL in
+      $UkarumpaURLPrefix)
+        # The source.list indicates that software installs will potentially be done by 
+        # access to the Ukarumpa linux mirrors at http://linuxrepo.sil.org.pg/mirror
+        # User should be warned and given the opportunity to bail out.
+        response="y"
+        if [[ "x$2" = "x" ]]; then
+          read -r -n 1 -p "The $1 program is not installed on this computer. Install it? [y/n] " response
+        fi
+        case $response in
+          [yY][eE][sS]|[yY]) 
+              # ping the Ukarumpa server to check for access to http://linuxrepo.sil.org.pg/mirror
+              ping -c1 -q http://linuxrepo.sil.org.pg/mirror
+              if [ "$?" != 0 ]; then
+                echo "Internet access to http://linuxrepo.sil.org.pg/mirror not currently available."
+                echo "This script cannot continue without access to the Ukarumpa server."
+                echo "Make sure the computer has access to the server, then try again."
+                echo "Or, alternately, run wasta-offline and install software without Internet access"
+                echo "Aborting the installation..."
+                return 1
+              fi
+              echo -e "\nInstalling $1..."
+              apt-get install $1
+              LASTERRORLEVEL=$?
+              if [ $LASTERRORLEVEL != 0 ]; then
+                 #echo "Could not install the $1 program. Aborting..."
+                 return $LASTERRORLEVEL
+              fi
+              ;;
+           *)
+              #echo "Please install the $1 program, then try again"
+              return 1
+              ;;
+        esac
+      ;;
       $InternetURLPrefix)
         # The source.list indicates that software installs will potentially be done by direct
         # access to the Internet. User should be warned and given the opportunity to bail out.
@@ -456,15 +366,16 @@ smart_install_program ()
       ;;
       $FileURLPrefix)
         # The sources.list indicates wasta-offline is active and software can potentially be 
-        # installed using a full wasta-offline LM-UPDATES. User should be warned if wasta-offline
-        # is not actually running, or a full mirror at /media/.../LM-UPDATES can't be found.
+        # installed using a full wasta-offline USB drive. User should be warned if wasta-offline
+        # is not actually running, or a full mirror at /media/$USER/<DISK_LABEL>/wasta-offline/... 
+        # can't be found.
         if (is_program_running $WASTAOFFLINE); then
           # wasta-offline is running
-          # If wasta-offline is running against the full mirror it should be mounted at /media/.../LM-UPDATES
-          if (is_dir_available $LMUPDATESDIR); then
-            echo "The $WASTAOFFLINE program is running with the full mirror on: $LMUPDATESDIR."
+          # If wasta-offline is running against the full mirror it should be mounted at /media/.../<DISK_LABEL>
+          if (is_dir_available $USBMOUNTDIR); then
+            echo "The $WASTAOFFLINE program is running with the full mirror on: $USBMOUNTDIR."
           else
-            echo "The $WASTAOFFLINE program is running but full mirror in NOT on: $LMUPDATESDIR"
+            echo "The $WASTAOFFLINE program is running but full mirror in NOT on: $USBMOUNTDIR"
             # An error message will appear in the apt-get install $1 call below
           fi
           echo -e "\nInstalling $1..."
@@ -489,17 +400,89 @@ smart_install_program ()
   fi
 }
 
-# This function uses rsync to copy the root directory and apt-mirror-setup directory
+# This function echos the base_path that is set in the user's /etc/apt/mirror.list file
+# This function takes no parameters. Typically returns: /data/master/wasta-offline/apt-mirror
+# but could potentially return something like /media/bill/UPDATES/wasta-offline/apt-mirror
+# if the computer being used, ran update-mirror.sh script (without it having a master mirror)
+# and just updating the mirror on an external USB drive.
+# If there is no mirror.list file at /etc/apt/ or no base_path is set in mirror.list
+# this function returns an empty string.
+# No echo statements should be added to this function, other than the 
+# echo "$BasePath" line at the end of the function.
+get_base_path_of_mirror_list_file ()
+{
+  PathToMirrorListFile="/etc/apt/mirror.list"
+  FILE=$PathToMirrorListFile
+  SetBasePath="set base_path"
+  BasePath=""
+  if [ -e "$PathToMirrorListFile" ]; then
+    while read -r line
+    do
+      [[ $line = \#* ]] && continue
+      if [[ $line == $SetBasePath* ]]; then
+        # Get the following path part
+        BasePath=${line#$SetBasePath}
+        # Remove leading space
+        BasePath=${BasePath//[[:blank:]]/}
+        #BasePath=`echo $BasePath` # echo also removes leading space
+        # No need to process any more of mirror.list
+        break;
+      fi
+    done < $FILE
+  fi
+  echo "$BasePath"
+}
+
+# This function echos a default value that can be used initially for the $COPYFROMDIR source.
+# It calls the get_wasta_offline_usb_mount_point () function to get a USBMOUNTPOINT from any 
+# attached/mounted USB drive that has a /media/$USER/<DISK_LABEL>/wasta-offline tree.
+# If no value was obtained for USBMOUNTPOINT, the function echos a default value of "UNKNOWN".
+# If a USBMOUNTPOINT exists, the function echos that as return value.
+get_a_default_path_for_COPYFROMDIR ()
+{
+  USBMOUNTPOINT=`get_wasta_offline_usb_mount_point` 
+  if [ "x$USBMOUNTPOINT" = "x" ]; then
+    # USBMOUNTPOINT is empty string, i.e., no USB media found with /media/$USER/<DISK_LABEL>/wasta-offline
+    echo "UNKNOWN"
+  else
+    echo "$USBMOUNTPOINT"  # /media/$USER/<DISK_LABEL>/wasta-offline
+  fi
+}
+
+# This function echos a default value that can be used initially for the $COPYTODIR destination.
+# It calls the get_base_path_of_mirror_list_file () function to get a BasePath from any 
+# /etc/apt/mirror.list file existing on the computer. After stripping off the final .../apt-mirror 
+# dir, it tests if the value is empty (no mirror.list existed), or has a string value (mirror.list existed).
+# If no value was gotten from a mirror.list file the function echos a default value of /data/master/wasta-offline.
+# If a base_path existed from a mirror.list file the function echos that as return value.
+get_a_default_path_for_COPYTODIR ()
+{
+  BasePath=""
+  BasePath=`get_base_path_of_mirror_list_file` # most likely /data/master/wasta-offline/apt-mirror, if it exists
+  # We'll sync to the wasta-offline directory (one level higher up), so remove /apt-mirror part.
+  COPYTODIRFROMMIRRORLISTFILE=`dirname $BasePath` # strip off the .../apt-mirror dir, i.e., /data/master/wasta-offline
+  if [[ "x$COPYTODIRFROMMIRRORLISTFILE" == "x" ]]; then
+    # COPYTODIRFROMMIRRORLISTFILE is empty string, i.e., no mirror.list value was retrieved for base_path
+    # In this case echo a default value of /data/master/wasta-offline as return value
+    echo "/data/master/wasta-offline"
+  else
+    # COPYTODIRFROMMIRRORLISTFILE had a value so echo it as return value
+    echo "$COPYTODIRFROMMIRRORLISTFILE" 
+  fi
+}
+
+# This function uses rsync to copy the base directory and apt-mirror-setup directory
 # files from a source mirror's base directory to a destination mirror's base directory.
 # This function takes two parameters: $1 a source mirror's base path, and $2 a destination 
-# mirror's base path.
-# The calling script needs to export the following variables:
+# mirror's base path - usually "$COPYFROMBASEDIR" and "$COPYTOBASEDIR".
+# The calling script should export and/or assign values to the following variables:
 #   $BILLSWASTADOCSDIR
 #   $OFFLINEDIR
 #   $APTMIRRORDIR
 #   $APTMIRRORSETUPDIR
 # This function is currently only used within the sync_Wasta-Offline_to_Ext_Drive.sh script.
-copy_mirror_root_files ()
+# TODO: Needs revision if the scripts are to support copying/syncing to NTFS formatted drive.
+copy_mirror_base_dir_files ()
 {
   VARDIR="/var"
   # FYI: It would be possible to grab the wasta-offline*.deb packages directly
@@ -519,7 +502,7 @@ copy_mirror_root_files ()
   # Note: Since COPYFROMDIR generally has a final /, append $APPMIRROR to it rather than $APPMIRRORDIR
   PKGPATH=$1$OFFLINEDIR$APTMIRRORDIR"/mirror/ppa.launchpad.net/wasta-linux/wasta-apps/ubuntu/pool/main/w/wasta-offline"
 
-  echo -e "\nExecuting copy_mirror_root_files function..."
+  echo -e "\nExecuting copy_mirror_base_dir_files function..."
   echo "The 1 parameter is: $1"
   echo "The 2 parameter is: $2"
   echo "The PKGPATH is: $PKGPATH"
@@ -544,15 +527,19 @@ copy_mirror_root_files ()
       rm $1/wasta-offline*.deb
     fi
     echo -e "\nCopying packages from source mirror tree to: $1"
-    # For these "root" level files we use --update option instead of the --delete option
+    # For these "base" level files we use --update option instead of the --delete option
     # which updates the destination only if the source file is newer
+    # TODO: Adjust rsync command to use options: -rvh --size-only --progress
+    # if destination USB drive is not Linux ext4 (ntfs)
     rsync -avz --update $DEBS $1
     if ls $2/wasta-offline*.deb 1> /dev/null 2>&1; then
       rm $2/wasta-offline*.deb
     fi
     echo -e "\nCopying packages from source mirror tree to: $2"
-    # For these "root" level files we use --update option instead of the --delete option
+    # For these "base" level files we use --update option instead of the --delete option
     # which updates the destination only if the source file is newer
+    # TODO: Adjust rsync command to use options: -rvh --size-only --progress
+    # if destination USB drive is not Linux ext4 (ntfs)
     rsync -avz --update $DEBS $2
   fi
   
@@ -575,6 +562,8 @@ copy_mirror_root_files ()
     echo -e "\nCopying packages from source mirror tree to: $1"
     # For these "root" level files we use --update option instead of the --delete option
     # which updates the destination only if the source file is newer
+    # TODO: Adjust rsync command to use options: -rvh --size-only --progress
+    # if destination USB drive is not Linux ext4 (ntfs)
     rsync -avz --update $DEBS $1
     if ls $2/wasta-offline-setup*.deb 1> /dev/null 2>&1; then
       rm $2/wasta-offline-setup*.deb
@@ -582,6 +571,8 @@ copy_mirror_root_files ()
     echo -e "\nCopying packages from source mirror tree to: $2"
     # For these "root" level files we use --update option instead of the --delete option
     # which updates the destination only if the source file is newer
+    # TODO: Adjust rsync command to use options: -rvh --size-only --progress
+    # if destination USB drive is not Linux ext4 (ntfs)
     rsync -avz --update $DEBS $2
   fi
   
@@ -591,6 +582,8 @@ copy_mirror_root_files ()
   # destination of $1$OFFLINEDIR$APTMIRRORDIR$VARDIR
   echo -e "\ncopying the *.sh files from: $1$APTMIRRORSETUPDIR/*.sh"
   echo "                                to $1$OFFLINEDIR$APTMIRRORDIR$VARDIR"
+  # TODO: Adjust rsync command to use options: -rvh --size-only --progress
+  # if destination USB drive is not Linux ext4 (ntfs)
   rsync -avz --update $1$APTMIRRORSETUPDIR/*.sh $1$OFFLINEDIR$APTMIRRORDIR$VARDIR
 
   # Copy other needed files to the external drive's root dir
@@ -616,6 +609,8 @@ copy_mirror_root_files ()
     echo "  to $destscript"
     # For these "root" level files we use --update option instead of the --delete option
     # which updates the destination only if the source file is newer
+    # TODO: Adjust rsync command to use options: -rvh --size-only --progress
+    # if destination USB drive is not Linux ext4 (ntfs)
     rsync -avz --update $script $destscript
   done
 
@@ -638,6 +633,8 @@ copy_mirror_root_files ()
     echo -e "\nSynchronizing the script file $script to $destscript"
     # For these "root" level files we use --update option instead of the --delete option
     # which updates the destination only if the source file is newer
+    # TODO: Adjust rsync command to use options: -rvh --size-only --progress
+    # if destination USB drive is not Linux ext4 (ntfs)
     rsync -avz --update $script $destscript
   done
 
@@ -660,21 +657,29 @@ copy_mirror_root_files ()
     echo -e "\nSynchronizing the script file $script to $destscript"
     # For these "root" level files we use --update option instead of the --delete option
     # which updates the destination only if the source file is newer
+    # TODO: Adjust rsync command to use options: -rvh --size-only --progress
+    # if destination USB drive is not Linux ext4 (ntfs)
     rsync -avz --update $script $destscript
   done
   
   echo "Synchronizing the ReadMe file to $2..."
   # For these "root" level files we use --update option instead of the --delete option
   # which updates the destination only if the source file is newer
+  # TODO: Adjust rsync command to use options: -rvh --size-only --progress
+  # if destination USB drive is not Linux ext4 (ntfs)
   rsync -avz --update $1/ReadMe $2
   #rsync -avz --progress --update $1/README.md $2
   echo "Synchronizing the .git and .gitignore files to $2..."
+  # TODO: Adjust rsync command to use options: -rvh --size-only --progress
+  # if destination USB drive is not Linux ext4 (ntfs)
   rsync -avz --update $1/.git* $2
   
   if [ -d $1$BILLSWASTADOCSDIR ]; then
     echo "Synchronizing the $BILLSWASTADOCSDIR dir and contents to $2$BILLSWASTADOCSDIR..."
     # Here again use --update option instead of the --delete option
     # which updates the destination only if the source file is newer
+    # TODO: Adjust rsync command to use options: -rvh --size-only --progress
+    # if destination USB drive is not Linux ext4 (ntfs)
     rsync -avz --update $1$BILLSWASTADOCSDIR/ $2$BILLSWASTADOCSDIR/
     if [ -L $1/docs-index ]; then
       echo -e "\nSymbolic link docs-index already exists at $1"
@@ -689,7 +694,7 @@ copy_mirror_root_files ()
       ln -s $2$BILLSWASTADOCSDIR/index.html $2/docs-index
     fi
   fi
-  echo "Exiting copy_mirror_root_files function."
+  echo "Exiting copy_mirror_base_dir_files function."
   return 0
 }
 
@@ -698,11 +703,12 @@ copy_mirror_root_files ()
 # other files at the root of the mirror tree.
 # This function must have one parameter $1 passed to it, which is the base directory where the chown and
 # chmod operations are to initiate.
-# The calling script needs to export the following variables:
+# The calling script should export and/or assign values to the following variables:
 #   $BILLSWASTADOCSDIR
 #   $OFFLINEDIR
 #   $APTMIRROR
 #   $APTMIRRORDIR
+# TODO: Needs revision if the scripts are to support copying/syncing to NTFS formatted drive.
 set_mirror_ownership_and_permissions ()
 {
   # Although the destination may be a tree with no content created by the mkdir -p $COPYTODIR call 
@@ -731,7 +737,7 @@ set_mirror_ownership_and_permissions ()
     chmod -R ugo+rw $1
     # Find all Script files at $1 and set them read-write-executable
     # Note: The for loops with find command below should echo those in the last half of the 
-    # copy_mirror_root_files () function above.
+    # copy_mirror_base_dir_files () function above.
     for script in `find $1 -maxdepth 1 -name '*.sh'` ; do 
       echo "Setting $script executable"
       chmod ugo+rwx $script
@@ -792,10 +798,7 @@ ensure_user_in_apt_mirror_group ()
 # base_path setting, if apt-mirror is installed and mirror.list exists.
 # Since the master mirror location is actually a git repository, the script also copies
 # the .git folder and .gitignore file to the new location if available.
-# This function is used in the all the main wasta scripts:
-#   update-mirror.sh
-#   sync_Wasta-Offline_to_Ext_Drive.sh
-#   make_Master_for_Wasta-Offline.sh
+# This function is currently used only in the sync_Wasta-Offline_to_Ext_Drive.sh
 # Once a user responds with y, the script will not prompt the user again, unless the
 # master mirror is moved back to its old /data location.
 move_mirror_from_data_to_data_master ()
@@ -943,17 +946,20 @@ generate_mirror_list_file ()
   # NOTE: The inventory of software repositories that get downloaded by apt-mirror is
   # controlled by the "here-document" part of this function below, between the cat <<EOF ...
   # and EOF lines. Existing repositories can be removed by commenting out the appropriate
-  # deb-amd64 and deb-i386 lines or adding additional repositories. The LM-UPDATES mirror
+  # deb-amd64 and deb-i386 lines or adding additional repositories. The Full Wasta-Offline Mirror
   # supplied by Bill Martin will always have both deb-amd64 and deb-i386 packages for the
   # "full" mirror.
+  # The "full" mirror generated by this function, currently manages about 750GB of mirror data.
   # Variables that get expanded while generating the mirror.list file:
   #   $GENERATEDSIGNATURE is "###_This_file_was_generated_by_the_update-mirror.sh_script_###"
-  #   $1 is the URL Prefix passed in as the parameter of the function call (http://, ftp://..., etc).
-  #   $LOCALMIRRORSPATH is base path to the mirror (usually /media/LM-UPDATES/wasta-offline/apt-mirror,
-  #      or /media/$USER/LM-UPDATES/wasta-offline/apt-mirror, but can also be 
+  #   $1 is the URL Prefix passed in as the parameter of the function call (http://, ftp://..., 
+  #   http://linuxrepo.sil.org.pg/mirror..., etc).
+  #   $LOCALMIRRORSPATH is base path to the mirror (usually /media/<DISK_LABEL>/wasta-offline/apt-mirror,
+  #      or /media/$USER/<DISK_LABEL>/wasta-offline/apt-mirror, but can also be 
   #      /data/wasta-offline/apt-mirror for the master copy of the full mirror)
   #   $ARCHIVESECURITY is either "archive" (for Ukarumpa FTP mirror), or "security" (for the
   #      remote Internet mirror).
+  # This function is currently used in the updata-mirror.sh, and make_Master_for_Wasta-Offline.sh scripts.
   # Revised 22 March 2016 by Bill Martin:
   #   Change LibreOffice versions to include 4-2, 4-4, 5-0, 5-1
   #   Add Linux Mint Rosa to the list
@@ -965,9 +971,10 @@ generate_mirror_list_file ()
   #   Added the Linux Mint Serena and Sonya repos to the list
   # Revised 30 September 2018 by Bill Martin:
   #   Added the Ubuntu Bionic repos to the list
-  #   Removed (commented out) the precise/maya repos as they are no longer supported
+  #   Removed the precise/maya repos as they are no longer supported
   #   Added the LibreOffice libreoffice-5-4 and libreoffice-6-0 repos 
   #   Added the Linux Mint Sylvia 18.3 Tara 19 and Tessa 19.1 repos to the list
+  #   Added special https protocol for Skype repo
 
   # If this is the first generation of mirror.list, first back up the user's existing mirror.list
   # to mirror.list.save. The existing mirror.list file won't have the $GENERATEDSIGNATURE in the
@@ -981,20 +988,38 @@ generate_mirror_list_file ()
     cp -f $ETCAPT$MIRRORLIST $ETCAPT$MIRRORLIST$SAVEEXT
   fi
 
-  echo -e "\n"
-  echo "LOCALMIRRORSPATH is $LOCALMIRRORSPATH"
-  # Handle the irregularity in the Ukarumpa FTP repository that has precise-security
-  # and trusty-security located in the archive.ubuntu.com rather than security.ubuntu.com
-  # as is the default for Linux Mint and Wasta-Linux. The repos at ubuntu.com have both.
+  #echo -e "\n"
+  #echo "LOCALMIRRORSPATH is $LOCALMIRRORSPATH"
+  
+  # whm 23 November 2018 Note: The /etc/apt/sources.list configuration file of some 
+  # Linux distributions pointed to security.ubuntu.com/ubuntu, whereas others pointed
+  # to archive.ubuntu.com/ubuntu for security updates (trusty-security, xenial-security,
+  # and bionic-security). The reality is that these *-security update repos are currently
+  # located in both security.ubuntu.com/ubuntu and archive.ubuntu.com/ubuntu. Hence,
+  # below we will use the "security" string for the $ARCHIVESECURITY variable. This
+  # results is some duplication in the mirror so that *-security is contained in two
+  # different places, but having a separate security.ubuntu.com/ubuntu might avoid some
+  # "file not found" problems on some machines using the wasta-offline mirror. 
   # Note: According to Cambell Prince the packages.palaso.org repo no longer exists, so 
   # that all future palaso software will be released via the packages.sil.org repository.
-  if [ $1 = $FTPUkarumpaURLPrefix ]; then
+  #if [ $1 = $FTPUkarumpaURLPrefix ]; then
     ARCHIVESECURITY="archive"
+  #else
+  #  ARCHIVESECURITY="security"
+  #fi
+  
+  echo -e "\nGenerating $MIRRORLIST configuration file at $MIRRORLISTPATH..."
+  
+  SKYPEURL="repo.skype.com/deb"
+  if [[ $1 == "http://"* ]]; then 
+    SKYPEPATH=${1#http://}
+    SKYPEPREFIX="https://$SKYPEURL"
   else
-    ARCHIVESECURITY="security"
+    SKYPEPREFIX=$1$SKYPEURL
   fi
-  echo -e "\nGenerating $MIRRORLIST at $MIRRORLISTPATH"
-
+  #echo "SKYPEPATH is: $SKYPEPATH"
+  #echo "SKYPEPREFIX is: $SKYPEPREFIX"
+  
   # The code below generates a custom /etc/apt/mirror.list configuration file on the fly for the user. 
   # Any changes deemed necessary to the content of mirror.list that gets generated by this script, 
   # should be made within the "here-document" content below, rather than directly to the user's 
@@ -1002,11 +1027,11 @@ generate_mirror_list_file ()
   #
   # The following uses "here-document" redirection which tells the shell to read from the current
   # source until the line containing EOF is seen. As long as the command is cat <<EOF and not quoted
-  # as cat <<"EOF", parameter expansion happens for $LOCALMIRRORSPATH, $1, and $ARCHIVESECURITY.
+  # as cat <<"EOF", parameter expansion happens for $LOCALMIRRORSPATH, $1, $SKYPEPREFIX and $ARCHIVESECURITY.
   # The /etc/apt/mirror.list file is created from scratch each time this script is run.
   # Within functions, $1 is the first parameter that is provided with the function call. In this
-  # case, $1 is either $FTPUkarumpaURLPrefix, $InternetURLPrefix, or $CustomURLPrefix depending on 
-  # the user's selection in the main program (see below).
+  # case, $1 is either $UkarumpaURLPrefix, $FTPUkarumpaURLPrefix, $InternetURLPrefix, or 
+  # $CustomURLPrefix depending on the user's selection in the main program (see below).
   #
 cat <<EOF >$MIRRORLISTPATH
 $GENERATEDSIGNATURE
@@ -1026,48 +1051,7 @@ set _tilde 0
 #
 ############# end config ##############
 
-# whm modified 24Mar14 to add Linux Mint repro, remove src repos, include both 32-bit and 64-bit packages
-# Note: the following are referenced in /etc/apt/sources.list
-#deb-amd64 $1packages.linuxmint.com/ maya main upstream import backport
-#deb-i386 $1packages.linuxmint.com/ maya main upstream import backport
-#deb-amd64 $1archive.ubuntu.com/ubuntu precise main restricted universe multiverse
-#deb-i386 $1archive.ubuntu.com/ubuntu precise main restricted universe multiverse
-# Note: Our external mirror points to the security.ubuntu.com/ubuntu precise-security repository.
-# The Ukarumpa FTP mirrors point to archive.ubuntu.com/ubuntu precise-security. Presumably, both 
-# remote mirrors contain the same packages and updates.
-#deb-amd64 $1$ARCHIVESECURITY.ubuntu.com/ubuntu precise-security main restricted universe multiverse
-#deb-i386 $1$ARCHIVESECURITY.ubuntu.com/ubuntu precise-security main restricted universe multiverse
-#deb-amd64 $1archive.ubuntu.com/ubuntu precise-updates main restricted universe multiverse
-#deb-i386 $1archive.ubuntu.com/ubuntu precise-updates main restricted universe multiverse
-#deb-amd64 $1extras.ubuntu.com/ubuntu precise main
-#deb-i386 $1extras.ubuntu.com/ubuntu precise main
-# Note: The following two archive.canonical.com partner repos may not be in the Ukarumpa FTP mirror
-# If so, one may comment out the following two entries
-#deb-amd64 $1archive.canonical.com/ubuntu precise partner
-#deb-i386 $1archive.canonical.com/ubuntu precise partner
-#deb-amd64 $1packages.sil.org/ubuntu precise main
-#deb-i386 $1packages.sil.org/ubuntu precise main
-#deb-amd64 $1packages.sil.org/ubuntu precise-experimental main
-#deb-i386 $1packages.sil.org/ubuntu precise-experimental main
-#deb-amd64 $1download.virtualbox.org/virtualbox/debian precise contrib
-#deb-i386 $1download.virtualbox.org/virtualbox/debian precise contrib
-# Note: the following are referenced in separate .list files in /etc/apt/sources.list.d/
-# Note: the wasta-linux repos need the source code packages also included
-#deb-amd64 $1ppa.launchpad.net/wasta-linux/wasta-apps/ubuntu precise main
-#deb-i386 $1ppa.launchpad.net/wasta-linux/wasta-apps/ubuntu precise main
-#deb-src $1ppa.launchpad.net/wasta-linux/wasta-apps/ubuntu precise main
-#deb-amd64 $1ppa.launchpad.net/wasta-linux/wasta/ubuntu precise main
-#deb-i386 $1ppa.launchpad.net/wasta-linux/wasta/ubuntu precise main
-#deb-src $1ppa.launchpad.net/wasta-linux/wasta/ubuntu precise main
-#deb-amd64 $1ppa.launchpad.net/libreoffice/libreoffice-4-2/ubuntu precise main
-#deb-i386 $1ppa.launchpad.net/libreoffice/libreoffice-4-2/ubuntu precise main
-#deb-amd64 $1ppa.launchpad.net/libreoffice/libreoffice-4-4/ubuntu precise main
-#deb-i386 $1ppa.launchpad.net/libreoffice/libreoffice-4-4/ubuntu precise main
-#deb-amd64 $1ppa.launchpad.net/libreoffice/libreoffice-5-0/ubuntu precise main
-#deb-i386 $1ppa.launchpad.net/libreoffice/libreoffice-5-0/ubuntu precise main
-# It appears that libreoffice-5-0 is the last version available for precise
-# Note: Ubuntu 12.04 Precise reached end-of-life on April 28, 2017 so the
-# existing packages for 12.04 won't change after April 2017. 
+# whm 23 November 2018 Note: the precise (12.04) distribution is no longer supported
 
 # whm added 21Sep2014 trusty repos below:
 # Note: the following are referenced in /etc/apt/sources.list
@@ -1076,8 +1060,8 @@ deb-i386 $1packages.linuxmint.com/ qiana main upstream import backport
 deb-amd64 $1archive.ubuntu.com/ubuntu trusty main restricted universe multiverse
 deb-i386 $1archive.ubuntu.com/ubuntu trusty main restricted universe multiverse
 # Note: Our external mirror points to the security.ubuntu.com/ubuntu trusty-security repository.
-# The Ukarumpa FTP mirrors point to archive.ubuntu.com/ubuntu trusty-security. Presumably, both 
-# remote mirrors contain the same packages and updates
+# The old Ukarumpa FTP mirrors point to archive.ubuntu.com/ubuntu trusty-security.  
+# Presumably, both remote mirrors contain the same packages and updates.
 deb-amd64 $1$ARCHIVESECURITY.ubuntu.com/ubuntu trusty-security main restricted universe multiverse
 deb-i386 $1$ARCHIVESECURITY.ubuntu.com/ubuntu trusty-security main restricted universe multiverse
 deb-amd64 $1archive.ubuntu.com/ubuntu trusty-updates main restricted universe multiverse
@@ -1203,7 +1187,7 @@ deb-i386 $1ppa.launchpad.net/libreoffice/libreoffice-5-4/ubuntu xenial main
 deb-amd64 $1ppa.launchpad.net/libreoffice/libreoffice-6-0/ubuntu xenial main
 deb-i386 $1ppa.launchpad.net/libreoffice/libreoffice-6-0/ubuntu xenial main
 
-# whm added 30 September 2016 bionic repos below:
+# whm added 30 September 2018 bionic repos below:
 deb-amd64 $1archive.ubuntu.com/ubuntu bionic main restricted universe multiverse
 deb-i386 $1archive.ubuntu.com/ubuntu bionic main restricted universe multiverse
 deb-amd64 $1archive.ubuntu.com/ubuntu bionic-updates main restricted universe multiverse
@@ -1221,6 +1205,14 @@ deb-amd64 $1packages.sil.org/ubuntu bionic main
 deb-i386 $1packages.sil.org/ubuntu bionic main
 deb-amd64 $1packages.sil.org/ubuntu bionic-experimental main
 deb-i386 $1packages.sil.org/ubuntu bionic-experimental main
+
+# Note: the following are referenced in separate .list files in /etc/apt/sources.list.d/
+# whm added 26 November 2018 Skype repos below must use https:// protocol (see SKYPEPREFIX
+# varirable calculation in generate_mirror_list_file () function in bash_functions.sh):
+deb-amd64 $SKYPEPREFIX stable main
+deb-i386 $SKYPEPREFIX stable main
+deb-amd64 $SKYPEPREFIX unstable main
+deb-i386 $SKYPEPREFIX unstable main
 
 # Note: the following are referenced in separate .list files in /etc/apt/sources.list.d/
 # Note: the wasta-linux repos need the source code packages also included
@@ -1242,6 +1234,7 @@ clean $1$ARCHIVESECURITY.ubuntu.com/ubuntu
 clean $1extras.ubuntu.com/ubuntu
 clean $1archive.canonical.com/ubuntu
 clean $1packages.sil.org/ubuntu
+clean $SKYPEPREFIX
 #clean $1download.virtualbox.org/virtualbox/debian
 clean $1ppa.launchpad.net/wasta-linux/wasta-apps/ubuntu
 clean $1ppa.launchpad.net/wasta-linux/wasta/ubuntu
@@ -1260,23 +1253,23 @@ EOF
 }
 
 # A bash function that determines if a full wasta-offline mirror exists at the given
-# path.
+# path passed in as a single parameter.
 # Returns 0 if a full wasta-offline mirror exists at $1, otherwise returns 1.
 # Revised: 17 April 2016 to correct logic and remove libreoffice repo tests
 # A single optional parameter must be used which should be the absolute path to the
 # wasta-offline directory of an apt-mirror generated mirror tree. For example,
-# /data/master/wasta-offline or /media/LM-UPDATES/wasta-offline or /media/$USER/LM-UPDATES/wasta-offline.
+# /data/master/wasta-offline or /media/<DISK_LABEL>/wasta-offline or /media/$USER/<DISK_LABEL>/wasta-offline.
 # A "full" wasta-offline mirror should have the following mirrors:
 # List of Mirrors and Repos:
 # As of September 2018 these are the mirrors and the repositories that we use in the
-# full Wasta-Linux Mirror as supplied by Bill Martin:
+# full Wasta-Linux Mirror as supplied by Bill Martin: TODO: Update these
 #   Mirror                                        Repos
 #   --------------------------------------------------------------------------------
-#   archive.canonical.com                         partner
-#   archive.ubuntu.com                            main multiverse restricted universe
-#   extras.ubuntu.com                             main
-#   packages.linuxmint.com                        backport import main upstream
-#   packages.sil.org                              main
+#   archive.canonical.com                          partner
+#   archive.ubuntu.com                             main multiverse restricted universe
+#   extras.ubuntu.com                              main
+#   packages.linuxmint.com                         backport import main upstream
+#   packages.sil.org                               main
 #   *ppa.launchpad.net/libreoffice/libreoffice-4-2 main
 #   *ppa.launchpad.net/libreoffice/libreoffice-4-4 main
 #   *ppa.launchpad.net/libreoffice/libreoffice-5-0 main
@@ -1285,20 +1278,20 @@ EOF
 #   *ppa.launchpad.net/libreoffice/libreoffice-5-3 main
 #   *ppa.launchpad.net/libreoffice/libreoffice-5-4 main
 #   *ppa.launchpad.net/libreoffice/libreoffice-6-0 main
-#   ppa.launchpad.net/wasta-linux/wasta           main
-#   ppa.launchpad.net/wasta-linux/wasta-apps      main
-#   security.ubuntu.com                           main multiverse restricted universe
+#   ppa.launchpad.net/wasta-linux/wasta            main
+#   ppa.launchpad.net/wasta-linux/wasta-apps       main
+#   security.ubuntu.com                            main multiverse restricted universe
 # 
 # Note: the libreoffice mirrors above marked with * are not included in our test for presence of a wasta-offline mirror.
 # For each of the above Repos we include both binary-i386 and binary-amd64 architecture packages. 
 is_there_a_wasta_offline_mirror_at ()
 {
   # The following constants are used exclusively in the is_there_a_wasta_offline_mirror_at () function:
-  #WASTAOFFLINEDIR="/data" # initial assignment, varies between /data and /media/LM-UPDATES or /media/$USER/LM-UPDATES
+  #WASTAOFFLINEDIR="/data" # initial assignment, varies between /data and /media/<DISK_LABEL> or /media/$USER/<DISK_LABEL>
   # 17 Apr 2016 whm removed the libreoffice mirrors from $UBUNTUMIRRORS list (they have repos for specific versions)
   WASTAOFFLINEDIR=$1
-  echo -e "\nParameter is $1"
-  echo "WASTAOFFLINEDIR is $WASTAOFFLINEDIR"
+  #echo -e "\nParameter is $1"
+  #echo "WASTAOFFLINEDIR is $WASTAOFFLINEDIR"
   UBUNTUMIRRORS=("archive.ubuntu.com" "packages.sil.org" "ppa.launchpad.net/wasta-linux/wasta" "ppa.launchpad.net/wasta-linux/wasta-apps")
   UBUNTUDISTS=("trusty" "xenial")
   LINUXMINTDISTS=("qiana" "rebecca" "rafaela" "rosa" "sarah")
@@ -1310,10 +1303,11 @@ is_there_a_wasta_offline_mirror_at ()
 
   # Check to see if there is a valid wasta-offline path at the $1 parameter location. If not,
   # return 1 (for failure)
- if [ ! -d $1 ]; then
+  if [ ! -d $1 ]; then
     return 1
   fi
   
+  #echo "Performing checks in wasta-offline data tree..."
   # Note: We won't survey all the repos that exist for each of the mirrors in the above
   # chart. We will survey only one repo in each of the mirrors - the "main" repo in all
   # mirrors except for the canonical mirror which only has a "partner" repo. Hence, we won't
@@ -1337,6 +1331,7 @@ is_there_a_wasta_offline_mirror_at ()
         if [ ! -d "$WASTAOFFLINEDIR/apt-mirror/mirror/$mirror/ubuntu/dists/$dist/main/$arch" ]; then
           full_mirror_exists="FALSE"
           echo -n "x"
+          #echo "not found: $WASTAOFFLINEDIR/apt-mirror/mirror/$mirror/ubuntu/dists/$dist/main/$arch"
           break
         else
           echo -n "." #"Found: $WASTAOFFLINEDIR/apt-mirror/mirror/$mirror/ubuntu/dists/$dist/main/$arch"
@@ -1402,6 +1397,8 @@ is_there_a_wasta_offline_mirror_at ()
 
 # A bash function that determines if one wasta-offline mirror is older, same or newer than 
 # another one.
+# The calling script should export and/or assign values to the following variables:
+#   $LastAppMirrorUpdate
 # Returns 0 if the mirror at $1 is older than the mirror at $2
 # Returns 1 if the mirror at $1 is newer than the mirror at $2
 # Returns 2 if the mirror at $1 has the same timestamp as the mirror at $2
@@ -1476,19 +1473,27 @@ is_this_mirror_older_than_that_mirror ()
   fi
 }
 
-# ------------------------------------------------------------------------------
-# Unused functions - which might come in handy later
-# ------------------------------------------------------------------------------
-
 # A bash function that checks the user's /etc/apt/sources.list file to determine what URL protocol
 # is currently being used.
 # This function takes no parameters.
+# The calling script should export and/or assign values to the following variables:
+#   $UkarumpaURLPrefix
+#   $InternetURLPrefix
+#   $FTPURLPrefix
+#   $FileURLPrefix
+#   $ETCAPT$SOURCESLIST
 # This function simply echoes the string protocol as one of these possibilities:
+#   http://linuxrepo.sil.org.pg/mirror
 #   http://
 #   ftp://
 #   file:
 get_sources_list_protocol ()
 {
+  grep -Fq "$UkarumpaURLPrefix" $ETCAPT$SOURCESLIST
+  GREPRESULTINT=$?
+  if [ $GREPRESULTINT -eq 0 ]; then
+     echo "$UkarumpaURLPrefix"
+  fi
   grep -Fq "$InternetURLPrefix" $ETCAPT$SOURCESLIST
   GREPRESULTINT=$?
   if [ $GREPRESULTINT -eq 0 ]; then
@@ -1505,6 +1510,10 @@ get_sources_list_protocol ()
      echo "$FileURLPrefix"
   fi
 }
+
+# ------------------------------------------------------------------------------
+# Unused functions - which might come in handy later
+# ------------------------------------------------------------------------------
 
 date2stamp ()
 {
