@@ -24,6 +24,8 @@
 #      Added a new get_a_default_path_for_COPYFROMDIR () function.
 #      Added a new get_a_default_path_for_COPYTODIR () function.
 #      Did a general cleanup of the scripts and comments.
+#      Removed 'export' from all variables - not needed for variable visibility.
+#      Added [currently unused] for move_mirror_from_data_to_data_master () function
 # Name: bash_functions.sh
 # Distribution: 
 # This script is included with all Wasta-Offline Mirrors supplied by Bill Martin.
@@ -46,11 +48,11 @@
 #   copy_mirror_base_dir_files ()
 #   set_mirror_ownership_and_permissions ()
 #   ensure_user_in_apt_mirror_group ()
-#   move_mirror_from_data_to_data_master ()
 #   generate_mirror_list_file ()
 #   is_there_a_wasta_offline_mirror_at ()
 #   is_this_mirror_older_than_that_mirror ()
 #   get_sources_list_protocol ()
+#   move_mirror_from_data_to_data_master () [currently unused]
 #   date2stamp () [currently unused]
 #   stamp2date () [currently unused]
 #   dateDiff () [currently unused]
@@ -116,7 +118,7 @@ is_program_running ()
     if [ "x$2" = "x" ]; then
       # 'x' is used in the string comparison because bash is broken and in some versions could 
       # fail the equality test with empty strings.
-      echo "The $1 program is currently running!"
+      echo "The $1 program is currently running."
     fi
     # In bash logic success/true is 0
     return 0 # $NUMBEROFPROCESSES # will be > 0
@@ -124,7 +126,7 @@ is_program_running ()
     if [ "x$2" = "x" ]; then
       # 'x' is used in the string comparison because bash is broken and in some versions could 
       # fail the equality test with empty strings.
-      echo "The $1 program is not running!"
+      echo "The $1 program is not currently running."
     fi
     # In bash logic failure/false is >= 1
     return 1 # $NUMBEROFPROCESSES # will be 0
@@ -194,10 +196,10 @@ get_device_name_of_usb_mount_point ()
 # - in which the second drive's label gets renamed to UPDATES1), the | sort -r pipe option
 # causes the output to only detect the first non-numerically-suffixed one that is found. 
 # For example if two USB drives each labeled UPDATES are plugged in, the second one will have
-# its label become UPDATES1, and this function will detect only the first drive plugged it 
-# (UPDATES rather than UPDATES1).
-# Returns zero (0) if such directory is found and exports the absolute path prefix up to, 
-# and including the /wasta-offline folder, to the exported variable USBMOUNTPOINT. For example, 
+# its label become UPDATES1 or UPDATES_, and this function will detect only the first drive 
+# plugged in (UPDATES rather than UPDATES1 or UPDATES_).
+# Returns zero (0) if such directory is found and assigns the absolute path prefix up to, 
+# and including the /wasta-offline folder, to the variable USBMOUNTPOINT. For example, 
 # it might return /media/bill/<DISK_LABEL>/wasta-offline as the value stored in USBMOUNTPOINT.
 # Note: whm 23 November 2018 revised to echo the value of $USBMOUNTPOINT so the function
 # can be used within back ticks to return the $USBMOUNTPOINT value as a string, for example:
@@ -217,8 +219,9 @@ get_wasta_offline_usb_mount_point ()
         # second, look for wasta-offline folder under /media (12.04 and older)
         START_FOLDER=$(ls -1d /media/*/wasta-offline 2>/dev/null | sort -r | head -1)
     fi
-    
-    export USBMOUNTPOINT=$START_FOLDER
+    # Since the USBMOUNTPOINT is not a local variable to this function is should be visible
+    # to the context of callers of get_wasta_offline_usb_mount_point (). 
+    USBMOUNTPOINT=$START_FOLDER
     # The following echo returns the $USBMOUNTPOINT as a string when the function is
     # assigned to a variable, i.e., START_FOLDER=`get_wasta_offline_usb_mount_point`
     # No other echo statements should appear in this function.
@@ -475,7 +478,7 @@ get_a_default_path_for_COPYTODIR ()
 # files from a source mirror's base directory to a destination mirror's base directory.
 # This function takes two parameters: $1 a source mirror's base path, and $2 a destination 
 # mirror's base path - usually "$COPYFROMBASEDIR" and "$COPYTOBASEDIR".
-# The calling script should export and/or assign values to the following variables:
+# The calling script should have assigned values to the following variables:
 #   $BILLSWASTADOCSDIR
 #   $OFFLINEDIR
 #   $APTMIRRORDIR
@@ -703,7 +706,7 @@ copy_mirror_base_dir_files ()
 # other files at the root of the mirror tree.
 # This function must have one parameter $1 passed to it, which is the base directory where the chown and
 # chmod operations are to initiate.
-# The calling script should export and/or assign values to the following variables:
+# The calling script should have assigned values to the following variables:
 #   $BILLSWASTADOCSDIR
 #   $OFFLINEDIR
 #   $APTMIRROR
@@ -801,7 +804,7 @@ ensure_user_in_apt_mirror_group ()
 # This function is currently used only in the sync_Wasta-Offline_to_Ext_Drive.sh
 # Once a user responds with y, the script will not prompt the user again, unless the
 # master mirror is moved back to its old /data location.
-move_mirror_from_data_to_data_master ()
+move_mirror_from_data_to_data_master () [No longer used]
 {
   # Set up some constants for use in function only
   DATADIR="/data"
@@ -1397,7 +1400,7 @@ is_there_a_wasta_offline_mirror_at ()
 
 # A bash function that determines if one wasta-offline mirror is older, same or newer than 
 # another one.
-# The calling script should export and/or assign values to the following variables:
+# The calling script should have assigned values to the following variables:
 #   $LastAppMirrorUpdate
 # Returns 0 if the mirror at $1 is older than the mirror at $2
 # Returns 1 if the mirror at $1 is newer than the mirror at $2
@@ -1476,7 +1479,7 @@ is_this_mirror_older_than_that_mirror ()
 # A bash function that checks the user's /etc/apt/sources.list file to determine what URL protocol
 # is currently being used.
 # This function takes no parameters.
-# The calling script should export and/or assign values to the following variables:
+# The calling script should have assigned values to the following variables:
 #   $UkarumpaURLPrefix
 #   $InternetURLPrefix
 #   $FTPURLPrefix

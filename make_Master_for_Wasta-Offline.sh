@@ -25,6 +25,7 @@
 #      the file system type of the USB drive at the mount point.
 #      Added sleep statements to paus output for better monitoring of progress.
 #      Made Abort warnings more visible in console output.
+#      Removed 'export' from all variables - not needed for variable visibility.
 # Name: make_Master_for_Wasta-Offline.sh
 # Distribution: 
 # This script is included with all Wasta-Offline Mirrors supplied by Bill Martin.
@@ -36,13 +37,13 @@
 # Purpose: 
 # The primary purpose of this script is to create a Master copy of the full 
 # Wasta-Offline Mirror on a dedicated local computer - copying the mirror data from
-# a full Wasta-Offline Mirror located on a USB external drive to a default location
+# a full Wasta-Offline Mirror located on a USB external drive, to a default location
 # of /data/master/wasta-offline/ on the fixed hard drive of a computer that becomes
 # the "master mirror". Executing this script need only be done once on a given
-# computer to extablish it as a dedicated computer maintaining a "master mirror."
+# computer to extablish it as a dedicated computer for maintaining the "master mirror."
 
 # NOTE: These Wasta-Offline scripts are for use by administrators and not normal
-# Wasta-Linux users. The Wasta-Offline program itself should not be running when you, 
+# Wasta-Linux users. The Wasta-Offline program itself need not be running when you, 
 # as administrator are running these scripts. Hence, when you plug in a USB drive 
 # containing the full Wasta-Offline Mirror - intending to create a master mirror with 
 # this make_Master_for_Wasta-Offline.sh script - and the Authentication/Password message 
@@ -269,9 +270,17 @@ MAKEMASTERCOPYSCRIPT="make_Master_for_Wasta-Offline.sh"
 WAIT=60
 USBDEVICENAME=""
 USBFILESYSTEMTYPE=""
-export InternetURLPrefix="http://"
-#export FTPURLPrefix="ftp://"
-#export FileURLPrefix="file:"
+InternetURLPrefix="http://"
+#FTPURLPrefix="ftp://"
+#FileURLPrefix="file:"
+
+# The following variables are defined just before the generate... function call below.
+#GENERATEDSIGNATURE="###_This_file_was_generated_by_the_update-mirror.sh_script_###"
+#LOCALMIRRORSPATH=$COPYTODIR$APTMIRRORDIR # default to /data/master/wasta-offline/apt-mirror
+#ETCAPT="/etc/apt/"
+#MIRRORLIST="mirror.list"
+#MIRRORLISTPATH=$ETCAPT$MIRRORLIST # /etc/apt/mirror.list
+#SAVEEXT=".save" # used in generate_mirror_list_file () function
 
 echo -e "\n[*** Now executing the $MAKEMASTERCOPYSCRIPT script ***]"
 sleep 3s
@@ -308,7 +317,7 @@ fi
 # Get the USBMOUNTPOINT of the external USB drive's mirror. 
 # USBMOUNTPOINT can be an empty string if no USB drive is attached/mounted, or an mounted USB
 # drive has no wasta-offline tree on it.
-export USBMOUNTPOINT=`get_wasta_offline_usb_mount_point` 
+USBMOUNTPOINT=`get_wasta_offline_usb_mount_point` 
 
 # Get the BASEPATH_TO_MIRROR if a mirror.list file exists.
 # most likely /data/master/wasta-offline/apt-mirror, if it exists, or it will be an 
@@ -507,7 +516,7 @@ USBMOUNTDIR=$USBMOUNTPOINT
 if [[ $USBMOUNTPOINT == *"wasta-offline"* ]]; then 
   USBMOUNTDIR=$(dirname "$USBMOUNTPOINT")
 fi
-export USBMOUNTDIR # normally USBMOUNTDIR is /media/<DISK_LABEL> or /media/$USER/<DISK_LABEL>
+USBMOUNTDIR # normally USBMOUNTDIR is /media/<DISK_LABEL> or /media/$USER/<DISK_LABEL>
 USBDEVICENAME=`get_device_name_of_usb_mount_point $USBMOUNTPOINT`
 echo "   Device NAME of USB Drive: $USBDEVICENAME"
 USBFILESYSTEMTYPE=`get_file_system_type_of_usb_partition $USBDEVICENAME`
@@ -616,11 +625,19 @@ fi
 # In this context, we use the $COPYTODIR path with the /apt-mirror dir appended to it.
 GENERATEDSIGNATURE="###_This_file_was_generated_by_the_update-mirror.sh_script_###"
 LOCALMIRRORSPATH=$COPYTODIR$APTMIRRORDIR # default to /data/master/wasta-offline/apt-mirror
-export ETCAPT="/etc/apt/"
+ETCAPT="/etc/apt/"
 MIRRORLIST="mirror.list"
 MIRRORLISTPATH=$ETCAPT$MIRRORLIST # /etc/apt/mirror.list
-SAVEEXT=".save"
+SAVEEXT=".save" # used in generate_mirror_list_file () function
 sleep 3s
+
+# Note: We use the $InternetURLPrefix (http://) as a default initial mirror.list prefix 
+# protocol when establishing the master mirror with make_Master_for_Wasta-Offline.sh.
+# Once the master mirror is established, the updata-mirror.sh script is used to
+# update the mirror, and update-mirror.sh will change the protocol prefix of the
+# entries in the mirror.list file each time the user runs update-mirror.sh depending
+# on the menu choice (of where to get the mirror data) the user makes in the process
+# of running the update-mirror.sh script.
 if generate_mirror_list_file $InternetURLPrefix ; then
   echo "Successfully generated $MIRRORLIST at $MIRRORLISTPATH."
 else

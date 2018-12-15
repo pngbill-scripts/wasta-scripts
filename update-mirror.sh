@@ -34,6 +34,7 @@
 #      the file system type of the USB drive at the mount point.
 #      Added sleep statements to paus output for better monitoring of progress.
 #      Made Abort warnings more visible in console output.
+#      Removed 'export' from all variables - not needed for variable visibility.
 # Name: update-mirror.sh
 # Distribution:
 # This script is the main script that is included with all full Wasta-Offline 
@@ -56,7 +57,7 @@
 # for such apt-mirror updates.
 #
 # NOTE: These Wasta-Offline scripts are for use by administrators and not normal
-# Wasta-Linux users. The Wasta-Offline program itself should not be running when you, 
+# Wasta-Linux users. The Wasta-Offline program itself need not be running when you, 
 # as administrator are running these scripts. Hence, when you plug in a USB drive 
 # containing the full Wasta-Offline Mirror - intending to update a master mirror with 
 # this update-mirror.sh script - and the Authentication/Password message appears,
@@ -75,6 +76,44 @@
 # offline - instead of having to use the expensive and slow Internet. However, the 
 # wasta-offline program itself never needs to run while using these scripts to
 # accomplish their purposes. 
+#
+# NOTE: 
+# Updating the "master" wasta-offline mirror is handled a bit differently than the external
+# USB drive's mirror. If there is a local /data/master/wasta-offline/apt-mirror directory, 
+# $UPDATINGLOCALDATA="YES" and update-mirror.sh will update the local master wasta-offline 
+# mirror instead of the external USB drive's wasta-offline mirror. If an external USB 
+# drive with a wasta-offline mirror on it is plugged in, another variable named 
+# $UPDATINGEXTUSBDATA="YES" and update-mirror.sh will ALSO conveniently call the 
+# sync_Wasta-Offline_to_Ext_Drive.sh script to synchronize the external USB drive's mirror 
+# to be identical with the newly updated master copy of the mirror.
+# It can be very useful to have a master on a dedicated computer and use updata-mirror.sh
+# to keep that master mirror updated. With a master mirror, if more than one portable
+# Wasta-Offline USB drive is being maintained, it is more efficient to use this script to
+# update the master mirror from the Local server or Internet repositories, and then sync 
+# from the master mirror to any external USB mirror that is attached to the system. 
+#
+# When multiple Wasta-Offline portable USB drive mirrors are being maintained (as at 
+# Ukarumpa), subsequent USB drive mirrors can be attached to the computer containing the 
+# master mirror - one at a time - and for each successive USB drive, the administrator
+# can call the sync_Wasta-Offline_to_Ext_Drive.sh script directly to update the USB 
+# drive's mirror. 
+#
+# Note: Since each of the multiple USB drives may have the same disk label ("UPDATES" for
+# example), you should not attach more than one of such USB drives at a time to the 
+# computer hosting the master mirror to get updated. Update only one USB drive at a time! 
+# The reason for this is that, if more than one USB drive is attached with identical disk 
+# labels, only the first drive that was plugged into a USB port will be used/updated. 
+# For example, if two full wasta-offline drives are mounted at the same time, and both 
+# have the same disk label of "UPDATES", the system will temporarily mount additional
+# USB drives with adjuste disk label names - as "UPDATES1" or "UPDATES_". This script
+# will only update the first USB drive containing a wasta-offline mirror that is 
+# mounted to the master mirror computer system.
+
+# When there is no local master copy at /data/master/wasta-offline/apt-mirror (a possible 
+# use-case for field situations with only poor/expensive Internet access), the variable 
+# $UPDATINGLOCALDATA="NO" and the update-mirror.sh script will simply update the external 
+# USB drive's wasta-offline mirror directly - and won't call the 
+# sync_Wasta-Offline_to_Ext_Drive.sh script.
 
 # NOTE: The inventory of software repositories apt-mirror downloads updates from is
 #       controlled by the bash function below called generate_mirror_list_file ().
@@ -129,10 +168,11 @@
 #    up the updated software mirror.
 # 9. If there is a local /data/master/wasta-offline/apt-mirror directory, 
 #    $UPDATINGLOCALDATA="YES" and update-mirror.sh will first update the local master 
-#    wasta-offline mirror. After the local master mirror is updated, and if an external
-#    USB drive was plugged in, the update-mirror.sh script will conveniently call
-#    the sync_Wasta-Offline_to_Ext_Drive.sh script to synchronize the external USB 
-#    drive's mirror to be identical with the newly updated master copy of the mirror.
+#    wasta-offline mirror. If an external USB drive with a wasta-offline mirror on it
+#    is plugged in, $UPDATINGEXTUSBDATA="YES" and update-mirror.sh will ALSO 
+#    conveniently call the sync_Wasta-Offline_to_Ext_Drive.sh script to synchronize 
+#    the external USB drive's mirror to be identical with the newly updated master 
+#    copy of the mirror.
 #
 # Usage: 
 #   Automatic: bash update-mirror.sh - or, use the File Manager to navigate to the
@@ -227,101 +267,83 @@ MASTERDIR="/master"
 APTMIRRORDIR="/$APTMIRROR" # /apt-mirror
 WASTAOFFLINE="wasta-offline"
 WASTAOFFLINEDIR="/$WASTAOFFLINE" # /wasta-offline
-
-echo -e "\n[*** Now executing the $UPDATEMIRRORSCRIPT script ***]"
-sleep 3s
-
-# Use the get_wasta_offline_usb_mount_point () function to get a value for USBMOUNTPOINT
-export USBMOUNTPOINT=`get_wasta_offline_usb_mount_point` # normally USBMOUNTPOINT is /media/$USER/<DISK_LABEL>/wasta-offline
-
-if [ "x$USBMOUNTPOINT" = "x" ]; then
-  # $USBMOUNTPOINT for a USB drive containing the wasta-offline data was not found
-  USBMOUNTDIR=""
-  WASTAOFFLINEEXTERNALAPTMIRRORPATH=""
-  # The $USBMOUNTPOINT variable is empty, i.e., a wasta-offline subdirectory on /media/... was not found
-  echo -e "\nWasta-Offline data was NOT found at /media/..."
-else
-  USBMOUNTDIR=$USBMOUNTPOINT # normally USBMOUNTPOINT is /media/<DISK_LABEL>/wasta-offline or /media/$USER/<DISK_LABEL>/wasta-offline
-  WASTAOFFLINEEXTERNALAPTMIRRORPATH=$USBMOUNTDIR$APTMIRRORDIR # /media/$USER/<DISK_LABEL>/wasta-offline/apt-mirror
-  echo -e "\nWasta-Offline data found at mount point: $USBMOUNTPOINT"
-  USBDEVICENAME=`get_device_name_of_usb_mount_point $USBMOUNTPOINT`
-  echo "Device Name of USB at $USBMOUNTPOINT: $USBDEVICENAME"
-  USBFILESYSTEMTYPE=`get_file_system_type_of_usb_partition $USBDEVICENAME`
-  echo "File system TYPE of USB Drive at $USBDEVICENAME: $USBFILESYSTEMTYPE"
-fi
-
 WASTAOFFLINELOCALAPTMIRRORPATH=$DATADIR$MASTERDIR$WASTAOFFLINEDIR$APTMIRRORDIR # /data/master/wasta-offline/apt-mirror
-UPDATINGLOCALDATA="YES" # [may be changed below]
-LOCALMIRRORSPATH=$WASTAOFFLINELOCALAPTMIRRORPATH # default to /data/master/wasta-offline/apt-mirror [may be changed below]
+LOCALMIRRORSPATH=$WASTAOFFLINELOCALAPTMIRRORPATH # default to $WASTAOFFLINELOCALAPTMIRRORPATH above [may be changed below]
 MIRRORLIST="mirror.list"
-export SOURCESLIST="sources.list"
-export ETCAPT="/etc/apt/"
+SOURCESLIST="sources.list"
+ETCAPT="/etc/apt/"
 MIRRORLISTPATH=$ETCAPT$MIRRORLIST # /etc/apt/mirror.list
-SAVEEXT=".save"
+SAVEEXT=".save" # used in generate_mirror_list_file () function
 APTMIRRORSETUPDIR="/apt-mirror-setup"
 POSTMIRRORSCRIPT="postmirror.sh"
 POSTMIRROR2SCRIPT="postmirror2.sh"
 SYNCWASTAOFFLINESCRIPT="sync_Wasta-Offline_to_Ext_Drive.sh"
 FTP="ftp"
 WAIT=60
+BILLSWASTADOCSDIR="/bills-wasta-docs"
+GITIGNORE=".gitignore"
 GENERATEDSIGNATURE="###_This_file_was_generated_by_the_update-mirror.sh_script_###"
 # The OLD SIL Ukarumpa FTP site's URL was:
 #FTPUkarumpaURLPrefix="ftp://ftp.sil.org.pg/Software/CTS/Supported_Software/Ubuntu_Repository/mirror/"
 # Use the NEW Ukarumpa linuxrepo server's URL:
-export UkarumpaURLPrefix="http://linuxrepo.sil.org.pg/mirror"
+UkarumpaURLPrefix="http://linuxrepo.sil.org.pg/mirror"
 # The above UkarumpaURL may be overridden if the user invokes this script manually and uses a
 # different URL in a parameter at invocation.
-export InternetURLPrefix="http://"
-export FTPURLPrefix="ftp://"
-export FileURLPrefix="file:"
+InternetURLPrefix="http://"
+FTPURLPrefix="ftp://"
+FileURLPrefix="file:"
 VARDIR="/var"
-PathToCleanScript=$BasePath"/var/clean.sh"
-BILLSWASTADOCSDIR="/bills-wasta-docs"
-GITIGNORE=".gitignore"
+UPDATINGLOCALDATA="YES" # [may be changed below]
+UPDATINGEXTUSBDATA="YES" # [may be changed below]
+
+echo -e "\n[*** Now executing the $UPDATEMIRRORSCRIPT script ***]"
+sleep 3s
+
+# Use the get_wasta_offline_usb_mount_point () function to get a value for USBMOUNTPOINT
+USBMOUNTPOINT=`get_wasta_offline_usb_mount_point` # normally USBMOUNTPOINT is /media/$USER/<DISK_LABEL>/wasta-offline
+
+if [ "x$USBMOUNTPOINT" = "x" ]; then
+  # $USBMOUNTPOINT for a USB drive containing the wasta-offline data was not found
+  USBMOUNTDIR=""
+  WASTAOFFLINEEXTERNALAPTMIRRORPATH=""
+  UPDATINGEXTUSBDATA="NO"
+  # The $USBMOUNTPOINT variable is empty, i.e., a wasta-offline subdirectory on /media/... was not found
+  echo -e "\nWasta-Offline data was NOT found at /media/..."
+else
+  USBMOUNTDIR=$USBMOUNTPOINT # normally USBMOUNTPOINT is /media/<DISK_LABEL>/wasta-offline or /media/$USER/<DISK_LABEL>/wasta-offline
+  WASTAOFFLINEEXTERNALAPTMIRRORPATH=$USBMOUNTDIR$APTMIRRORDIR # /media/$USER/<DISK_LABEL>/wasta-offline/apt-mirror
+  UPDATINGEXTUSBDATA="YES"
+  echo -e "\nWasta-Offline data found at mount point: $USBMOUNTPOINT"
+  USBDEVICENAME=`get_device_name_of_usb_mount_point $USBMOUNTPOINT`
+  echo "Device Name of USB at $USBMOUNTPOINT: $USBDEVICENAME"
+  USBFILESYSTEMTYPE=`get_file_system_type_of_usb_partition $USBDEVICENAME`
+  echo "File system TYPE of USB Drive at $USBDEVICENAME: $USBFILESYSTEMTYPE"
+fi
+sleep 3s
 
 CURRDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
-echo "Some calculated variable values (useful for debugging):"
-echo "   USBMOUNTPOINT: $USBMOUNTPOINT"
-echo "   USBMOUNTDIR: $USBMOUNTDIR"
-echo "   WASTAOFFLINEEXTERNALAPTMIRRORPATH: $WASTAOFFLINEEXTERNALAPTMIRRORPATH"
-echo "   WASTAOFFLINELOCALAPTMIRRORPATH: $WASTAOFFLINELOCALAPTMIRRORPATH"
-echo "   LOCALMIRRORSPATH: $LOCALMIRRORSPATH"
-echo "   "
-sleep 3s
+#echo "Some calculated variable values (useful for debugging):"
+#echo "   USBMOUNTPOINT: $USBMOUNTPOINT"
+#echo "   USBMOUNTDIR: $USBMOUNTDIR"
+#echo "   WASTAOFFLINEEXTERNALAPTMIRRORPATH: $WASTAOFFLINEEXTERNALAPTMIRRORPATH"
+#echo "   WASTAOFFLINELOCALAPTMIRRORPATH: $WASTAOFFLINELOCALAPTMIRRORPATH"
+#echo "   LOCALMIRRORSPATH: $LOCALMIRRORSPATH"
+#echo "   "
+#sleep 3s
 
 # ------------------------------------------------------------------------------
 # Main program starts here
 # ------------------------------------------------------------------------------
 
-# NOTE: If neither a local master mirror nor a USB drive with the full mirror is found notify
+# the second USB drive with modified suffix added to the USB drive's label name - something
+# like "UPDATES1" or "UPDATES_" - with a number or underscore character suffixed. 
+# These scripts will only detect the mount point of the first USB drive inserted having a
+# Wasta-Offline mirror. Any second or additional USB drives mounted with the same disk label
+# name will be ignored. 
+
+# If neither a local master mirror nor a USB drive with the full mirror is found notify
 # the user of the problem and abort, otherwise continue.
-# Updating the master wasta-offline mirror is handled a bit differently than the external
-# USB drive's mirror. If there is a local /data/master/wasta-offline/apt-mirror directory, 
-# $UPDATINGLOCALDATA="YES" and update-mirror.sh will update the local master wasta-offline 
-# mirror instead of the external USB drive's wasta-offline mirror. When the local master  
-# mirror is updated, update-mirror.sh will also call the sync_Wasta-Offline_to_Ext_Drive.sh 
-# script after the apt-mirror update to synchronize the external USB drive's mirror with the 
-# newly updated master copy of the mirror. 
-# This is the usual case for Bill Martin's situation and other situations in which a master
-# mirror is maintained. If more than one Wasta-Offline USB drive mirror is being maintained
-# it is more efficient to update a master mirror from the Local server or Internet repositories, 
-# and then sync from it to any external USB mirror that is attached to the system. When 
-# there is no local master copy at /data/master/wasta-offline/apt-mirror (a possible use-case  
-# for field situations with poor/expensive Internet access), $UPDATINGLOCALDATA="NO" and the 
-# update-mirror.sh script will simply update the external USB drive's wasta-offline mirror 
-# directly - and won't call the sync_Wasta-Offline_to_Ext_Drive.sh script.
-# If multiple Wasta-Offline USB drive mirrors are being maintained, subsequent USB drive
-# mirrors can be attached to the computer containing the master mirror, and one can then
-# call the sync_Wasta-Offline_to_Ext_Drive.sh script directly to update the USB drive's
-# mirror. Since all USB drive's may have the same disk label, you should not attach more
-# than one of such USB drives at a time to the computer, each having the same disk label.
-# If more than one USB drive is attached with identical disk labels, only the first drive
-# that was plugged into a USB port will be used. For example, if two full wasta-offline 
-# drives have the label "UPDATES", the system will temporarily mount the second USB drive
-# typically using a modified label name locally of "UPDATES1". These scripts will determine 
-# the mount point of the first USB drive inserted - named UPDATES, and the second USB 
-# drive - typically named UPDATES1 will be ignored. 
 if [ -d $WASTAOFFLINELOCALAPTMIRRORPATH ]; then
   LOCALMIRRORSPATH=$WASTAOFFLINELOCALAPTMIRRORPATH # /data/master/wasta-offline/apt-mirror
   LOCALBASEDIR=$DATADIR$MASTERDIR # /data/master
@@ -339,11 +361,6 @@ else
   LOCALBASEDIR=$USBMOUNTDIR # /media/$USER/<DISK_LABEL>
   UPDATINGLOCALDATA="NO"
 fi
-
-echo -e "\nThe current working directory is: $CURRDIR"
-echo "The mirror to receive updates is at: $LOCALMIRRORSPATH"
-echo "The base directory to receive wasta-scripts updates is: $LOCALBASEDIR"
-echo -e "\nAre we updating a master copy of the mirror? $UPDATINGLOCALDATA"
 
 # Check for the postmirror.sh and postmirror2.sh scripts that are needed for this script.
 # These postmirror scripts should exist in a subfolder called apt-mirror-setup in the
@@ -371,6 +388,14 @@ if [ ! -f $CURRDIR$APTMIRRORSETUPDIR/$POSTMIRROR2SCRIPT ]; then
   echo "Aborting..."
   exit 1
 fi
+
+echo -e "\nThe current working directory is: $CURRDIR"
+echo "The mirror to receive updates is: $LOCALMIRRORSPATH"
+echo "The base directory to receive wasta-scripts updates is: $LOCALBASEDIR"
+echo -e "\nAre we updating a master copy of the mirror? $UPDATINGLOCALDATA"
+sleep 2s
+echo "  Are we also updating a USB drive's mirror? $UPDATINGEXTUSBDATA"
+sleep 3s
 
 # Ensure the postmirror.sh and postmirror2.sh scripts are freshly copied from the
 # $CURRDIR/apt-mirror-setup folder to the $CURRDIR/wasta-offline/apt-mirror/var folder,
@@ -491,7 +516,7 @@ fi
 # Here is the main menu:
 # Query the user where to get software updates: from the Internet or from the SIL Ukarumpa local server.
 # The prompt counts down from 60 to 0 at which time it selects 4) unless user selects differently.
-echo -e "\n"
+echo -e "\nMAIN MENU:"
 echo "*******************************************************************************"
 echo "Where should the Wasta-Offline Mirror get its software updates?"
 echo "  1) Get software updates from the SIL Ukarumpa local server."
@@ -663,7 +688,7 @@ case $SELECTION in
       # Note: For this option, the user's /etc/apt/mirror.list file now points to repositories with this path prefix:
       # http://..."
       sleep 3s
-      
+        
       apt-mirror
     
       LASTERRORLEVEL=$?
@@ -851,9 +876,7 @@ EOF
     exit 0
    ;;
   *)
-    echo -e "\n****** WARNING ******"
-    echo "Unrecognized response. Aborting..."
-    echo "****** WARNING ******"
+    echo -e "\nUnrecognized response. Aborting..."
     echo "Aborting..."
     exit 1
   ;;

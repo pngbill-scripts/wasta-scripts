@@ -29,6 +29,7 @@
 #      the file system type of the USB drive at the mount point.
 #      Added sleep statements to pause output for better monitoring of progress.
 #      Made Abort warnings more visible in console output.
+#      Removed 'export' from all variables - not needed for variable visibility.
 # Name: sync_Wasta-Offline_to_Ext_Drive.sh
 # Distribution: 
 # This script is included with all Wasta-Offline Mirrors supplied by Bill Martin.
@@ -53,7 +54,7 @@
 # version 14.04 (Trusty and later).
 #
 # NOTE: These Wasta-Offline scripts are for use by administrators and not normal
-# Wasta-Linux users. The Wasta-Offline program itself should not be running when you, 
+# Wasta-Linux users. The Wasta-Offline program itself need not be running when you, 
 # as administrator are running these scripts. Hence, when you plug in a USB drive 
 # containing the full Wasta-Offline Mirror - intending to update the mirror with this
 # sync_Wasta-Offline_to_Ext_Drive.sh script - and the Authentication/Password message 
@@ -264,16 +265,16 @@ SCRIPTVERSION="0.2"
 WASTAOFFLINEPKGURL="http://ppa.launchpad.net/wasta-linux/wasta-apps/ubuntu/pool/main/w/wasta-offline"
 DATADIR="/data"
 MASTERDIR="/master"
-export APTMIRROR="apt-mirror"
-export BILLSWASTADOCSDIR="/bills-wasta-docs"
-export WASTAOFFLINEDIR="/wasta-offline"
-export APTMIRRORDIR="/apt-mirror"
-export APTMIRRORSETUPDIR="/apt-mirror-setup"
-export MIRRORDIR="/mirror"
-export UPDATEMIRRORSCRIPT="update-mirror.sh"
-export SYNCWASTAOFFLINESCRIPT="sync_Wasta-Offline_to_Ext_Drive.sh"
-export POSTMIRRORSCRIPT="postmirror.sh"
-export POSTMIRROR2SCRIPT="postmirror2.sh"
+APTMIRROR="apt-mirror"
+BILLSWASTADOCSDIR="/bills-wasta-docs"
+WASTAOFFLINEDIR="/wasta-offline"
+APTMIRRORDIR="/apt-mirror"
+APTMIRRORSETUPDIR="/apt-mirror-setup"
+MIRRORDIR="/mirror"
+UPDATEMIRRORSCRIPT="update-mirror.sh"
+SYNCWASTAOFFLINESCRIPT="sync_Wasta-Offline_to_Ext_Drive.sh"
+POSTMIRRORSCRIPT="postmirror.sh"
+POSTMIRROR2SCRIPT="postmirror2.sh"
 
 # See NOTEs later in this script that explain what paths can be pointed to by $COPYFROMDIR and $COPYTODIR.
 COPYFROMDIR=$DATADIR$MASTERDIR$WASTAOFFLINEDIR"/"  # /data/master/wasta-offline/ is now the default source dir
@@ -284,11 +285,11 @@ echo -e "\n[*** Now executing the $SYNCWASTAOFFLINESCRIPT script ***]"
 sleep 3s
 
 # Use the get_wasta_offline_usb_mount_point () function to get a value for USBMOUNTPOINT
-export USBMOUNTPOINT=`get_wasta_offline_usb_mount_point`  # normally USBMOUNTPOINT is /media/$USER/<DISK_LABEL>/wasta-offline
+USBMOUNTPOINT=`get_wasta_offline_usb_mount_point`  # normally USBMOUNTPOINT is /media/$USER/<DISK_LABEL>/wasta-offline
 echo -e "\nThe USB drive mount point is: $USBMOUNTPOINT"
 if [ "x$USBMOUNTPOINT" = "x" ]; then
   # $USBMOUNTPOINT for a USB drive containing a wasta-offline subfolder was not found
-  export USBMOUNTDIR=""
+  USBMOUNTDIR=""
   COPYTODIR=""
   # The $USBMOUNTPOINT variable is empty, i.e., a wasta-offline subdirectory on /media/... was not found
   echo -e "\nWasta-Offline data was NOT found at /media/..."
@@ -300,7 +301,6 @@ else
   if [[ $USBMOUNTPOINT == *"wasta-offline"* ]]; then 
     USBMOUNTDIR=$(dirname "$USBMOUNTPOINT")
   fi
-  export USBMOUNTDIR # normally USBMOUNTDIR is /media/$USER/<DISK_LABEL>
   COPYTODIR=$USBMOUNTPOINT  # /media/$USER/<DISK_LABEL>/wasta-offline
   #echo -e "\nWasta-Offline data was found at: $USBMOUNTPOINT"
   # Use the get_device_name_of_usb_mount_point () function with $USBMOUNTPOINT parameter to get USBDEVICENAME
@@ -313,7 +313,7 @@ fi
 DATADIRVARDIR=$DATADIR$MASTERDIR$WASTAOFFLINEDIR$APTMIRRORDIR"/var" # /data/master/wasta-offline/apt-mirror/var
 CLEANSCRIPT=$COPYFROMDIR"apt-mirror/var/clean.sh" # /data/master/wasta-offline/apt-mirror/var/clean.sh
 WAIT=60
-export LastAppMirrorUpdate="last-apt-mirror-update"
+LastAppMirrorUpdate="last-apt-mirror-update" # used in is_this_mirror_older_than_that_mirror () function
 
 # ------------------------------------------------------------------------------
 # Main program starts here
@@ -359,12 +359,13 @@ esac
 
 # Determine if user still has mirror directly off /data dir rather than the better /data/master dir
 # If the user still has mirror at /data then offer to move (mv) it to /data/master
-if ! move_mirror_from_data_to_data_master ; then
-  # User opted not to move mirror from /data to /data/master
-  echo -e "\nUser opted not to move (mv) the master mirror directories to: $DATADIR$MASTERDIR"
-  echo "Aborting..."
-  exit 1
-fi
+# Removed call of move_mirror_from_data_to_data_master () function below. Probably not needed anymore.
+#if ! move_mirror_from_data_to_data_master ; then
+#  # User opted not to move mirror from /data to /data/master
+#  echo -e "\nUser opted not to move (mv) the master mirror directories to: $DATADIR$MASTERDIR"
+#  echo "Aborting..."
+#  exit 1
+#fi
 
 # Check that there is a wasta-offline mirror at the source location. If not there is no
 # sync operation that we can do.
@@ -429,7 +430,7 @@ if is_there_a_wasta_offline_mirror_at "$COPYTODIR" ; then
       #read -r -n 1 -p "Replace it with the NEWER mirror from the external hard drive? [y/n] " response
       case $response in
         [yY][eE][sS]|[yY]) 
-            echo -e "\nUpdating the full Wasta-Offline Mirror at: $COPYTODIR..."
+            echo -e "\nUpdating the Wasta-Offline Mirror at: $COPYTODIR..."
             # The main rsync command is called below
             ;;
          *)
@@ -465,7 +466,7 @@ if is_there_a_wasta_offline_mirror_at "$COPYTODIR" ; then
       #read -r -n 1 -p "Replace it with the OLDER mirror from the external hard drive? [y/n] " response
       case $response in
         [yY][eE][sS]|[yY]) 
-            echo -e "\nRolling back the full Wasta-Offline Mirror at: $COPYTODIR..."
+            echo -e "\nRolling back the Wasta-Offline Mirror at: $COPYTODIR..."
             # The main rsync command is called below
             ;;
          *)
@@ -501,7 +502,7 @@ if is_there_a_wasta_offline_mirror_at "$COPYTODIR" ; then
       #read -r -n 1 -p "Replace it anyway with the mirror from the external hard drive? [y/n] " response
       case $response in
         [yY][eE][sS]|[yY]) 
-            echo -e "\nUpdating/Syncing full Wasta-Offline Mirror at: $COPYTODIR..."
+            echo -e "\nUpdating the Wasta-Offline Mirror at: $COPYTODIR..."
             # The main rsync command is called below
             ;;
          *)
@@ -571,7 +572,7 @@ if is_there_a_wasta_offline_mirror_at "$COPYTODIR" ; then
       #read -r -n 1 -p "Replace destination mirror using the mirror on the external hard drive? [y/n] " response
       case $response in
         [yY][eE][sS]|[yY]) 
-            echo -e "\nUpdating/Syncing the full Wasta-Offline Mirror at: $COPYTODIR..."
+            echo -e "\nUpdating the Wasta-Offline Mirror at: $COPYTODIR..."
             # The main rsync command is called below
             ;;
          *)
@@ -765,6 +766,7 @@ echo -e "\n"
 echo "*******************************************************************************"
 echo "Synchronizinging data via the following rsync command:"
 echo "rsync -avz --progress --delete $COPYFROMDIR $COPYTODIR"
+echo "This may take a while - press CTRL-C anytime to abort..."
 echo "*******************************************************************************"
 sleep 3s
 # Here is the main rsync command. The rsync options are:
