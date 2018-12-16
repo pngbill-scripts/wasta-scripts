@@ -199,12 +199,12 @@ get_device_name_of_usb_mount_point ()
 # its label become UPDATES1 or UPDATES_, and this function will detect only the first drive 
 # plugged in (UPDATES rather than UPDATES1 or UPDATES_).
 # Returns zero (0) if such directory is found and assigns the absolute path prefix up to, 
-# and including the /wasta-offline folder, to the variable USBMOUNTPOINT. For example, 
-# it might return /media/bill/<DISK_LABEL>/wasta-offline as the value stored in USBMOUNTPOINT.
-# Note: whm 23 November 2018 revised to echo the value of $USBMOUNTPOINT so the function
-# can be used within back ticks to return the $USBMOUNTPOINT value as a string, for example:
-# USBMOUNTPOINT=`get_wasta_offline_usb_mount_point`
-# No echo statements should appear in this function other than the echo "$USBMOUNTPOINT" line.
+# and including the /wasta-offline folder, to the variable START_FOLDER. For example, 
+# it might return /media/bill/<DISK_LABEL>/wasta-offline as the value stored in START_FOLDER.
+# Note: whm 23 November 2018 revised to echo the value of $START_FOLDER so the function
+# is normally used within back ticks to return the USB mount point value as a string, 
+# for example: USBMOUNTPOINT=`get_wasta_offline_usb_mount_point`
+# No echo statements should appear in this function other than the echo "$START_FOLDER" line.
 get_wasta_offline_usb_mount_point ()
 {
     START_FOLDER=""
@@ -219,19 +219,16 @@ get_wasta_offline_usb_mount_point ()
         # second, look for wasta-offline folder under /media (12.04 and older)
         START_FOLDER=$(ls -1d /media/*/wasta-offline 2>/dev/null | sort -r | head -1)
     fi
-    # Since the USBMOUNTPOINT is not a local variable to this function is should be visible
-    # to the context of callers of get_wasta_offline_usb_mount_point (). 
-    USBMOUNTPOINT=$START_FOLDER
-    # The following echo returns the $USBMOUNTPOINT as a string when the function is
-    # assigned to a variable, i.e., START_FOLDER=`get_wasta_offline_usb_mount_point`
+    # The following echo returns the USB mount point as a string when the function is
+    # assigned to a variable, i.e., USBMOUNTPOINT=`get_wasta_offline_usb_mount_point`
     # No other echo statements should appear in this function.
-    echo "$USBMOUNTPOINT"
+    echo "$START_FOLDER"
 
-	# Handle situation where no wasta-offline subdirectory was found, in which case USBMOUNTPOINT
-	# will be an empty string.
-	if [ "x$USBMOUNTPOINT" = "x" ]; then
-		# The $USBMOUNTPOINT variable is empty, i.e., a wasta-offline subdirectory on /media/... was not found
-		return 1 # failure - no USBMOUNTPOINT found
+	# Handle situation where no wasta-offline subdirectory was found, in which case
+	# USB mount point will be an empty string.
+	if [ "x$START_FOLDER" = "x" ]; then
+		# The $START_FOLDER variable is empty, i.e., a wasta-offline subdirectory on /media/... was not found
+		return 1 # failure - no USB mount point found
 	fi
 	return 0 # Success
 }
@@ -437,18 +434,18 @@ get_base_path_of_mirror_list_file ()
 }
 
 # This function echos a default value that can be used initially for the $COPYFROMDIR source.
-# It calls the get_wasta_offline_usb_mount_point () function to get a USBMOUNTPOINT from any 
+# It calls the get_wasta_offline_usb_mount_point () function to get a USB mount point from any 
 # attached/mounted USB drive that has a /media/$USER/<DISK_LABEL>/wasta-offline tree.
-# If no value was obtained for USBMOUNTPOINT, the function echos a default value of "UNKNOWN".
-# If a USBMOUNTPOINT exists, the function echos that as return value.
+# If no value was obtained for the USB mount point, the function echos a default value of "UNKNOWN".
+# If a USB mount point exists, the function echos that as return value.
 get_a_default_path_for_COPYFROMDIR ()
 {
-  USBMOUNTPOINT=`get_wasta_offline_usb_mount_point` 
-  if [ "x$USBMOUNTPOINT" = "x" ]; then
-    # USBMOUNTPOINT is empty string, i.e., no USB media found with /media/$USER/<DISK_LABEL>/wasta-offline
+  USBMNTPT=`get_wasta_offline_usb_mount_point` 
+  if [ "x$USBMNTPT" = "x" ]; then
+    # USBMNTPT is empty string, i.e., no USB media found with /media/$USER/<DISK_LABEL>/wasta-offline
     echo "UNKNOWN"
   else
-    echo "$USBMOUNTPOINT"  # /media/$USER/<DISK_LABEL>/wasta-offline
+    echo "$USBMNTPT"  # /media/$USER/<DISK_LABEL>/wasta-offline
   fi
 }
 
@@ -480,7 +477,7 @@ get_a_default_path_for_COPYTODIR ()
 # mirror's base path - usually "$COPYFROMBASEDIR" and "$COPYTOBASEDIR".
 # The calling script should have assigned values to the following variables:
 #   $BILLSWASTADOCSDIR
-#   $OFFLINEDIR
+#   $WASTAOFFLINEDIR
 #   $APTMIRRORDIR
 #   $APTMIRRORSETUPDIR
 # This function is currently only used within the sync_Wasta-Offline_to_Ext_Drive.sh script.
@@ -502,8 +499,7 @@ copy_mirror_base_dir_files ()
 
   # $PKGPATH is assigned the path to the wasta-offline directory containing the deb packages 
   # deep in the ppa.launchpad.net part of the source mirror's "pool" repo:
-  # Note: Since COPYFROMDIR generally has a final /, append $APPMIRROR to it rather than $APPMIRRORDIR
-  PKGPATH=$1$OFFLINEDIR$APTMIRRORDIR"/mirror/ppa.launchpad.net/wasta-linux/wasta-apps/ubuntu/pool/main/w/wasta-offline"
+  PKGPATH=$1$WASTAOFFLINEDIR$APTMIRRORDIR"/mirror/ppa.launchpad.net/wasta-linux/wasta-apps/ubuntu/pool/main/w/wasta-offline"
 
   echo -e "\nExecuting copy_mirror_base_dir_files function..."
   echo "The 1 parameter is: $1"
@@ -550,7 +546,7 @@ copy_mirror_base_dir_files ()
   # $PKGPATH is assigned the path to the wasta-offline directory containing the deb packages 
   # deep in the ppa.launchpad.net part of the source mirror's "pool" repo:
   # Note: Since COPYFROMDIR generally has a final /, append $APPMIRROR to it rather than $APPMIRRORDIR
-  PKGPATH=$1$OFFLINEDIR$APTMIRRORDIR"/mirror/ppa.launchpad.net/wasta-linux/wasta-apps/ubuntu/pool/main/w/wasta-offline-setup"
+  PKGPATH=$1$WASTAOFFLINEDIR$APTMIRRORDIR"/mirror/ppa.launchpad.net/wasta-linux/wasta-apps/ubuntu/pool/main/w/wasta-offline-setup"
   # Store the found deb files, along with their absolute paths prefixed in a DEBS variable
   DEBS=`find "$PKGPATH" -type f -name wasta-offline-setup_*_all.deb -printf '%T@ %p\n' | sort -n | cut -f2 -d" "`
   # Handle any find failure that leaves the DEBS variable empty and, if no failures,
@@ -582,12 +578,12 @@ copy_mirror_base_dir_files ()
   cd $OLDDIR # Restore the working dir to what it was
 
   # Copy the *.sh file in the $1$APTMIRRORSETUPDIR to their ultimate 
-  # destination of $1$OFFLINEDIR$APTMIRRORDIR$VARDIR
+  # destination of $1$WASTAOFFLINEDIR$APTMIRRORDIR$VARDIR
   echo -e "\ncopying the *.sh files from: $1$APTMIRRORSETUPDIR/*.sh"
-  echo "                                to $1$OFFLINEDIR$APTMIRRORDIR$VARDIR"
+  echo "                                to $1$WASTAOFFLINEDIR$APTMIRRORDIR$VARDIR"
   # TODO: Adjust rsync command to use options: -rvh --size-only --progress
   # if destination USB drive is not Linux ext4 (ntfs)
-  rsync -avz --update $1$APTMIRRORSETUPDIR/*.sh $1$OFFLINEDIR$APTMIRRORDIR$VARDIR
+  rsync -avz --update $1$APTMIRRORSETUPDIR/*.sh $1$WASTAOFFLINEDIR$APTMIRRORDIR$VARDIR
 
   # Copy other needed files to the external drive's root dir
   
@@ -641,10 +637,10 @@ copy_mirror_base_dir_files ()
     rsync -avz --update $script $destscript
   done
 
-  # Find all the other Script files at $1$OFFLINEDIR$APTMIRRORDIR$VARDIR (includes only 
+  # Find all the other Script files at $1$WASTAOFFLINEDIR$APTMIRRORDIR$VARDIR (includes only 
   # the clean.sh postmirror.sh and postmirror2.sh scripts in the 
   # $1/wasta-offline/apt-mirror/var/ folder) and rsync them to $2
-  for script in `find $1$OFFLINEDIR$APTMIRRORDIR$VARDIR -maxdepth 1 -name '*.sh'` ; do 
+  for script in `find $1$WASTAOFFLINEDIR$APTMIRRORDIR$VARDIR -maxdepth 1 -name '*.sh'` ; do 
     # The $script var will have the absolute path to the file in the source tree
     # We need to adjust the path to copy it to the same relative location in the 
     # destination tree. 
@@ -652,7 +648,7 @@ copy_mirror_base_dir_files ()
     # Handle any find failure that leaves tje $script variables empty, and if no failures,
     # rsync the script to the destination mirror at same relative location.
     destscript=$2${script#$1}
-    echo "Found script in $1$OFFLINEDIR$APTMIRRORDIR$VARDIR dir of source tree at: $script"
+    echo "Found script in $1$WASTAOFFLINEDIR$APTMIRRORDIR$VARDIR dir of source tree at: $script"
     echo "The destination script will be at: $destscript"
     DIROFSCRIPT=${destscript%/*}
     echo "Making directory at: $DIROFSCRIPT"
@@ -678,7 +674,7 @@ copy_mirror_base_dir_files ()
   rsync -avz --update $1/.git* $2
   
   if [ -d $1$BILLSWASTADOCSDIR ]; then
-    echo "Synchronizing the $BILLSWASTADOCSDIR dir and contents to $2$BILLSWASTADOCSDIR..."
+    echo "Synchronizing the $BILLSWASTADOCS dir and contents to $2$BILLSWASTADOCSDIR..."
     # Here again use --update option instead of the --delete option
     # which updates the destination only if the source file is newer
     # TODO: Adjust rsync command to use options: -rvh --size-only --progress
@@ -708,7 +704,7 @@ copy_mirror_base_dir_files ()
 # chmod operations are to initiate.
 # The calling script should have assigned values to the following variables:
 #   $BILLSWASTADOCSDIR
-#   $OFFLINEDIR
+#   $WASTAOFFLINEDIR
 #   $APTMIRROR
 #   $APTMIRRORDIR
 # TODO: Needs revision if the scripts are to support copying/syncing to NTFS formatted drive.
@@ -724,8 +720,8 @@ set_mirror_ownership_and_permissions ()
   if [ $1 ]; then
     # Set ownership of the mirror tree starting at the wasta-offline directory
     echo "SUDO_USER is: $SUDO_USER"
-    echo "Setting $1$OFFLINEDIR owner: $APTMIRROR:$APTMIRROR"
-    chown -R $APTMIRROR:$APTMIRROR $1$OFFLINEDIR
+    echo "Setting $1$WASTAOFFLINEDIR owner: $APTMIRROR:$APTMIRROR"
+    chown -R $APTMIRROR:$APTMIRROR $1$WASTAOFFLINEDIR
     # Set ownership of the mirror tree at the apt-mirror-setup directory
     echo "Setting $1$APTMIRRORSETUPDIR owner: $APTMIRROR:$APTMIRROR"
     chown -R $APTMIRROR:$APTMIRROR $1$APTMIRRORSETUPDIR
@@ -749,7 +745,7 @@ set_mirror_ownership_and_permissions ()
       echo "Setting $script executable"
       chmod ugo+rwx $script
     done
-    for script in `find $1$OFFLINEDIR$APTMIRRORDIR$VARDIR -maxdepth 1 -name '*.sh'` ; do 
+    for script in `find $1$WASTAOFFLINEDIR$APTMIRRORDIR$VARDIR -maxdepth 1 -name '*.sh'` ; do 
       echo "Setting $script executable"
       chmod ugo+rwx $script
     done
@@ -804,12 +800,12 @@ ensure_user_in_apt_mirror_group ()
 # This function is currently used only in the sync_Wasta-Offline_to_Ext_Drive.sh
 # Once a user responds with y, the script will not prompt the user again, unless the
 # master mirror is moved back to its old /data location.
-move_mirror_from_data_to_data_master () [No longer used]
+move_mirror_from_data_to_data_master () # [No longer used]
 {
   # Set up some constants for use in function only
   DATADIR="/data"
   MASTERDIR="/master"
-  OFFLINEDIR="/wasta-offline"
+  WASTAOFFLINEDIR="/wasta-offline"
   APTMIRRORDIR="/apt-mirror"
   APTMIRRORSETUPDIR="/apt-mirror-setup"
   BASH_FUNCTIONS_SCRIPT="bash_functions.sh"
@@ -825,16 +821,16 @@ move_mirror_from_data_to_data_master () [No longer used]
   # a simpler test is warranted in which we just check to see if there is a directory
   # tree of /data/wasta-offline/apt-mirror/mirror (regardless of contents) on the local 
   # computer.
-  if [ -d $DATADIR$OFFLINEDIR$APTMIRRORDIR$MIRRORDIR ]; then
+  if [ -d $DATADIR$WASTAOFFLINEDIR$APTMIRRORDIR$MIRRORDIR ]; then
     echo -e "\nThere appears to be a master mirror at: "
-    echo "   $DATADIR$OFFLINEDIR"
-    echo "Your current mirror location at $DATADIR$OFFLINEDIR can cause spurious"
+    echo "   $DATADIR$WASTAOFFLINEDIR"
+    echo "Your current mirror location at $DATADIR$WASTAOFFLINEDIR can cause spurious"
     echo "launchings of the wasta-offline program at bootup. We highly recommend"
     echo "your mirror be relocated a level deeper within $DATADIR to a $MASTERDIR"
     echo "sub-directory within the $DATADIR directory. This script can move the existing"
     echo "mirror for you using the mv command without having to copy data."
     echo "Do you want this script to do a fast move (mv) of your existing mirror to:"
-    echo "   $DATADIR$MASTERDIR$OFFLINEDIR [y/n]?"
+    echo "   $DATADIR$MASTERDIR$WASTAOFFLINEDIR [y/n]?"
     for (( i=$WAIT; i>0; i--)); do
       printf "\rPlease press the y or n key, or hit any key to abort - countdown $i "
       read -s -n 1 -t 1 response
@@ -870,7 +866,7 @@ move_mirror_from_data_to_data_master () [No longer used]
         chmod -R ugo+rw $DATADIR$MASTERDIR
         echo "Relocating the master mirror from $DATADIR to: $DATADIR$MASTERDIR"
         #mv /data/wasta-offline /data/master/wasta-offline
-        mv $DATADIR$OFFLINEDIR $DATADIR$MASTERDIR$OFFLINEDIR
+        mv $DATADIR$WASTAOFFLINEDIR $DATADIR$MASTERDIR$WASTAOFFLINEDIR
         LASTERRORLEVEL=$?
         if [ $LASTERRORLEVEL != 0 ]; then
           echo -e "\nCannot move (mv) the master mirror directories to: $DATADIR$MASTERDIR"
@@ -920,8 +916,8 @@ move_mirror_from_data_to_data_master () [No longer used]
         fi
         # Adjust the user's mirror.list file to point to the new master mirror location
         echo "Modifying base_path in mirror.list file to use the new base_path: "
-        echo "   $DATADIR$MASTERDIR$OFFLINEDIR$APTMIRRORDIR"
-        sed -i 's|'$DATADIR$OFFLINEDIR$APTMIRRORDIR'|'$DATADIR$MASTERDIR$OFFLINEDIR$APTMIRRORDIR'|g' /etc/apt/mirror.list
+        echo "   $DATADIR$MASTERDIR$WASTAOFFLINEDIR$APTMIRRORDIR"
+        sed -i 's|'$DATADIR$WASTAOFFLINEDIR$APTMIRRORDIR'|'$DATADIR$MASTERDIR$WASTAOFFLINEDIR$APTMIRRORDIR'|g' /etc/apt/mirror.list
         # All moves now completed so just return 0 for success
         return 0
         ;;
@@ -940,6 +936,8 @@ generate_mirror_list_file ()
 {
   # A bash function that generates a custom mirror.list file with the proper settings and
   # URL protocol prefixes needed for the location of the user's mirror.
+  # The URL protocol must be passed as the single parameter, i.e., $UkarumpaURLPrefix,
+  # $InternetURLPrefix, or $CustomURLPrefix.
   # If this function succeeds it returns 0. If it fails it returns 1.
   # This function makes a backup of any existing mirror.list file to mirror.list.save if the 
   # following line is NOT already present at the top of the existing mirror.list file:
@@ -953,6 +951,13 @@ generate_mirror_list_file ()
   # supplied by Bill Martin will always have both deb-amd64 and deb-i386 packages for the
   # "full" mirror.
   # The "full" mirror generated by this function, currently manages about 750GB of mirror data.
+  # The calling script should have assigned values to the following variables:
+  #   $GENERATEDSIGNATURE
+  #   $LOCALMIRRORSPATH
+  #   $ETCAPT
+  #   $MIRRORLIST
+  #   $SAVEEXT
+  #
   # Variables that get expanded while generating the mirror.list file:
   #   $GENERATEDSIGNATURE is "###_This_file_was_generated_by_the_update-mirror.sh_script_###"
   #   $1 is the URL Prefix passed in as the parameter of the function call (http://, ftp://..., 
@@ -1256,16 +1261,17 @@ EOF
 }
 
 # A bash function that determines if a full wasta-offline mirror exists at the given
-# path passed in as a single parameter.
+# path passed in as a single parameter. Parameter will be either $COPYFROMDIR or $COPYTODIR
+# whern the is_there_a_wasta_offline_mirror_at () function is called.
 # Returns 0 if a full wasta-offline mirror exists at $1, otherwise returns 1.
 # Revised: 17 April 2016 to correct logic and remove libreoffice repo tests
 # A single optional parameter must be used which should be the absolute path to the
 # wasta-offline directory of an apt-mirror generated mirror tree. For example,
-# /data/master/wasta-offline or /media/<DISK_LABEL>/wasta-offline or /media/$USER/<DISK_LABEL>/wasta-offline.
+# /data/master/wasta-offline or /media/$USER/<DISK_LABEL>/wasta-offline.
 # A "full" wasta-offline mirror should have the following mirrors:
 # List of Mirrors and Repos:
 # As of September 2018 these are the mirrors and the repositories that we use in the
-# full Wasta-Linux Mirror as supplied by Bill Martin: TODO: Update these
+# full Wasta-Linux Mirror as supplied by Bill Martin
 #   Mirror                                        Repos
 #   --------------------------------------------------------------------------------
 #   archive.canonical.com                          partner
@@ -1289,12 +1295,10 @@ EOF
 # For each of the above Repos we include both binary-i386 and binary-amd64 architecture packages. 
 is_there_a_wasta_offline_mirror_at ()
 {
-  # The following constants are used exclusively in the is_there_a_wasta_offline_mirror_at () function:
-  #WASTAOFFLINEDIR="/data" # initial assignment, varies between /data and /media/<DISK_LABEL> or /media/$USER/<DISK_LABEL>
+  # The following constants are used exclusively in this is_there_a_wasta_offline_mirror_at () function:
+  #The input parameter $1 is assigned to PATHTOMIRROR which varies between /data/master and /media/$USER/<DISK_LABEL>
   # 17 Apr 2016 whm removed the libreoffice mirrors from $UBUNTUMIRRORS list (they have repos for specific versions)
-  WASTAOFFLINEDIR=$1
-  #echo -e "\nParameter is $1"
-  #echo "WASTAOFFLINEDIR is $WASTAOFFLINEDIR"
+  PATHTOMIRROR=$1  # Assign the parameter, normally /data/master/wasta-offline or /media/$USER/<DISK_LABEL>/wasta-offline
   UBUNTUMIRRORS=("archive.ubuntu.com" "packages.sil.org" "ppa.launchpad.net/wasta-linux/wasta" "ppa.launchpad.net/wasta-linux/wasta-apps")
   UBUNTUDISTS=("trusty" "xenial")
   LINUXMINTDISTS=("qiana" "rebecca" "rafaela" "rosa" "sarah")
@@ -1323,7 +1327,7 @@ is_there_a_wasta_offline_mirror_at ()
 
   # Group 1 use three embedded for loops: outer loop for mirror in $UBUNTUMIRRORS, middle loop 
   # for dist in $UBUNTUDISTS; inner loop for arch in $ARCHS
-  # Path: $WASTAOFFLINEDIR/apt-mirror/mirror/$mirror/ubuntu/dists/$dist/main/$arch
+  # Path: $PATHTOMIRROR/apt-mirror/mirror/$mirror/ubuntu/dists/$dist/main/$arch
   # Number of tests to be made: 28
   for mirror in "${UBUNTUMIRRORS[@]}"
   do
@@ -1331,62 +1335,62 @@ is_there_a_wasta_offline_mirror_at ()
     do
       for arch in "${ARCHS[@]}"
       do
-        if [ ! -d "$WASTAOFFLINEDIR/apt-mirror/mirror/$mirror/ubuntu/dists/$dist/main/$arch" ]; then
+        if [ ! -d "$PATHTOMIRROR/apt-mirror/mirror/$mirror/ubuntu/dists/$dist/main/$arch" ]; then
           full_mirror_exists="FALSE"
           echo -n "x"
-          #echo "not found: $WASTAOFFLINEDIR/apt-mirror/mirror/$mirror/ubuntu/dists/$dist/main/$arch"
+          #echo "not found: $PATHTOMIRROR/apt-mirror/mirror/$mirror/ubuntu/dists/$dist/main/$arch"
           break
         else
-          echo -n "." #"Found: $WASTAOFFLINEDIR/apt-mirror/mirror/$mirror/ubuntu/dists/$dist/main/$arch"
+          echo -n "." #"Found: $PATHTOMIRROR/apt-mirror/mirror/$mirror/ubuntu/dists/$dist/main/$arch"
         fi
       done
     done
   done
 
   # Group 2 use two embedded for loops: outer loop for dist in $UBUNTUDISTS; inner loop for arch in $ARCHS
-  # Path: $WASTAOFFLINEDIR/apt-mirror/mirror/archive.canonical.com/ubuntu/dists/$dist/partner/$arch
+  # Path: $PATHTOMIRROR/apt-mirror/mirror/archive.canonical.com/ubuntu/dists/$dist/partner/$arch
   # Number of tests to be made: 4
   for dist in "${UBUNTUDISTS[@]}"
   do
     for arch in "${ARCHS[@]}"
     do
-      if [ ! -d "$WASTAOFFLINEDIR/apt-mirror/mirror/archive.canonical.com/ubuntu/dists/$dist/partner/$arch" ]; then
+      if [ ! -d "$PATHTOMIRROR/apt-mirror/mirror/archive.canonical.com/ubuntu/dists/$dist/partner/$arch" ]; then
         full_mirror_exists="FALSE"
         break
       else
-        echo -n "." #"Found: $WASTAOFFLINEDIR/apt-mirror/mirror/archive.canonical.com/ubuntu/dists/$dist/partner/$arch"
+        echo -n "." #"Found: $PATHTOMIRROR/apt-mirror/mirror/archive.canonical.com/ubuntu/dists/$dist/partner/$arch"
       fi
     done
   done
 
   # Group 3 use two embedded for loops: outer loop for dist in $LINUXMINTDISTS; inner loop for arch in $ARCHS
-  # Path: $WASTAOFFLINEDIR/apt-mirror/mirror/packages.linuxmint.com/dists/$dist/main/$arch
+  # Path: $PATHTOMIRROR/apt-mirror/mirror/packages.linuxmint.com/dists/$dist/main/$arch
   # Number of tests to be made: 4
   for dist in "${LINUXMINTDISTS[@]}"
   do
     for arch in "${ARCHS[@]}"
     do
-      if [ ! -d "$WASTAOFFLINEDIR/apt-mirror/mirror/packages.linuxmint.com/dists/$dist/main/$arch" ]; then
+      if [ ! -d "$PATHTOMIRROR/apt-mirror/mirror/packages.linuxmint.com/dists/$dist/main/$arch" ]; then
         full_mirror_exists="FALSE"
         break
       else
-        echo -n "." #"Found: $WASTAOFFLINEDIR/apt-mirror/mirror/packages.linuxmint.com/dists/$dist/main/$arch"
+        echo -n "." #"Found: $PATHTOMIRROR/apt-mirror/mirror/packages.linuxmint.com/dists/$dist/main/$arch"
       fi
     done
   done
 
   # Group 4 use two embedded for loops: outer loop for dist in $UBUNTUSECUREDISTS; inner loop for arch in $ARCHS
-  # Path: $WASTAOFFLINEDIR/apt-mirror/mirror/security.ubuntu.com/ubuntu/dists/$dist/main/$arch
+  # Path: $PATHTOMIRROR/apt-mirror/mirror/security.ubuntu.com/ubuntu/dists/$dist/main/$arch
   # Number of tests to be made: 4
   for dist in "${UBUNTUSECUREDISTS[@]}"
   do
     for arch in "${ARCHS[@]}"
     do
-      if [ ! -d "$WASTAOFFLINEDIR/apt-mirror/mirror/security.ubuntu.com/ubuntu/dists/$dist/main/$arch" ]; then
+      if [ ! -d "$PATHTOMIRROR/apt-mirror/mirror/security.ubuntu.com/ubuntu/dists/$dist/main/$arch" ]; then
         full_mirror_exists="FALSE"
         break
       else
-        echo -n "." #"Found: $WASTAOFFLINEDIR/apt-mirror/mirror/security.ubuntu.com/ubuntu/dists/$dist/main/$arch"
+        echo -n "." #"Found: $PATHTOMIRROR/apt-mirror/mirror/security.ubuntu.com/ubuntu/dists/$dist/main/$arch"
       fi
     done
   done

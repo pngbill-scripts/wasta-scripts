@@ -512,11 +512,10 @@ fi
 # Get more information about the attached/mounted USB drive, especially the space required for the 
 # current full mirror that we're creating/syncing from the USB drive.
 # The USBMOUNTDIR value should be the path up to, but not including /wasta-offline of $USBMOUNTPOINT
-USBMOUNTDIR=$USBMOUNTPOINT
+USBMOUNTDIR=$USBMOUNTPOINT # normally USBMOUNTDIR is /media/$USER/<DISK_LABEL>
 if [[ $USBMOUNTPOINT == *"wasta-offline"* ]]; then 
   USBMOUNTDIR=$(dirname "$USBMOUNTPOINT")
 fi
-USBMOUNTDIR # normally USBMOUNTDIR is /media/<DISK_LABEL> or /media/$USER/<DISK_LABEL>
 USBDEVICENAME=`get_device_name_of_usb_mount_point $USBMOUNTPOINT`
 echo "   Device NAME of USB Drive: $USBDEVICENAME"
 USBFILESYSTEMTYPE=`get_file_system_type_of_usb_partition $USBDEVICENAME`
