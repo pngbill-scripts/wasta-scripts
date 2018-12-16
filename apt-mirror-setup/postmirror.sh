@@ -1,10 +1,13 @@
 #!/bin/bash
 # Author: Bill Martin
 # Date: 4 November 2014
-# Revision: 
+# Revisions: 
 #   - 7 November 2014 Modified for Trusty mount points having embedded $USER 
-#      in $MOUNTPOINT path as: /media/$USER/LM-UPDATES whereas Precise was: 
-#      /media/LM-UPDATES
+#      in $MOUNTPOINT path as: /media/$USER/<DISK_LABEL>
+#   - 15 December 2018 Changed the Ukarumpa linuxrepo URL from ftp to 
+#      http://linuxrepo.sil.org.pg/mirror
+#      Revised to make the script more generic and not hard wire "LM-UPDATES"
+#      as the expected USB disk label.
 # Name: postmirror.sh
 # Distribution:
 # This script is designed to be a replacement for the empty default postmirror.sh 
@@ -16,7 +19,7 @@
 
 # Purpose: 
 # Normally, you should not need to call this script directly. Instead, you
-# should use the update-mirror.sh script (in the LM-UPDATES root directory)
+# should use the update-mirror.sh script (in the USB drive's root directory)
 # to update the full software mirror as supplied by Bill Martin. Calling the 
 # update-mirror.sh script fully automates the update process. It will ensure
 # that the apt-mirror program is installed, and automatically invoke it from
@@ -44,8 +47,8 @@
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -  - - - -
 # Run the postmirror2.sh script to correct Hash Sum mismatches errors?
 #  1) No, don't run the script. There are no Hash Sum mismatches"
-#  2) Yes, run the script and get (75MB) of metadata from the Internet, or"
-#  3) Yes, run the script and get (75MB) of metadata from the local FTP site"
+#  2) Yes, run the script and get (120MB) of metadata from the Internet, or"
+#  3) Yes, run the script and get (120MB) of metadata from the Ukarumpa site"
 # Please press the 1, 2, or 3 key, or hit any key to abort - countdown 60  
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -  - - - -
 # If no response is given within 60 seconds, 1) No, don't run the script... is 
@@ -55,8 +58,8 @@
 #    called. Script completed."
 # If 2 is entered, postmirror2.sh is called without any parameter (Internet use 
 #    assumed)
-# If 3 is entered, postmirror2.sh is called with a "ftp" parameter
-#    "ftp" will be interpreted to be "ftp://ftp.sil.org.pg/Software/CTS/Supported_Software/Ubuntu_Repository/mirror/"
+# If 3 is entered, postmirror2.sh is called with a "ukarumpa" parameter
+#    "ukarumpa" will be interpreted to be "http://linuxrepo.sil.org.pg/mirror"
 #    within the postmirror2.sh script, unless postmirror2.sh is called manually and a 
 #    different parameter is used for the URL.
 
@@ -72,11 +75,11 @@
 # Usage: 
 #   Automatic: Runs automatically at the end the apt-mirror updaing command: sudo apt-mirror
 #   Manual: Can be run manually with the following invocation, and optional parameters: 
-#      sudo <path>/postmirror.sh [ftp | <path-prefix>]
+#      sudo <path>/postmirror.sh [ukarumpa | <path-prefix>]
 #      where <path> is the base_path/var directory (as specified in mirror.list)
-#      ftp option: Using ftp as a parameter will direct all downloads to the Ukarumpa FTP mirror
-#         at ftp://ftp.sil.org.pg/Software/CTS/Supported_Software/Ubuntu_Repository/mirror/
-#      <path-prefix> option: a different ftp:// or http:// URL address may be given
+#      ukarumpa option: Using ukarumpa as a parameter will direct all downloads from the Ukarumpa mirror
+#         at http://linuxrepo.sil.org.pg/mirror
+#      <path-prefix> option: an ftp:// or http:// URL address may be given
 #   Note: When this script is invoked manually, is should be as soon as possible after the mirror
 #         was updated with a prior call to: sudo apt-mirror. Otherwise the hash sums could get
 #         out of date.
@@ -215,7 +218,7 @@ if [ "$(whoami)" != "apt-mirror" ]; then
   echo "Run the $PostMirrorScript2 script to correct Hash Sum mismatches errors?"
   echo "  1) No, don't run the script. There are no Hash Sum mismatches (default)"
   echo "  2) Yes, run the script and get (75MB) of metadata from the Internet, or"
-  echo "  3) Yes, run the script and get (75MB) of metadata from the local FTP site"
+  echo "  3) Yes, run the script and get (75MB) of metadata from the Ukarumpa site"
   for (( i=$WAIT; i>0; i--)); do
     printf "\rPlease press the 1, 2, or 3 key, or hit any key to abort - countdown $i "
     #read -p "\rPlease press the 1, 2, or 3 key (countdown $i) " -n 1 -t 1 key
@@ -263,17 +266,19 @@ case $SELECTION in
     fi
   ;;
   "3")
-    ping -c1 -q ftp://ftp.sil.org.pg
+    ping -c1 -q http://linuxrepo.sil.org.pg/mirror
     if [ "$?" != 0 ]; then
-      echo -e "\nFTP access to the ftp.sil.org.pg server is not available!"
-      echo "This script cannot run without access to the SIL FTP server!"
+      echo -e "\n****** WARNING ******"
+      echo "Access to the http://linuxrepo.sil.org.pg/mirror server is not available."
+      echo "This script cannot run without access to the SIL server."
+      echo "Make sure the computer has access to the server, then try again."
+      echo "****** WARNING ******"
       echo "Aborting..."
       exit 1
     else
-      echo -e "\nCalling $PostMirrorScript2 - getting data from local Ukarumpa FTP site..."
-      #echo "  ftp://ftp.sil.org.pg/Software/CTS/Supported_Software/Ubuntu_Repository/mirror/..."
-      bash $PathToPostMirrorScript2 "ftp"
-      # "ftp" will be interpreted to be "ftp://ftp.sil.org.pg/Software/CTS/Supported_Software/Ubuntu_Repository/mirror/"
+      echo -e "\nCalling $PostMirrorScript2 - getting data from local Ukarumpa site..."
+      bash $PathToPostMirrorScript2 "ukarumpa"
+      # "ukarumpa" will be interpreted to be "http://linuxrepo.sil.org.pg/mirror"
       # within the postmirror2.sh script.
     fi
    ;;

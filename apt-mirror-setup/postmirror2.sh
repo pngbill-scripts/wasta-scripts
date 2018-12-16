@@ -1,10 +1,14 @@
 #!/bin/bash
 # Author: Bill Martin
 # Date: 4 November 2014
-# Revision: 
+# Revisions: 
 #   - 7 November 2014 Modified for Trusty mount points having embedded $USER 
-#      in $MOUNTPOINT path as: /media/$USER/LM-UPDATES whereas Precise was: 
-#      /media/LM-UPDATES
+#      in $MOUNTPOINT path as: /media/$USER/<DISK_LABEL> whereas Precise was: 
+#      /media/<DISK_LABEL>
+#   - 15 December 2018 Changed the Ukarumpa linuxrepo URL from ftp to 
+#      http://linuxrepo.sil.org.pg/mirror
+#      Revised to make the script more generic and not hard wire "LM-UPDATES"
+#      as the expected USB disk label.
 # Name: postmirror2.sh
 # Distribution: 
 # This script is a compantion script of postmirror.sh and is included with
@@ -44,7 +48,7 @@
 # session:
 # 1. With Wasta-Offline mirrors supplied by Bill Martin, the postmirror.sh script
 # and this companion postmirror2.sh script will already be included in the mirror
-# tree in the folder at: /media/LM-UPDATES/wasta-offline/apt-mirror/var/. 
+# tree in the folder at: /media/$USER/<DISK_LABEL>/wasta-offline/apt-mirror/var/. 
 # Therefore, updates to the mirror (by calling sudo apt-mirror) will automatically 
 # call the postmirror.sh script, which in turn calls this postmirror2.sh script as 
 # necessary, depending on the user's option selected at the time postmirror.sh is
@@ -58,7 +62,7 @@
 # so that it uses the path to your local mirror. Uncomment the first path for 
 # use with a master copy of the mirror at: "/data/wasta-offline/apt-mirror/mirror". 
 # Alternately, uncomment the second path to run directly on the full Wasta-Offline 
-# external USB drive mirror at: "/media/LM-UPDATES/wasta-offline/apt-mirror/mirror".
+# external USB drive mirror at: "/media/$USER/<DISK_LABEL>/wasta-offline/apt-mirror/mirror".
 # If you are using this script for other situations, assign to local_mirrors_path
 # the path that you use to keep the mirror up-to-date when you use the command: 
 # sudo apt-mirror. This path should be the same as the mirror_path that is defined 
@@ -66,55 +70,69 @@
 # Note that the mirror_path in mirror.list is a combination of $base_path/mirror. 
 # Therefore, if $base_path is /data/wasta-offline/apt-mirror, then the 
 # local_mirrors_path should be set by uncommenting the first local_mirrors_path
-# assignment. If $base_path is /media/LM-UPDATES/wasta-offline/apt-mirror, then
+# assignment. If $base_path is /media/$USER/<DISK_LABEL>/wasta-offline/apt-mirror, then
 # local_mirrors_path should be set by uncommenting the second local_mirrors_path
 # assignment below.
 #
-# Note: It is possible to download the metadata files from the PNG FTP mirrors. 
+# Note: It is possible to download the metadata files from the PNG Ukarumpa mirrors. 
 # However, if the Wasta-Offline full mirror is being updated via the
 # sudo apt-mirror command with the computer's /etc/apt/mirror.list configured to 
-# get its updates from the PNG FTP mirrors (the usual anticipated case), and if the 
-# PNG FTP mirrors are also internally having any problems with "Hash Sum mismatch" 
+# get its updates from the PNG Ukarumpa mirrors (the usual anticipated case), and if the 
+# PNG Ukarumpa mirrors are also internally having any problems with "Hash Sum mismatch" 
 # errors, then using this script via the normal postmirror.sh action at the end of
 # a apt-mirror update probably won't correct those errors - but would simply 
-# duplicate any errors that the PNG FTP mirrors may be experiencing.
+# duplicate any errors that the PNG Ukarumpa mirrors may be experiencing.
 #
 # List of Mirrors and Repos:
-# As of October 2014 these are the mirrors and the repositories that we use in the
-# full Wasta-Linux Mirror as supplied by Bill Martin:
+# As of September 2018 these are the mirrors and the repositories that we use in the
+# full Wasta-Linux Mirror as supplied by Bill Martin
 #   Mirror                                        Repos
 #   --------------------------------------------------------------------------------
-#   archive.canonical.com                         partner
-#   archive.ubuntu.com                            main multiverse restricted universe
-#   extras.ubuntu.com                             main
-#   packages.linuxmint.com                        backport import main upstream
-#   packages.sil.org                              main
-#   ppa.launchpad.net/libreoffice/libreoffice-4-1 main
-#   ppa.launchpad.net/libreoffice/libreoffice-4-2 main
-#   ppa.launchpad.net/wasta-linux/wasta           main
-#   ppa.launchpad.net/wasta-linux/wasta-apps      main
-#   security.ubuntu.com                           main multiverse restricted universe
-# 
+#   archive.canonical.com                          partner
+#   archive.ubuntu.com                             main multiverse restricted universe
+#   extras.ubuntu.com                              main
+#   packages.linuxmint.com                         backport import main upstream
+#   packages.sil.org                               main
+#   ppa.launchpad.net/libreoffice/libreoffice-4-2  main
+#   ppa.launchpad.net/libreoffice/libreoffice-4-4  main
+#   ppa.launchpad.net/libreoffice/libreoffice-5-0  main
+#   ppa.launchpad.net/libreoffice/libreoffice-5-1  main
+#   ppa.launchpad.net/libreoffice/libreoffice-5-2  main
+#   ppa.launchpad.net/libreoffice/libreoffice-5-3  main
+#   ppa.launchpad.net/libreoffice/libreoffice-5-4  main
+#   ppa.launchpad.net/libreoffice/libreoffice-6-0  main
+#   ppa.launchpad.net/wasta-linux/wasta            main
+#   ppa.launchpad.net/wasta-linux/wasta-apps       main
+#   security.ubuntu.com                            main multiverse restricted universe
 # For each of the above Repos we include both binary-i386 and binary-amd64 architecture packages.
 #  
 # Note when set -e is uncommented, script stops immediately and no error codes are returned in "$?"
 #set -e
 
 POSTMIRROR2SCRIPT="postmirror2.sh"
-# The SIL Ukarumpa FTP site's URL:
-FTPUkarumpaURLPrefix="ftp://ftp.sil.org.pg/Software/CTS/Supported_Software/Ubuntu_Repository/mirror/"
-# The above FTPUkarumpaURL may be overridden if the user invokes this script manually and uses a
-# different URL in a parameter at invocation.
+UkarumpaURLPrefix="http://linuxrepo.sil.org.pg/mirror"
 InternetURLPrefix="http://"
-FTP="ftp"
+UKA="ukarumpa"
 
-MOUNTPOINT=`mount | grep LM-UPDATES | cut -d ' ' -f3` # normally MOUNTPOINT is /media/LM-UPDATES or /media/$USER/LM-UPDATES
+START_FOLDER=""
+# whm Note: code below borrowed from the wasta-offline program script.
+# first, look for wasta-offline folder under /media/$USER (12.10 and newer)
+# 2014-04-24 rik: $USER, $(logname), $(whoami), $(who) all not working when
+#   launch with gksu.  So, just setting to /media/*/*/wasta-offline :-(
+START_FOLDER=$(ls -1d /media/*/*/wasta-offline 2> /dev/null | sort -r | head -1)
+    
+if [ -z "$START_FOLDER" ]
+then
+  # second, look for wasta-offline folder under /media (12.04 and older)
+  START_FOLDER=$(ls -1d /media/*/wasta-offline 2>/dev/null | sort -r | head -1)
+fi
+MOUNTPOINT="$START_FOLDER" # normally MOUNTPOINT is /media/$USER/<DISK_LABEL>
 
 # For manual invocation of this script:
 # Uncomment the first local_mirrors_path assignment below for Bill's desktop mirror located at:
 #    "/data/wasta-offline/apt-mirror/mirror"
 # Uncomment the second local_mirrors_path assignment below for a USB hard drive mirror located at:
-#    "/media/LM-UPDATES/wasta-offline/apt-mirror/mirror" or "/media/$USER/LM-UPDATES/wasta-offline/apt-mirror/mirror"
+#    "/media/$USER/<DISK_LABEL>/wasta-offline/apt-mirror/mirror"
 #local_mirrors_path="/data/wasta-offline/apt-mirror/mirror" 
 local_mirrors_path="$MOUNTPOINT/wasta-offline/apt-mirror/mirror"
 # Note: When this postmirror2.sh script is automatically invoked by the postmirror.sh script
@@ -150,10 +168,10 @@ if [ $# -eq 0 ]; then
   echo "  '$InternetURLPrefix' will be used"
   URLPrefix=$InternetURLPrefix
 else
-  if [ "$1" == "$FTP" ]; then
-   echo -e "\nNote: $POSTMIRROR2SCRIPT was invoked with an 'ftp' parameter:"
-   echo "  '$FTPUkarumpaURLPrefix' will be used"
-   URLPrefix=$FTPUkarumpaURLPrefix
+  if [ "$1" == "$UKA" ]; then
+    echo -e "\nNote: $POSTMIRROR2SCRIPT was invoked with an 'ukarumpa' parameter:"
+    echo "  '$UkarumpaURLPrefix' will be used"
+    URLPrefix=$UkarumpaURLPrefix
   else 
     echo -e "\nNote: $POSTMIRROR2SCRIPT was invoked with the following user defined parameter:"
     echo "  '$1' will be used"
