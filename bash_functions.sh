@@ -296,6 +296,8 @@ smart_install_program ()
                 echo "Aborting the installation..."
                 return 1
               fi
+              echo -e "calling apt-get update"
+              apt-get update
               echo -e "\nInstalling $1..."
               apt-get install $1
               LASTERRORLEVEL=$?
@@ -329,6 +331,8 @@ smart_install_program ()
                 echo "Aborting the installation..."
                 return 1
               fi
+              echo -e "calling apt-get update"
+              apt-get update
               echo -e "\nInstalling $1..."
               apt-get install $1
               LASTERRORLEVEL=$?
@@ -356,6 +360,8 @@ smart_install_program ()
           echo "Aborting the installation..."
           return 1
         fi
+        echo -e "calling apt-get update"
+        apt-get update
         echo -e "\nInstalling $1..."
         apt-get install $1
         LASTERRORLEVEL=$?
@@ -378,6 +384,8 @@ smart_install_program ()
             echo "The $WASTAOFFLINE program is running but full mirror in NOT on: $USBMOUNTDIR"
             # An error message will appear in the apt-get install $1 call below
           fi
+          echo -e "calling apt-get update"
+          apt-get update
           echo -e "\nInstalling $1..."
           apt-get install $1
           LASTERRORLEVEL=$?
