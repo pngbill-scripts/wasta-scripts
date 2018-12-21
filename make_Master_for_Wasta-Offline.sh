@@ -545,18 +545,18 @@ echo "   File system TYPE of USB Drive: $USBFILESYSTEMTYPE"
 # master mirror.
 BASEPATH_TO_MIRROR=$COPYTODIR
 
-# Get the top level BASE_DIRECTORY from the BASEPATH_TO_MIRROR.
+# Get the top level root or ROOT_DIRECTORY_OF_MASTER from the BASEPATH_TO_MIRROR.
 sleep 3s
 echo -e "\nThe destination path to the master mirror is: $BASEPATH_TO_MIRROR"
-BASE_DIRECTORY="/"$(echo "$BASEPATH_TO_MIRROR" | cut -d "/" -f2)
-echo "The base directory of the master mirror is: $BASE_DIRECTORY"
+ROOT_DIRECTORY_OF_MASTER="/"$(echo "$BASEPATH_TO_MIRROR" | cut -d "/" -f2)
+echo "The root directory of the master mirror is: $ROOT_DIRECTORY_OF_MASTER"
 
-# Check whether the BASE_DIRECTORY exists. If not create the base directory, if only
+# Check whether the ROOT_DIRECTORY_OF_MASTER exists. If not create the base directory, if only
 # temporarily, in order to get a value using df for MASTER_BYTES_AVAIL.
-CREATED_BASE_DIRECTORY="FALSE"
-if [ ! -d "$BASE_DIRECTORY" ]; then
-  CREATED_BASE_DIRECTORY="TRUE"
-  mkdir -p "$BASE_DIRECTORY"
+CREATED_ROOT_DIRECTORY_OF_MASTER="FALSE"
+if [ ! -d "$ROOT_DIRECTORY_OF_MASTER" ]; then
+  CREATED_ROOT_DIRECTORY_OF_MASTER="TRUE"
+  mkdir -p "$ROOT_DIRECTORY_OF_MASTER"
 fi
 
 # Check that the COPYTODIR's base dir has enough space for syncing the full 
@@ -574,9 +574,9 @@ fi
 # appear to have fields that differentiate between a 'used' and an 'avail' fields
 # that are available in the df --output= fields.
 USB_BYTES_USED=`df -B1 --output=fstype,used,target $USBMOUNTDIR | awk '{if(NR>1)print}' | tr -s " " | cut -f2 -d" "`
-MASTER_BYTES_AVAIL=`df -B1 --output=fstype,avail,target $BASE_DIRECTORY | awk '{if(NR>1)print}' | tr -s " " | cut -f2 -d" "`
+MASTER_BYTES_AVAIL=`df -B1 --output=fstype,avail,target $ROOT_DIRECTORY_OF_MASTER | awk '{if(NR>1)print}' | tr -s " " | cut -f2 -d" "`
 #USB_BYTES_USED=`lsblk -o SIZE,MOUNTPOINT -b | grep $USBMOUNTDIR | cut -f1 -d" "`
-#MASTER_BYTES_AVAIL=`lsblk -o SIZE,MOUNTPOINT -b | grep $BASE_DIRECTORY | cut -f1 -d" "`
+#MASTER_BYTES_AVAIL=`lsblk -o SIZE,MOUNTPOINT -b | grep $ROOT_DIRECTORY_OF_MASTER | cut -f1 -d" "`
 ONE_TB_BYTES="1000000000000"
 # If the disk space used by the USB drive's data > space available, warn user and abort
 sleep 3s
@@ -592,13 +592,13 @@ if [ "$USB_BYTES_USED" -gt "$MASTER_BYTES_AVAIL" ]; then
   echo "Please allocate disk space for the master mirror of at least 1TB and try again!"
   echo "****** WARNING ******"
   echo "Aborting..."
-  # If we just created the $BASE_DIRECTORY above with mkdir remove it with rm -rf
-  # before we abort. If "$CREATED_BASE_DIRECTORY" == "TRUE" we know that the 
+  # If we just created the $ROOT_DIRECTORY_OF_MASTER above with mkdir remove it with rm -rf
+  # before we abort. If "$CREATED_ROOT_DIRECTORY_OF_MASTER" == "TRUE" we know that the 
   # directory didn't exist previously. Since we're running as root, ensure that
-  # the value in $BASE_DIRECTORY is not "/" since rm -rf / would remove the entire
+  # the value in $ROOT_DIRECTORY_OF_MASTER is not "/" since rm -rf / would remove the entire
   # file system!!
-  if [[ "$CREATED_BASE_DIRECTORY" == "TRUE" && "$BASE_DIRECTORY" != "/" ]]; then
-    rm -rf "$BASE_DIRECTORY"
+  if [[ "$CREATED_ROOT_DIRECTORY_OF_MASTER" == "TRUE" && "$ROOT_DIRECTORY_OF_MASTER" != "/" ]]; then
+    rm -rf "$ROOT_DIRECTORY_OF_MASTER"
   fi
   exit 1
 else
@@ -616,7 +616,7 @@ fi
 sleep 3s
 
 # If we get here, there is probably sufficient space to create the mirror at $COPYTODIR location
-# Check if the BASE_DIRECTORY already exists that we'll sync to.
+# Check if the ROOT_DIRECTORY_OF_MASTER already exists that we'll sync to.
 
 # NOTE: The call of the sync_Wasta-Offline_to_Ext_Drive.sh script at the end
 # of this function will check for existence of any wasta-offline mirror at the
@@ -652,13 +652,13 @@ else
   echo "Error: Could not generate $MIRRORLIST at $MIRRORLISTPATH."
   echo "****** WARNING ******"
   echo "Aborting..."
-  # If we just created the $BASE_DIRECTORY above with mkdir remove it with rm -rf
-  # before we abort. If "$CREATED_BASE_DIRECTORY" == "TRUE" we know that the 
+  # If we just created the $ROOT_DIRECTORY_OF_MASTER above with mkdir remove it with rm -rf
+  # before we abort. If "$CREATED_ROOT_DIRECTORY_OF_MASTER" == "TRUE" we know that the 
   # directory didn't exist previously. Since we're running as root, ensure that
-  # the value in $BASE_DIRECTORY is not "/" since rm -rf / would remove the entire
+  # the value in $ROOT_DIRECTORY_OF_MASTER is not "/" since rm -rf / would remove the entire
   # file system!!
-  if [[ "$CREATED_BASE_DIRECTORY" == "TRUE" && "$BASE_DIRECTORY" != "/" ]]; then
-    rm -rf "$BASE_DIRECTORY"
+  if [[ "$CREATED_ROOT_DIRECTORY_OF_MASTER" == "TRUE" && "$ROOT_DIRECTORY_OF_MASTER" != "/" ]]; then
+    rm -rf "$ROOT_DIRECTORY_OF_MASTER"
   fi
   exit $LASTERRORLEVEL
 fi

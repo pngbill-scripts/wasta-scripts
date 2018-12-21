@@ -655,9 +655,9 @@ else
   echo -e "\nSetting source mirror ownership and permissions at $COPYFROMBASEDIR..."
   if set_mirror_ownership_and_permissions "$COPYFROMBASEDIR" ; then
     # All chown and chmod operations were successful
-    echo -e "\n  Mirror ownership and permissions set successfully at: $COPYFROMBASEDIR"
+    echo -e "\n  Mirror ownership and permissions set successfully at: $COPYFROMBASEDIR."
   else
-    echo -e "\nNot all mirror ownership and permissions could be set at: $COPYFROMBASEDIR"
+    echo -e "\nNot all mirror ownership and permissions could be set at: $COPYFROMBASEDIR."
   fi
 
   # Before setting the destination's ownership and permissions, call the 
@@ -739,9 +739,9 @@ else
   echo -e "\nSetting destination mirror ownership and permissions at $COPYTOBASEDIR..."
   if set_mirror_ownership_and_permissions "$COPYTOBASEDIR" ; then
     # All chown and chmod operations were successful
-    echo -e "\n  Mirror ownership and permissions set successfully at: $COPYTOBASEDIR"
+    echo -e "\n  Mirror ownership and permissions set successfully at: $COPYTOBASEDIR."
   else
-    echo -e "\nNot all mirror ownership and permissions could be set at: $COPYTOBASEDIR"
+    echo -e "\nNot all mirror ownership and permissions could be set at: $COPYTOBASEDIR."
   fi
 fi
 
