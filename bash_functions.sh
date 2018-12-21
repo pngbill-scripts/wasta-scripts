@@ -509,10 +509,10 @@ copy_mirror_base_dir_files ()
   # deep in the ppa.launchpad.net part of the source mirror's "pool" repo:
   PKGPATH=$1$WASTAOFFLINEDIR$APTMIRRORDIR"/mirror/ppa.launchpad.net/wasta-linux/wasta-apps/ubuntu/pool/main/w/wasta-offline"
 
-  echo -e "\nExecuting copy_mirror_base_dir_files function..."
-  echo "The 1 parameter is: $1"
-  echo "The 2 parameter is: $2"
-  echo "The PKGPATH is: $PKGPATH"
+  #echo -e "\nExecuting copy_mirror_base_dir_files function..."
+  #echo "The 1 parameter is: $1"
+  #echo "The 2 parameter is: $2"
+  #echo "The PKGPATH is: $PKGPATH"
 
   # Previously the wasta-offline debs were specifically packaged for i386 and amd64 packages, but
   # are currently packaged in an _all.deb package for each distro supported.
@@ -533,21 +533,25 @@ copy_mirror_base_dir_files ()
     if ls $1/wasta-offline*.deb 1> /dev/null 2>&1; then
       rm $1/wasta-offline*.deb
     fi
-    echo -e "\nCopying packages from source mirror tree to: $1"
+    #echo -e "\nCopying packages from source mirror tree to: $1"
+    echo -n "."
     # For these "base" level files we use --update option instead of the --delete option
     # which updates the destination only if the source file is newer
     # TODO: Adjust rsync command to use options: -rvh --size-only --progress
     # if destination USB drive is not Linux ext4 (ntfs)
-    rsync -avz --update $DEBS $1
+    # Add -q (quiet) to options
+    rsync -avzq --update $DEBS $1
     if ls $2/wasta-offline*.deb 1> /dev/null 2>&1; then
       rm $2/wasta-offline*.deb
     fi
-    echo -e "\nCopying packages from source mirror tree to: $2"
+    #echo -e "\nCopying packages from source mirror tree to: $2"
+    echo -n "."
     # For these "base" level files we use --update option instead of the --delete option
     # which updates the destination only if the source file is newer
     # TODO: Adjust rsync command to use options: -rvh --size-only --progress
     # if destination USB drive is not Linux ext4 (ntfs)
-    rsync -avz --update $DEBS $2
+    # Add -q (quiet) to options
+    rsync -avzq --update $DEBS $2
   fi
   
   # whm 13July2017 added wasta-offline-setup deb packages to root dir files
@@ -566,37 +570,42 @@ copy_mirror_base_dir_files ()
     if ls $1/wasta-offline-setup*.deb 1> /dev/null 2>&1; then
       rm $1/wasta-offline-setup*.deb
     fi
-    echo -e "\nCopying packages from source mirror tree to: $1"
+    #echo -e "\nCopying packages from source mirror tree to: $1"
+    echo -n "."
     # For these "root" level files we use --update option instead of the --delete option
     # which updates the destination only if the source file is newer
     # TODO: Adjust rsync command to use options: -rvh --size-only --progress
     # if destination USB drive is not Linux ext4 (ntfs)
-    rsync -avz --update $DEBS $1
+    # Add -q (quiet) to options
+    rsync -avzq --update $DEBS $1
     if ls $2/wasta-offline-setup*.deb 1> /dev/null 2>&1; then
       rm $2/wasta-offline-setup*.deb
     fi
-    echo -e "\nCopying packages from source mirror tree to: $2"
+    #echo -e "\nCopying packages from source mirror tree to: $2"
+    echo -n "."
     # For these "root" level files we use --update option instead of the --delete option
     # which updates the destination only if the source file is newer
     # TODO: Adjust rsync command to use options: -rvh --size-only --progress
     # if destination USB drive is not Linux ext4 (ntfs)
-    rsync -avz --update $DEBS $2
+    # Add -q (quiet) to options
+    rsync -avzq --update $DEBS $2
   fi
   
   cd $OLDDIR # Restore the working dir to what it was
 
   # Copy the *.sh file in the $1$APTMIRRORSETUPDIR to their ultimate 
   # destination of $1$WASTAOFFLINEDIR$APTMIRRORDIR$VARDIR
-  echo -e "\ncopying the *.sh files from: $1$APTMIRRORSETUPDIR/*.sh"
-  echo "                                to $1$WASTAOFFLINEDIR$APTMIRRORDIR$VARDIR"
+  #echo -e "\ncopying the *.sh files from: $1$APTMIRRORSETUPDIR/*.sh"
+  #echo "                                to $1$WASTAOFFLINEDIR$APTMIRRORDIR$VARDIR"
   # TODO: Adjust rsync command to use options: -rvh --size-only --progress
   # if destination USB drive is not Linux ext4 (ntfs)
-  rsync -avz --update $1$APTMIRRORSETUPDIR/*.sh $1$WASTAOFFLINEDIR$APTMIRRORDIR$VARDIR
+  # Add -q (quiet) to options
+  rsync -avzq --update $1$APTMIRRORSETUPDIR/*.sh $1$WASTAOFFLINEDIR$APTMIRRORDIR$VARDIR
 
   # Copy other needed files to the external drive's root dir
   
   # Find all Script files at base path $1 (-maxdepth 1 includes the $1 folder)  
-  echo -e "\n"
+  #echo -e "\n"
   for script in `find $1 -maxdepth 1 -name '*.sh'` ; do 
     # The $script var will have the absolute path to the file in the source tree
     # We need to adjust the path to copy it to the same relative location in the 
@@ -606,23 +615,25 @@ copy_mirror_base_dir_files ()
     # rsync the script to the destination mirror at same relative location. Create the
     # directory structure at the destination if necessary.
     destscript=$2${script#$1}
-    echo -e "\nFound script in Base DIR $1"
-    echo "  at: $script"
-    echo "Dest at: $destscript"
+    #echo -e "\nFound script in Base DIR $1"
+    #echo "  at: $script"
+    #echo "Dest at: $destscript"
     DIROFSCRIPT=${destscript%/*}
-    echo "Making directory at: $DIROFSCRIPT"
+    #echo "Making directory at: $DIROFSCRIPT"
     mkdir -p "$DIROFSCRIPT"
-    echo "Synchronizing the script $script"
-    echo "  to $destscript"
+    #echo "Synchronizing the script $script"
+    #echo "  to $destscript"
+    echo -n "."
     # For these "root" level files we use --update option instead of the --delete option
     # which updates the destination only if the source file is newer
     # TODO: Adjust rsync command to use options: -rvh --size-only --progress
     # if destination USB drive is not Linux ext4 (ntfs)
-    rsync -avz --update $script $destscript
+    # Add -q (quiet) to options
+    rsync -avzq --update $script $destscript
   done
 
   # Find all Script files in the apt-mirror-setup folder and rsync them to #2
-  echo -e "\n"
+  #echo -e "\n"
   for script in `find $1$APTMIRRORSETUPDIR -maxdepth 1 -name '*.sh'` ; do 
     # The $script var will have the absolute path to the file in the source tree
     # We need to adjust the path to copy it to the same relative location in the 
@@ -632,17 +643,19 @@ copy_mirror_base_dir_files ()
     # rsync the script to the destination mirror at same relative location. Create the
     # directory structure at the destination if necessary.
     destscript=$2${script#$1}
-    echo "Found script in $1$APTMIRRORSETUPDIR at: $script"
-    echo "The destination script will be at: $destscript"
+    #echo "Found script in $1$APTMIRRORSETUPDIR at: $script"
+    #echo "The destination script will be at: $destscript"
     DIROFSCRIPT=${destscript%/*}
-    echo "Making directory at: $DIROFSCRIPT"
+    #echo "Making directory at: $DIROFSCRIPT"
     mkdir -p "$DIROFSCRIPT"
-    echo -e "\nSynchronizing the script file $script to $destscript"
+    #echo -e "\nSynchronizing the script file $script to $destscript"
+    echo -n "."
     # For these "root" level files we use --update option instead of the --delete option
     # which updates the destination only if the source file is newer
     # TODO: Adjust rsync command to use options: -rvh --size-only --progress
     # if destination USB drive is not Linux ext4 (ntfs)
-    rsync -avz --update $script $destscript
+    # Add -q (quiet) to options
+    rsync -avzq --update $script $destscript
   done
 
   # Find all the other Script files at $1$WASTAOFFLINEDIR$APTMIRRORDIR$VARDIR (includes only 
@@ -656,52 +669,62 @@ copy_mirror_base_dir_files ()
     # Handle any find failure that leaves tje $script variables empty, and if no failures,
     # rsync the script to the destination mirror at same relative location.
     destscript=$2${script#$1}
-    echo "Found script in $1$WASTAOFFLINEDIR$APTMIRRORDIR$VARDIR dir of source tree at: $script"
-    echo "The destination script will be at: $destscript"
+    #echo "Found script in $1$WASTAOFFLINEDIR$APTMIRRORDIR$VARDIR dir of source tree at: $script"
+    #echo "The destination script will be at: $destscript"
     DIROFSCRIPT=${destscript%/*}
-    echo "Making directory at: $DIROFSCRIPT"
+    #echo "Making directory at: $DIROFSCRIPT"
     mkdir -p "$DIROFSCRIPT"
-    echo -e "\nSynchronizing the script file $script to $destscript"
+    #echo -e "\nSynchronizing the script file $script to $destscript"
+    echo -n "."
     # For these "root" level files we use --update option instead of the --delete option
     # which updates the destination only if the source file is newer
     # TODO: Adjust rsync command to use options: -rvh --size-only --progress
     # if destination USB drive is not Linux ext4 (ntfs)
-    rsync -avz --update $script $destscript
+    # Add -q (quiet) to options
+    rsync -avzq --update $script $destscript
   done
   
-  echo "Synchronizing the ReadMe file to $2..."
+  #echo "Synchronizing the ReadMe file to $2..."
   # For these "root" level files we use --update option instead of the --delete option
   # which updates the destination only if the source file is newer
   # TODO: Adjust rsync command to use options: -rvh --size-only --progress
   # if destination USB drive is not Linux ext4 (ntfs)
-  rsync -avz --update $1/ReadMe $2
+  # Add -q (quiet) to options
+  rsync -avzq --update $1/ReadMe $2
   #rsync -avz --progress --update $1/README.md $2
-  echo "Synchronizing the .git and .gitignore files to $2..."
+  #echo "Synchronizing the .git and .gitignore files to $2..."
+  echo -n "."
   # TODO: Adjust rsync command to use options: -rvh --size-only --progress
   # if destination USB drive is not Linux ext4 (ntfs)
-  rsync -avz --update $1/.git* $2
+  # Add -q (quiet) to options
+  rsync -avzq --update $1/.git* $2
   
   if [ -d $1$BILLSWASTADOCSDIR ]; then
-    echo "Synchronizing the $BILLSWASTADOCS dir and contents to $2$BILLSWASTADOCSDIR..."
+    #echo "Synchronizing the $BILLSWASTADOCS dir and contents to $2$BILLSWASTADOCSDIR..."
     # Here again use --update option instead of the --delete option
     # which updates the destination only if the source file is newer
     # TODO: Adjust rsync command to use options: -rvh --size-only --progress
     # if destination USB drive is not Linux ext4 (ntfs)
-    rsync -avz --update $1$BILLSWASTADOCSDIR/ $2$BILLSWASTADOCSDIR/
+    # Add -q (quiet) to options
+    rsync -avzq --update $1$BILLSWASTADOCSDIR/ $2$BILLSWASTADOCSDIR/
     if [ -L $1/docs-index ]; then
-      echo -e "\nSymbolic link docs-index already exists at $1"
+      #echo -e "\nSymbolic link docs-index already exists at $1"
+      echo -n "."
     else
-      echo -e "\nCreating symbolic link docs-index at $1"
+      #echo -e "\nCreating symbolic link docs-index at $1"
+      echo -n "."
       ln -s $1$BILLSWASTADOCSDIR/index.html $1/docs-index
     fi
     if [ -L $2/docs-index ]; then
-      echo "Symbolic link docs-index already exists at $2"
+      #echo "Symbolic link docs-index already exists at $2"
+      echo -n "."
     else
-      echo "Creating symbolic link docs-index at $2"
+      #echo "Creating symbolic link docs-index at $2"
+      echo -n "."
       ln -s $2$BILLSWASTADOCSDIR/index.html $2/docs-index
     fi
   fi
-  echo "Exiting copy_mirror_base_dir_files function."
+  #echo "Exiting copy_mirror_base_dir_files function."
   return 0
 }
 
@@ -722,43 +745,52 @@ set_mirror_ownership_and_permissions ()
   # we can go ahead and take care of any mirror ownership and permissions issues for those
   # directories and files that exist, in case something has changed them. We don't want ownership
   # or permissions issues on any existing content there to foul up the sync operation.
-  echo -e "\nExecuting set_mirror_ownership_and_permissions function..."
-  echo "The 1 parameter is: $1"
+  #echo -e "\nExecuting set_mirror_ownership_and_permissions function..."
+  #echo "The 1 parameter is: $1"
   
   if [ $1 ]; then
     # Set ownership of the mirror tree starting at the wasta-offline directory
-    echo "SUDO_USER is: $SUDO_USER"
-    echo "Setting $1$WASTAOFFLINEDIR owner: $APTMIRROR:$APTMIRROR"
+    #echo "SUDO_USER is: $SUDO_USER"
+    #echo "Setting $1$WASTAOFFLINEDIR owner: $APTMIRROR:$APTMIRROR"
+    echo -n "." 
     chown -R $APTMIRROR:$APTMIRROR $1$WASTAOFFLINEDIR
     # Set ownership of the mirror tree at the apt-mirror-setup directory
-    echo "Setting $1$APTMIRRORSETUPDIR owner: $APTMIRROR:$APTMIRROR"
+    #echo "Setting $1$APTMIRRORSETUPDIR owner: $APTMIRROR:$APTMIRROR"
+    echo -n "." 
     chown -R $APTMIRROR:$APTMIRROR $1$APTMIRRORSETUPDIR
     # Set ownership of scripts, ReadMe file, and bills-wasta-docs directory to $SUDO_USER
-    echo "Setting $1/*.sh owner: $SUDO_USER:$SUDO_USER"
+    #echo "Setting $1/*.sh owner: $SUDO_USER:$SUDO_USER"
+    echo -n "." 
     chown $SUDO_USER:$SUDO_USER $1/*.sh
-    echo "Setting $1/ReadMe owner: $SUDO_USER:$SUDO_USER"
+    #echo "Setting $1/ReadMe owner: $SUDO_USER:$SUDO_USER"
+    echo -n "." 
     chown $SUDO_USER:$SUDO_USER $1/ReadMe
-    echo "Setting $1$BILLSWASTADOCSDIR owner: $SUDO_USER:$SUDO_USER"
+    #echo "Setting $1$BILLSWASTADOCSDIR owner: $SUDO_USER:$SUDO_USER"
+    echo -n "." 
     chown -R $SUDO_USER:$SUDO_USER $1$BILLSWASTADOCSDIR
-    echo "Setting content at $1 read-write for everyone"
+    #echo "Setting content at $1 read-write for everyone"
+    echo -n "." 
     chmod -R ugo+rw $1
     # Find all Script files at $1 and set them read-write-executable
     # Note: The for loops with find command below should echo those in the last half of the 
     # copy_mirror_base_dir_files () function above.
     for script in `find $1 -maxdepth 1 -name '*.sh'` ; do 
-      echo "Setting $script executable"
+      #echo "Setting $script executable"
+      echo -n "." 
       chmod ugo+rwx $script
     done
     for script in `find $1$APTMIRRORSETUPDIR -maxdepth 1 -name '*.sh'` ; do 
-      echo "Setting $script executable"
+      #echo "Setting $script executable"
+      echo -n "." 
       chmod ugo+rwx $script
     done
     for script in `find $1$WASTAOFFLINEDIR$APTMIRRORDIR$VARDIR -maxdepth 1 -name '*.sh'` ; do 
-      echo "Setting $script executable"
+      #echo "Setting $script executable"
+      echo -n "." 
       chmod ugo+rwx $script
     done
   fi
-  echo "Exiting set_mirror_ownership_and_permissions function."
+  #echo "Exiting set_mirror_ownership_and_permissions function."
   return 0
 }
 

@@ -376,7 +376,7 @@ sleep 3s
 echo -e "\nChecking for a source mirror..."
 if is_there_a_wasta_offline_mirror_at "$COPYFROMDIR" ; then
   # There is already a wasta-offline mirror at $COPYFROMDIR
-  echo -e "\n   Found a source mirror at: $COPYFROMDIR"
+  echo -e "\n  Found a source mirror at: $COPYFROMDIR"
 else
   # There is no wasta-offline mirror at the source location, so notify user and abort.
   echo -e "\n****** WARNING ******"
@@ -397,7 +397,7 @@ sleep 3s
 echo -e "\nChecking for a destination mirror..."
 if is_there_a_wasta_offline_mirror_at "$COPYTODIR" ; then
     # There is already a wasta-offline mirror at $COPYTODIR
-    echo -e "\n   Found a destination mirror at: $COPYTODIR"
+    echo -e "\n  Found a destination mirror at: $COPYTODIR"
     # Check the destination mirror's wasta-offline/log file named last-apt-mirror-update 
     # and compare its timestamp with the source mirror's timestamp. Warn the user if they are
     # about to sync an older mirror to a newer mirror.
@@ -586,7 +586,7 @@ if is_there_a_wasta_offline_mirror_at "$COPYTODIR" ; then
       ;;
     esac
 else
-    echo -e "\nNo existing mirror found at: $COPYTODIR"
+    echo -e "\n  No existing mirror found at: $COPYTODIR"
     # We can proceed with the copy process - same as the 'y' (YES) case above.
     echo -e "\nCreating a NEW full Wasta-Offline Mirror at: $COPYTODIR..."
     # The main rsync command is called below
@@ -614,14 +614,14 @@ if [ ! -d "$COPYTODIR" ]; then
   echo "Aborting..."
   exit 1
 else
-  echo -e "\nFound $COPYTODIR"
+  #echo -e "\nFound $COPYTODIR"
   # Calculate the COPYFROMBASEDIR and COPYTOBASEDIR paths. This should be calculated by
   # removing the wasta-offline dir from the end of the COPYFROMDIR and COPYTODIR paths
   COPYFROMBASEDIR=`dirname $COPYFROMDIR`
   COPYTOBASEDIR=`dirname $COPYTODIR`
   # See NOTEs below that explain what paths can be pointed to by $COPYFROMDIR and $COPYTODIR.
-  echo -e "\nThe Source Base Directory is: $COPYFROMBASEDIR"
-  echo "The Destination Base Directory is: $COPYTOBASEDIR"
+  echo "  The Source Base Directory is: $COPYFROMBASEDIR"
+  echo "  The Destination Base Directory is: $COPYTOBASEDIR"
   
   # Take care of any source and destination mirror ownership and permission issues at
   # the source and destination, in case they have changed.
@@ -652,9 +652,10 @@ else
   # TODO: Make any necessary adjustments related to call of set_mirror_ownership_and_permissions () 
   # function below if 'source' mirror at $COPYFROMBASEDIR is a USB drive that is not Linux ext4 (ntfs).
   sleep 3s
+  echo -e "\nSetting source mirror ownership and permissions at $COPYFROMBASEDIR..."
   if set_mirror_ownership_and_permissions "$COPYFROMBASEDIR" ; then
     # All chown and chmod operations were successful
-    echo -e "\nSet mirror ownership and permissions successfully at: $COPYFROMBASEDIR"
+    echo -e "\n  Mirror ownership and permissions set successfully at: $COPYFROMBASEDIR"
   else
     echo -e "\nNot all mirror ownership and permissions could be set at: $COPYFROMBASEDIR"
   fi
@@ -701,9 +702,10 @@ else
   # TODO: Make any necessary adjustments related to call of copy_mirror_base_dir_files () 
   # function below if 'destination' mirror at $COPYTOBASEDIR is a USB drive that is not Linux ext4 (ntfs).
   sleep 3s
+  echo -e "\nCopying mirror base files from $COPYFROMBASEDIR to $COPYTOBASEDIR..."
   if copy_mirror_base_dir_files "$COPYFROMBASEDIR" "$COPYTOBASEDIR" ; then
     # All copy operations were successful
-    echo -e "\nCopied source mirror's root directory files to destination mirror."
+    echo -e "\n  Source mirror's root directory files copied to destination mirror."
   else
     echo -e "\nNot all source mirror's root directory files could be copied!"
   fi
@@ -734,11 +736,12 @@ else
   # TODO: Make any necessary adjustments related to call of set_mirror_ownership_and_permissions () 
   # function below if 'destination' mirror at $COPYTOBASEDIR is a USB drive that is not Linux ext4 (ntfs).
   sleep 3s
+  echo -e "\nSetting destination mirror ownership and permissions at $COPYTOBASEDIR..."
   if set_mirror_ownership_and_permissions "$COPYTOBASEDIR" ; then
     # All chown and chmod operations were successful
-    echo "Set mirror ownership and permissions successfully at: $COPYTOBASEDIR"
+    echo -e "\n  Mirror ownership and permissions set successfully at: $COPYTOBASEDIR"
   else
-    echo "Not all mirror ownership and permissions could be set at: $COPYTOBASEDIR"
+    echo -e "\nNot all mirror ownership and permissions could be set at: $COPYTOBASEDIR"
   fi
 fi
 
@@ -765,13 +768,17 @@ COPYTODIR=${COPYTODIR%/}
 # from the source mirror's tree (set above) to the destination mirror's tree.
 # whm 23 November 2018 Note: Use rsync -rvh --size-only --progress --delete /path/to/ext4/ /path/to/ntfs/
 # to rsync between Ext4/Xfs and NTFS partitions.
-echo -e "\n"
+echo " "
 echo "*******************************************************************************"
 echo "Synchronizinging data via the following rsync command:"
-echo "rsync -avz --progress --delete $COPYFROMDIR $COPYTODIR"
+echo "rsync -avz --progress --delete <Sync From Path> <Sync To Path>"
+echo "  Sync From Path is: $COPYFROMDIR"
+echo "  Sync To Path is: $COPYTODIR"
+echo "Expect a lot of screen output during Sync operation."
 echo "This may take a while - press CTRL-C anytime to abort..."
 echo "*******************************************************************************"
-sleep 3s
+echo ""
+sleep 5s
 # Here is the main rsync command. The rsync options are:
 #   -a archive mode (recurses thru dirs, preserves symlinks, permissions, times, group, owner)
 #   -v verbose
