@@ -702,7 +702,7 @@ else
   # TODO: Make any necessary adjustments related to call of copy_mirror_base_dir_files () 
   # function below if 'destination' mirror at $COPYTOBASEDIR is a USB drive that is not Linux ext4 (ntfs).
   sleep 3s
-  echo -e "\nCopying mirror base files from $COPYFROMBASEDIR to $COPYTOBASEDIR..."
+  echo -e "\nCopying mirror root files from $COPYFROMBASEDIR to $COPYTOBASEDIR..."
   if copy_mirror_base_dir_files "$COPYFROMBASEDIR" "$COPYTOBASEDIR" ; then
     # All copy operations were successful
     echo -e "\n  Source mirror's root directory files copied to destination mirror."
