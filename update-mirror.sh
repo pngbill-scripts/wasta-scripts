@@ -395,7 +395,6 @@ echo "Base dir to receive wasta-scripts updates is: $LOCALBASEDIR"
 echo -e "\nAre we updating the master copy of the mirror? $UPDATINGLOCALDATA"
 sleep 2s
 echo "Are we updating a portable USB drive's mirror? $UPDATINGEXTUSBDATA"
-sleep 3s
 
 # Ensure the postmirror.sh and postmirror2.sh scripts are freshly copied from the
 # $CURRDIR/apt-mirror-setup folder to the $CURRDIR/wasta-offline/apt-mirror/var folder,
@@ -601,7 +600,7 @@ case $SELECTION in
         # optionally call postmirror2.sh to correct any Hash Sum mismatches.
         # Ensure that ownership of the mirror tree is apt-mirror:apt-mirror (otherwise cron won't run) 
         # The $LOCALMIRRORSPATH is determined near the main beginning of this script
-        echo "Make $LOCALMIRRORSPATH dir owner be $APTMIRROR:$APTMIRROR"
+        echo "Make $LOCALMIRRORSPATH owner be $APTMIRROR:$APTMIRROR"
         chown -R $APTMIRROR:$APTMIRROR $LOCALMIRRORSPATH # chown -R apt-mirror:apt-mirror /media/$USER/<DISK_LABEL>/wasta-offline/apt-mirror
         
         # If apt-mirror updated the master local mirror (at /data/master/wasta-offline/...), then sync 
@@ -775,7 +774,7 @@ EOF
       cd $CURRDIR
       
       # The $LOCALMIRRORSPATH is determined near the main beginning of this script
-      echo "Make $LOCALMIRRORSPATH dir owner be $APTMIRROR:$APTMIRROR"
+      echo "Make $LOCALMIRRORSPATH owner be $APTMIRROR:$APTMIRROR"
       chown -R $APTMIRROR:$APTMIRROR $LOCALMIRRORSPATH # chown -R apt-mirror:apt-mirror /media/$USER/<DISK_LABEL>/wasta-offline/apt-mirror
       # If apt-mirror updated the master local mirror (at /data/master/wasta-offline/...), then sync 
       # it to the external USB mirror.
@@ -849,7 +848,7 @@ EOF
           # Note: Before apt-mirror finishes it will call postmirror.sh to clean the mirror and 
           # optionally call postmirror2.sh to correct any Hash Sum mismatches.
           # The $LOCALMIRRORSPATH is determined near the main beginning of this script
-          echo "Make $LOCALMIRRORSPATH dir owner be $APTMIRROR:$APTMIRROR"
+          echo "Make $LOCALMIRRORSPATH owner be $APTMIRROR:$APTMIRROR"
           chown -R $APTMIRROR:$APTMIRROR $LOCALMIRRORSPATH # chown -R apt-mirror:apt-mirror /media/$USER/<DISK_LABEL>/wasta-offline/apt-mirror
           # If apt-mirror updated the master local mirror (at /data/master/wasta-offline/...), then sync 
           # it to the external USB mirror.
