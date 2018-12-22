@@ -394,7 +394,7 @@ echo "The mirror to receive updates is: $LOCALMIRRORSPATH"
 echo "The base directory to receive wasta-scripts updates is: $LOCALBASEDIR"
 echo -e "\nAre we updating a master copy of the mirror? $UPDATINGLOCALDATA"
 sleep 2s
-echo "  Are we also updating a USB drive's mirror? $UPDATINGEXTUSBDATA"
+echo "  Are we updating a USB drive's mirror? $UPDATINGEXTUSBDATA"
 sleep 3s
 
 # Ensure the postmirror.sh and postmirror2.sh scripts are freshly copied from the
@@ -752,6 +752,7 @@ cat > $GITIGNORE <<EOF
 bills-wasta-docs/
 wasta-offline/
 wasta-offline_1.*.deb
+wasta-offline_2.*.deb
 wasta-offline-setup_1.*.deb
 docs-index
 .gitignore
