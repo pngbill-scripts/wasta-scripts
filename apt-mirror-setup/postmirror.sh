@@ -155,10 +155,12 @@ PathToLogDir=$(dirname $BasePath)"/log"
 # Export the ExportedMirrorPath to make it available to the postmirror2.sh script
 export ExportedMirrorPath=$BasePath"/mirror"
 
-echo "  The mirror_path is: $ExportedMirrorPath"
-echo "  The cleanscript path is: $PathToCleanScript"
-echo "  The postmirror.sh path is: $PathToPostMirrorScript"
-echo "  The postmirror2.sh path is: $PathToPostMirrorScript2"
+echo " mirror_path: $ExportedMirrorPath"
+echo " cleanscript path: $PathToCleanScript"
+echo " postmirror.sh path:"
+echo "   $PathToPostMirrorScript"
+echo " postmirror2.sh path:"
+echo "   $PathToPostMirrorScript2"
 
 # Update the /data/wasta-offline/log/$LastAppMirrorUpdate file to contain a time-stamp of 
 # the current time in UTC Unix format (seconds since 1970-01-01 00:00:00 UTC)
@@ -166,7 +168,8 @@ UnixDateStamp=$(date --utc +%s)
 mkdir -p $PathToLogDir
 echo $UnixDateStamp > $PathToLogDir/$LastAppMirrorUpdate
 echo -e "\nTimestamp (Unix format) of this apt-mirror update is: $UnixDateStamp"
-echo "Saving time-stamp to: $PathToLogDir/$LastAppMirrorUpdate"
+echo "Saving time-stamp to:"
+echo "  $PathToLogDir/$LastAppMirrorUpdate"
 
 # Always call the clean.sh script from postmirror.sh
 echo -e "\nCalling the clean.sh script..."

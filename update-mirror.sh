@@ -389,12 +389,12 @@ if [ ! -f $CURRDIR$APTMIRRORSETUPDIR/$POSTMIRROR2SCRIPT ]; then
   exit 1
 fi
 
-echo -e "\nThe current working directory is: $CURRDIR"
-echo "The mirror to receive updates is: $LOCALMIRRORSPATH"
-echo "The base directory to receive wasta-scripts updates is: $LOCALBASEDIR"
-echo -e "\nAre we updating a master copy of the mirror? $UPDATINGLOCALDATA"
+echo -e "\nCurrent working directory is: $CURRDIR"
+echo "Mirror to receive updates is: $LOCALMIRRORSPATH"
+echo "Base dir to receive wasta-scripts updates is: $LOCALBASEDIR"
+echo -e "\nAre we updating the master copy of the mirror? $UPDATINGLOCALDATA"
 sleep 2s
-echo "  Are we updating a USB drive's mirror? $UPDATINGEXTUSBDATA"
+echo "Are we updating a portable USB drive's mirror? $UPDATINGEXTUSBDATA"
 sleep 3s
 
 # Ensure the postmirror.sh and postmirror2.sh scripts are freshly copied from the
@@ -404,7 +404,8 @@ sleep 3s
 # from a mirror on the external drive at /media/$USER/<DISK_LABEL>
 if [ -d $CURRDIR$WASTAOFFLINEDIR ]; then
 
-  echo -e "\nCopying postmirror*.sh files to $CURRDIR$WASTAOFFLINEDIR$APTMIRRORDIR$VARDIR..."
+  echo -e "\nCopying postmirror*.sh files to:"
+  echo "   $CURRDIR$WASTAOFFLINEDIR$APTMIRRORDIR$VARDIR..."
   # Here is the main rsync command. The rsync options are:
   #   -a archive mode (recurses thru dirs, preserves symlinks, permissions, times, group, owner)
   #   -v verbose
