@@ -16,7 +16,7 @@
 #      method. Also the added code clones/updates the bills-wasta-docs files
 #      from its external GitHub repo.
 #   - 23 November 2018 Changed the path to the internal server at Ukarumpa
-#      to http://linuxrepo.sil.org.pg/mirror
+#      to http://linuxrepo.sil.org.pg/mirror/
 #      Since the new path uses the http:// protocol rather than ftp:// I changed
 #      the bash variable name from FTPUkarumpaURLPrefix to UkarumpaURLPrefix
 #      and removed reference to FTP in other places.
@@ -286,7 +286,7 @@ GENERATEDSIGNATURE="###_This_file_was_generated_by_the_update-mirror.sh_script_#
 # The OLD SIL Ukarumpa FTP site's URL was:
 #FTPUkarumpaURLPrefix="ftp://ftp.sil.org.pg/Software/CTS/Supported_Software/Ubuntu_Repository/mirror/"
 # Use the NEW Ukarumpa linuxrepo server's URL:
-UkarumpaURLPrefix="http://linuxrepo.sil.org.pg/mirror"
+UkarumpaURLPrefix="http://linuxrepo.sil.org.pg/mirror/"
 # The above UkarumpaURL may be overridden if the user invokes this script manually and uses a
 # different URL in a parameter at invocation.
 InternetURLPrefix="http://"
@@ -542,7 +542,7 @@ fi
 echo -e "\nYour choice was $SELECTION"
 case $SELECTION in
   "1")
-    # ping the Ukarumpa server to check for server access
+    # ping the Ukarumpa server to check for server access - can leave off final / here
     ping -c1 -q http://linuxrepo.sil.org.pg/mirror
     if [ "$?" != 0 ]; then
       echo -e "\n****** WARNING ******"

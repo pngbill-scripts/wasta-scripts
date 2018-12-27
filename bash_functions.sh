@@ -278,7 +278,7 @@ smart_install_program ()
     case $PROTOCOL in
       $UkarumpaURLPrefix)
         # The source.list indicates that software installs will potentially be done by 
-        # access to the Ukarumpa linux mirrors at http://linuxrepo.sil.org.pg/mirror
+        # access to the Ukarumpa linux mirrors at http://linuxrepo.sil.org.pg/mirror/
         # User should be warned and given the opportunity to bail out.
         response="y"
         if [[ "x$2" = "x" ]]; then
@@ -1002,7 +1002,7 @@ generate_mirror_list_file ()
   # Variables that get expanded while generating the mirror.list file:
   #   $GENERATEDSIGNATURE is "###_This_file_was_generated_by_the_update-mirror.sh_script_###"
   #   $1 is the URL Prefix passed in as the parameter of the function call (http://, ftp://..., 
-  #   http://linuxrepo.sil.org.pg/mirror..., etc).
+  #   http://linuxrepo.sil.org.pg/mirror/..., etc).
   #   $LOCALMIRRORSPATH is base path to the mirror (usually /media/<DISK_LABEL>/wasta-offline/apt-mirror,
   #      or /media/$USER/<DISK_LABEL>/wasta-offline/apt-mirror, but can also be 
   #      /data/wasta-offline/apt-mirror for the master copy of the full mirror)
@@ -1124,8 +1124,6 @@ deb-amd64 $1packages.sil.org/ubuntu trusty main
 deb-i386 $1packages.sil.org/ubuntu trusty main
 deb-amd64 $1packages.sil.org/ubuntu trusty-experimental main
 deb-i386 $1packages.sil.org/ubuntu trusty-experimental main
-#deb-amd64 $1download.virtualbox.org/virtualbox/debian trusty contrib
-#deb-i386 $1download.virtualbox.org/virtualbox/debian trusty contrib
 # Note: the following are referenced in separate .list files in /etc/apt/sources.list.d/
 # Note: the wasta-linux repos need the source code packages also included
 deb-amd64 $1ppa.launchpad.net/wasta-linux/wasta-apps/ubuntu trusty main
@@ -1212,6 +1210,8 @@ deb-amd64 $1packages.sil.org/ubuntu xenial main
 deb-i386 $1packages.sil.org/ubuntu xenial main
 deb-amd64 $1packages.sil.org/ubuntu xenial-experimental main
 deb-i386 $1packages.sil.org/ubuntu xenial-experimental main
+#deb-amd64 $1download.virtualbox.org/virtualbox/debian xenial contrib
+#deb-i386 $1download.virtualbox.org/virtualbox/debian xenial contrib
 
 # Note: the following are referenced in separate .list files in /etc/apt/sources.list.d/
 # Note: the wasta-linux repos need the source code packages also included
@@ -1531,7 +1531,7 @@ is_this_mirror_older_than_that_mirror ()
 #   $FileURLPrefix
 #   $ETCAPT$SOURCESLIST
 # This function simply echoes the string protocol as one of these possibilities:
-#   http://linuxrepo.sil.org.pg/mirror
+#   http://linuxrepo.sil.org.pg/mirror/
 #   http://
 #   ftp://
 #   file:
