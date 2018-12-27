@@ -261,7 +261,9 @@ DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 SCRIPTVERSION="0.2"
 DATADIR="/data"
 MASTERDIR="/master"
+WASTAOFFLINE="wasta-offline"
 WASTAOFFLINEDIR="/wasta-offline"
+APTMIRROR="apt-mirror"
 APTMIRRORDIR="/apt-mirror"
 APTMIRRORSETUPDIR="/apt-mirror-setup"
 MIRRORDIR="/mirror"
@@ -270,10 +272,12 @@ MAKEMASTERCOPYSCRIPT="make_Master_for_Wasta-Offline.sh"
 WAIT=60
 USBDEVICENAME=""
 USBFILESYSTEMTYPE=""
+SOURCESLIST="sources.list"
+ETCAPT="/etc/apt/"
 InternetURLPrefix="http://"
 UkarumpaURLPrefix="http://linuxrepo.sil.org.pg/mirror"
-#FTPURLPrefix="ftp://"
-#FileURLPrefix="file:"
+FTPURLPrefix="ftp://"
+FileURLPrefix="file:"
 
 # The following variables are defined just before the generate... function call below.
 #GENERATEDSIGNATURE="###_This_file_was_generated_by_the_update-mirror.sh_script_###"
@@ -605,7 +609,7 @@ else
   echo -e "\n-----------------------------------------------------------------"
   echo "Checking Disk Space Requirements..."
   echo "   The source USB Drive mirror uses $USB_BYTES_USED Bytes of data."
-  echo "   The destination Master Mirror Drive has $MASTER_BYTES_AVAIL Bytes available."
+  echo "   The dest Master Mirror Drive has $MASTER_BYTES_AVAIL Bytes available."
   if [ "$MASTER_BYTES_AVAIL" -lt "$ONE_TB_BYTES" ]; then 
     echo "WARNING: The dest Master Mirror Drive space is smaller than 1TB!"
     echo "You have sufficient space now, but your master mirror may run out of space."
@@ -625,6 +629,29 @@ sleep 3s
 # present that info to the user along with a timed prompt in which s/he can
 # proceed to create/sync the mirror to the destination, or abort the operation.
 
+# Call the get_sources_list_protocol () function to determine the current protocol
+# of the dedicated computer's sources.list file.
+# Internally the 'get_sources_list_protocol' function call below gets the 
+# currently used protocol from the sources.list file, but we'll also get it here and
+# assign it to a locally defined PROTOCOL variable for use below when calling
+# the 'generate_mirror_list_file ()' function. Presumably the sources.list file 
+# of the dedicated master computer is likely to point to the best sources for
+# installing apt-mirror within the context of this make_Master_for_Wasta-Offline.sh
+# script. 
+SOURCES_LIST_PROTOCOL=`get_sources_list_protocol` 
+#echo "The SOURCES_LIST_PROTOCOL is: $SOURCES_LIST_PROTOCOL"
+
+if smart_install_program $APTMIRROR -q ; then
+  # The apt-mirror program is installed
+  echo "The $APTMIRROR program is installed"
+else
+  # Could NOT install the apt-mirror program so warn and abort
+  echo -e "\n****** WARNING ******"
+  echo "Error: Could not install $APTMIRROR."
+  echo "****** WARNING ******"
+  echo "Aborting..."
+  exit $LASTERRORLEVEL        
+fi
 # Always create/update the master computer's mirror.list file with current base_path
 # Call the generate_mirror_list_file () function to create/update the computer's 
 # mirror.list file.
@@ -637,15 +664,16 @@ ETCAPT="/etc/apt/"
 MIRRORLIST="mirror.list"
 MIRRORLISTPATH=$ETCAPT$MIRRORLIST # /etc/apt/mirror.list
 SAVEEXT=".save" # used in generate_mirror_list_file () function
-# Note: We use the $UkarumpaURLPrefix (http://linuxrepo.sil.org.pg/mirror) as an
+# Note: We use the $PROTOCOL that currently exists in the computer's sources.list as an
 # initial default mirror.list prefix protocol when establishing the master mirror with 
-# make_Master_for_Wasta-Offline.sh. Ukarumpa is the most likely branch to use this
-# script. Even so, Once the master mirror is established, the updata-mirror.sh script 
-# is used to update the mirror, and update-mirror.sh will change the protocol prefix of 
+# make_Master_for_Wasta-Offline.sh. For a master computer based at Ukarumpa the most likely
+# protocol would be the local server at: http://linuxrepo.sil.org.pg/mirror. Even so, 
+# once the master mirror is established using this current script, the updata-mirror.sh script 
+# will be used to update the mirror, and update-mirror.sh will change the protocol prefix of 
 # the entries in the mirror.list file each time the user runs update-mirror.sh depending
 # on the menu choice (of where to get the mirror data) the user makes in the process
 # of running the update-mirror.sh script.
-if generate_mirror_list_file $UkarumpaURLPrefix ; then
+if generate_mirror_list_file $SOURCES_LIST_PROTOCOL ; then
   echo "Successfully generated $MIRRORLIST at $MIRRORLISTPATH."
 else
   echo -e "\n****** WARNING ******"
@@ -663,8 +691,8 @@ else
   exit $LASTERRORLEVEL
 fi
 
-#TODO: At this point offer to activate the automatic running of apt-mirror by
-# uncommenting the line in /etc/cron.d/apt-mirror and setting a daily hour to
+#TODO: At this point we could offer to activate the automatic running of apt-mirror 
+# by uncommenting the line in /etc/cron.d/apt-mirror and setting a daily hour to
 # run apt-mirror. Ask user for hour?
 
 # Make sure there is an apt-mirror group on the user's computer and

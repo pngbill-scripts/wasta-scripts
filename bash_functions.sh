@@ -252,7 +252,7 @@ get_wasta_offline_usb_mount_point ()
 smart_install_program ()
 {
   # Check if $1 is already installed. If not, offer to install the $1 program.
-  echo -e "\n"
+  echo " "
   echo -n "Checking if $1 is installed..."
   if (is_program_installed $1); then
     echo "YES"
@@ -297,9 +297,9 @@ smart_install_program ()
                 return 1
               fi
               echo -e "calling apt-get update"
-              apt-get update
+              apt-get -qq update
               echo -e "\nInstalling $1..."
-              apt-get install $1
+              apt-get -qq install $1
               LASTERRORLEVEL=$?
               if [ $LASTERRORLEVEL != 0 ]; then
                  #echo "Could not install the $1 program. Aborting..."
@@ -332,9 +332,9 @@ smart_install_program ()
                 return 1
               fi
               echo -e "calling apt-get update"
-              apt-get update
+              apt-get -qq update
               echo -e "\nInstalling $1..."
-              apt-get install $1
+              apt-get -qq install $1
               LASTERRORLEVEL=$?
               if [ $LASTERRORLEVEL != 0 ]; then
                  #echo "Could not install the $1 program. Aborting..."
@@ -361,9 +361,9 @@ smart_install_program ()
           return 1
         fi
         echo -e "calling apt-get update"
-        apt-get update
+        apt-get -qq update
         echo -e "\nInstalling $1..."
-        apt-get install $1
+        apt-get -qq install $1
         LASTERRORLEVEL=$?
         if [ $LASTERRORLEVEL != 0 ]; then
            #echo "Could not install the $1 program. Aborting..."
@@ -379,15 +379,16 @@ smart_install_program ()
           # wasta-offline is running
           # If wasta-offline is running against the full mirror it should be mounted at /media/.../<DISK_LABEL>
           if (is_dir_available $USBMOUNTDIR); then
-            echo "The $WASTAOFFLINE program is running with the full mirror on: $USBMOUNTDIR."
+            echo "The $WASTAOFFLINE program is running with the full mirror on:"
+            echo "   $USBMOUNTDIR."
           else
             echo "The $WASTAOFFLINE program is running but full mirror in NOT on: $USBMOUNTDIR"
             # An error message will appear in the apt-get install $1 call below
           fi
           echo -e "calling apt-get update"
-          apt-get update
+          apt-get -qq update
           echo -e "\nInstalling $1..."
-          apt-get install $1
+          apt-get -qq install $1
           LASTERRORLEVEL=$?
           if [ $LASTERRORLEVEL != 0 ]; then
              echo "Could not install the $1 program. Aborting..."
