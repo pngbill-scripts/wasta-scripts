@@ -609,6 +609,7 @@ case $SELECTION in
           # Call sync_Wasta_Offline_to_Ext_Drive.sh without any parameters: 
           #   the $COPYFROMDIR will be /data/master/wasta-offline/
           #   the $COPYTODIR will be /media/$USER/<DISK_LABEL>/wasta-offline
+          echo "[*** End of apt-mirror post-processing ***]"
           bash $DIR/$SYNCWASTAOFFLINESCRIPT
         fi
       else
@@ -722,8 +723,8 @@ case $SELECTION in
         exit $LASTERRORLEVEL
       fi
       # Update latest git repos for wasta-scripts and bills-wasta-docs
-      echo -e "\n"
-      echo "The LOCALBASEDIR is: $LOCALBASEDIR"
+      #echo -e "\n"
+      #echo "The LOCALBASEDIR is: $LOCALBASEDIR"
       cd $LOCALBASEDIR
       if [ -d ".git" ]; then
         echo "The local wasta-scripts repo .git file exists"
@@ -757,9 +758,9 @@ docs-index
 .gitignore
 EOF
       chown $SUDO_USER:$SUDO_USER $GITIGNORE
-      echo "The BILLSWASTADOCS path is: $LOCALBASEDIR$BILLSWASTADOCSDIR"
+      echo "The bills-wasta-docs path is: $LOCALBASEDIR$BILLSWASTADOCSDIR"
       if [ -d $LOCALBASEDIR$BILLSWASTADOCSDIR ]; then
-        echo "The BILLSWASTADOCS dir exists"
+        #echo "The BILLSWASTADOCS dir exists"
         cd $LOCALBASEDIR$BILLSWASTADOCSDIR
         git pull
         chown -R $SUDO_USER:$SUDO_USER $LOCALBASEDIR$BILLSWASTADOCSDIR
@@ -769,7 +770,7 @@ EOF
       fi
       # No need for a .gitignore file in bills-wasta-docs repo
       
-      echo "Change back to $CURRDIR"
+      #echo "Change back to $CURRDIR"
       cd $CURRDIR
       
       # The $LOCALMIRRORSPATH is determined near the main beginning of this script
@@ -781,6 +782,7 @@ EOF
         # Call sync_Wasta_Offline_to_Ext_Drive.sh without any parameters: 
         #   the $COPYFROMDIR will be /data/master/wasta-offline/
         #   the $COPYTODIR will be /media/$USER/<DISK_LABEL>/wasta-offline
+        echo "[*** End of apt-mirror post-processing ***]"
         bash $DIR/$SYNCWASTAOFFLINESCRIPT
       fi
     fi
@@ -855,6 +857,7 @@ EOF
             # Call sync_Wasta_Offline_to_Ext_Drive.sh without any parameters: 
             #   the $COPYFROMDIR will be /data/master/wasta-offline/
             #   the $COPYTODIR will be /media/$USER/<DISK_LABEL>/wasta-offline
+            echo "[*** End of apt-mirror post-processing ***]"
             bash $DIR/$SYNCWASTAOFFLINESCRIPT
           fi
         fi

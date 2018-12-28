@@ -92,7 +92,7 @@
 # However, if a user calls this script manually and is not root, we inform the user that it 
 # needs to be called as root.
 #echo -n "The whoami during run of postmirror.sh is: "
-whoami
+#whoami
 if [ "$(whoami)" != "root" ] && [ "$(whoami)" != "apt-mirror" ]; then
   echo -e "\nThis script needs to run with superuser permissions."
   echo "Normally you should not call this script directly."
