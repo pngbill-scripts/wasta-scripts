@@ -413,7 +413,7 @@ if [ -d $CURRDIR$WASTAOFFLINEDIR ]; then
   #   --update overwrite only if file is newer than existing file
   # TODO: Adjust rsync command to use options: -rvh --size-only --progress
   # if destination USB drive is not Linux ext4 (ntfs)
-  rsync -avz --progress --update $CURRDIR$APTMIRRORSETUPDIR/*.sh $CURRDIR$WASTAOFFLINEDIR$APTMIRRORDIR$VARDIR
+  rsync -avzq --progress --update $CURRDIR$APTMIRRORSETUPDIR/*.sh $CURRDIR$WASTAOFFLINEDIR$APTMIRRORDIR$VARDIR
   # Ensure that postmirror.sh and postmirror2.sh scripts are executable for everyone.
   chmod ugo+rwx $CURRDIR$WASTAOFFLINEDIR$APTMIRRORDIR$VARDIR/*.sh
 fi
