@@ -8,11 +8,12 @@
 #      http://linuxrepo.sil.org.pg/mirror
 #      Revised to make the script more generic and not hard wire "LM-UPDATES"
 #      as the expected USB disk label.
+#   - 28 December 2018 revised to simplify echo outputs.
 # Name: postmirror.sh
 # Distribution:
 # This script is designed to be a replacement for the empty default postmirror.sh 
 # script that comes with a new installation of apt-mirror.
-# postmirror.sh is a compantion script of postmirror2.sh and is included with
+# postmirror.sh has a compantion script postmirror2.sh which is included with
 # all Wasta-Offline Mirrors supplied by Bill Martin.
 # If you make changes to this script to improve it or correct errors, please
 # send your updated script to Bill Martin bill_martin@sil.org
@@ -90,7 +91,7 @@
 # When this script is called automatically from apt-mirror it runs as the user: "apt-mirror".
 # However, if a user calls this script manually and is not root, we inform the user that it 
 # needs to be called as root.
-echo -n "The whoami during run of postmirror.sh is: "
+#echo -n "The whoami during run of postmirror.sh is: "
 whoami
 if [ "$(whoami)" != "root" ] && [ "$(whoami)" != "apt-mirror" ]; then
   echo -e "\nThis script needs to run with superuser permissions."
@@ -115,7 +116,7 @@ WAIT=60
 BasePath=""
 
 # Go through mirror.list and extract the path on the uncommented set base_path line
-echo -e "\nReading the mirror.list file at: $PathToMirrorListFile"
+#echo -e "\nReading the mirror.list file at: $PathToMirrorListFile"
 while read -r line
 do
    [[ $line = \#* ]] && continue
@@ -129,8 +130,8 @@ do
      break;
    fi
 done < $FILE
-echo "The paths derived from the /etc/apt/mirror.list file are:"
-echo "  The base_path is: $BasePath"
+#echo "The paths derived from the /etc/apt/mirror.list file are:"
+#echo " The base_path is: $BasePath"
 
 # If we couldn't find a base_path value notify user and abort
 # since no other paths from mirror.list will be valid
@@ -155,19 +156,19 @@ PathToLogDir=$(dirname $BasePath)"/log"
 # Export the ExportedMirrorPath to make it available to the postmirror2.sh script
 export ExportedMirrorPath=$BasePath"/mirror"
 
-echo " mirror_path: $ExportedMirrorPath"
-echo " cleanscript path: $PathToCleanScript"
-echo " postmirror.sh path:"
-echo "   $PathToPostMirrorScript"
-echo " postmirror2.sh path:"
-echo "   $PathToPostMirrorScript2"
+#echo " mirror_path: $ExportedMirrorPath"
+#echo " cleanscript path: $PathToCleanScript"
+#echo " postmirror.sh path:"
+#echo "   $PathToPostMirrorScript"
+#echo " postmirror2.sh path:"
+#echo "   $PathToPostMirrorScript2"
 
 # Update the /data/wasta-offline/log/$LastAppMirrorUpdate file to contain a time-stamp of 
 # the current time in UTC Unix format (seconds since 1970-01-01 00:00:00 UTC)
 UnixDateStamp=$(date --utc +%s)
 mkdir -p $PathToLogDir
 echo $UnixDateStamp > $PathToLogDir/$LastAppMirrorUpdate
-echo -e "\nTimestamp (Unix format) of this apt-mirror update is: $UnixDateStamp"
+echo -e "\nThe Timestamp (Unix format) of this apt-mirror update is: $UnixDateStamp"
 echo "Saving time-stamp to:"
 echo "  $PathToLogDir/$LastAppMirrorUpdate"
 
@@ -176,7 +177,7 @@ echo -e "\nCalling the clean.sh script..."
 sh $PathToCleanScript
 
 # Make all mirror files read-write for everyone
-echo -e "\nMaking all mirror files read-write for everyone"
+echo "Making all mirror files read-write for everyone"
 chmod -R ugo+rw $ExportedMirrorPath  # $BasePath"/mirror"
 
 # Make apt-mirror owner of all content in the mirror tree
@@ -254,7 +255,7 @@ case $SELECTION in
     exit 0
   ;;
   "2")
-    # Check to see if the Internet is accessible using the http://example.com website
+    # Check to see if the Internet is accessible using the www.archive.ubuntu.com site
     # wget --spider www.archive.ubuntu.com
     ping -c1 -q www.archive.ubuntu.com
     if [ "$?" != 0 ]; then
@@ -269,6 +270,7 @@ case $SELECTION in
     fi
   ;;
   "3")
+    # Check to see if the Ukarumpa linuxrepo site is accessible
     ping -c1 -q http://linuxrepo.sil.org.pg/mirror
     if [ "$?" != 0 ]; then
       echo -e "\n****** WARNING ******"
