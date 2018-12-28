@@ -651,7 +651,6 @@ case $SELECTION in
       echo -"Internet access to www.archive.ubuntu.com not currently available."
       echo "This script cannot continue without access to the Internet."
       echo "Make sure the computer has access to the Internet, then try again."
-      echo "Or, alternately, run wasta-offline and install software without Internet access"
       echo "****** WARNING ******"
       echo "Aborting..."
       exit 1
