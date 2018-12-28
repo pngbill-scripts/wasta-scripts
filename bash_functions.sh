@@ -1540,22 +1540,22 @@ get_sources_list_protocol ()
   grep -Fq "$UkarumpaURLPrefix" $ETCAPT$SOURCESLIST
   GREPRESULTINT=$?
   if [ $GREPRESULTINT -eq 0 ]; then
-     echo "$UkarumpaURLPrefix"
+     echo "$UkarumpaURLPrefix" # http://linuxrepo.sil.org.pg/mirror/
   fi
   grep -Fq "$InternetURLPrefix" $ETCAPT$SOURCESLIST
   GREPRESULTINT=$?
   if [ $GREPRESULTINT -eq 0 ]; then
-     echo "$InternetURLPrefix"
+     echo "$InternetURLPrefix" # http://
   fi
   grep -Fq "$FTPURLPrefix" $ETCAPT$SOURCESLIST
   GREPRESULTFTP=$?
   if [ $GREPRESULTFTP -eq 0 ]; then
-     echo "$FTPURLPrefix"
+     echo "$FTPURLPrefix" # ftp://
   fi
   grep -Fq "$FileURLPrefix" $ETCAPT$SOURCESLIST
   GREPRESULTFILE=$?
   if [ $GREPRESULTFILE -eq 0 ]; then
-     echo "$FileURLPrefix"
+     echo "$FileURLPrefix" # file:
   fi
 }
 
