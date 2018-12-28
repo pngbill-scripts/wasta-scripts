@@ -218,11 +218,12 @@ fi
 # would otherwise appear in the cron.log while it waits 60 seconds for a response that would
 # never happen during the countdown.
 if [ "$(whoami)" != "apt-mirror" ]; then
-  echo -e "\n"
+  echo "**************************************************************************"
   echo "Run the $PostMirrorScript2 script to correct Hash Sum mismatches errors?"
   echo "  1) No, don't run the script. There are no Hash Sum mismatches (default)"
   echo "  2) Yes, run the script and get (75MB) of metadata from the Internet, or"
   echo "  3) Yes, run the script and get (75MB) of metadata from the Ukarumpa site"
+  echo "**************************************************************************"
   for (( i=$WAIT; i>0; i--)); do
     printf "\rPlease press the 1, 2, or 3 key, or hit any key to abort - countdown $i "
     #read -p "\rPlease press the 1, 2, or 3 key (countdown $i) " -n 1 -t 1 key
