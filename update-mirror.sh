@@ -605,7 +605,7 @@ case $SELECTION in
         
         # If apt-mirror updated the master local mirror (at /data/master/wasta-offline/...), then sync 
         # it to the external USB mirror.
-        if [ "$UPDATINGLOCALDATA" = "YES" ]; then
+        if [ "$UPDATINGEXTUSBDATA" = "YES" ]; then
           # Call sync_Wasta_Offline_to_Ext_Drive.sh without any parameters: 
           #   the $COPYFROMDIR will be /data/master/wasta-offline/
           #   the $COPYTODIR will be /media/$USER/<DISK_LABEL>/wasta-offline
@@ -778,7 +778,7 @@ EOF
       chown -R $APTMIRROR:$APTMIRROR $LOCALMIRRORSPATH # chown -R apt-mirror:apt-mirror /media/$USER/<DISK_LABEL>/wasta-offline/apt-mirror
       # If apt-mirror updated the master local mirror (at /data/master/wasta-offline/...), then sync 
       # it to the external USB mirror.
-      if [ "$UPDATINGLOCALDATA" = "YES" ]; then
+      if [ "$UPDATINGEXTUSBDATA" = "YES" ]; then
         # Call sync_Wasta_Offline_to_Ext_Drive.sh without any parameters: 
         #   the $COPYFROMDIR will be /data/master/wasta-offline/
         #   the $COPYTODIR will be /media/$USER/<DISK_LABEL>/wasta-offline
@@ -793,8 +793,8 @@ EOF
       # so that they point to the user's input path.
 
       echo -e "\nType the URL prefix to the mirror on the server, or just Enter to abort:"
-      echo "For example: ftp://ftp.organization.org/linux/software/mirror"
-      echo -n "URL: "
+      echo "For example: ftp://ftp.organization.org/linux/software/mirror/ [use final /]"
+      echo -n "URL prefix: "
       read CustomURLPrefix
       if [[ "x$CustomURLPrefix" != "x" ]]; then
         # Check for server access
@@ -853,7 +853,7 @@ EOF
           chown -R $APTMIRROR:$APTMIRROR $LOCALMIRRORSPATH # chown -R apt-mirror:apt-mirror /media/$USER/<DISK_LABEL>/wasta-offline/apt-mirror
           # If apt-mirror updated the master local mirror (at /data/master/wasta-offline/...), then sync 
           # it to the external USB mirror.
-          if [ "$UPDATINGLOCALDATA" = "YES" ]; then
+          if [ "$UPDATINGEXTUSBDATA" = "YES" ]; then
             # Call sync_Wasta_Offline_to_Ext_Drive.sh without any parameters: 
             #   the $COPYFROMDIR will be /data/master/wasta-offline/
             #   the $COPYTODIR will be /media/$USER/<DISK_LABEL>/wasta-offline
