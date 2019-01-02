@@ -176,13 +176,15 @@ echo "  $PathToLogDir/$LastAppMirrorUpdate"
 echo -e "\nCalling the clean.sh script..."
 sh $PathToCleanScript
 
+# After postmirror.sh (and postmirror2.sh) finish, the update-mirror.sh calling
+# script takes care of making all mirror files read-write for everyone, 
+# and making the owner be apt-mirror:apt-mirror, so we need not do those here.
 # Make all mirror files read-write for everyone
-echo "Making all mirror files read-write for everyone"
-chmod -R ugo+rw $ExportedMirrorPath  # $BasePath"/mirror"
-
+#echo "Making all mirror files read-write for everyone"
+#chmod -R ugo+rw $ExportedMirrorPath  # $BasePath"/mirror"
 # Make apt-mirror owner of all content in the mirror tree
-echo "Make $BasePath dir owner be $APTMIRROR:$APTMIRROR"
-chown -R $APTMIRROR:$APTMIRROR $BasePath # chown -R apt-mirror:apt-mirror /data/wasta-offline/apt-mirror
+#echo "Make $BasePath dir owner be $APTMIRROR:$APTMIRROR"
+#chown -R $APTMIRROR:$APTMIRROR $BasePath # chown -R apt-mirror:apt-mirror /data/wasta-offline/apt-mirror
 
 # check whether the companion script exists. If not, abort with error message.
 if [ ! -f $PathToPostMirrorScript2 ]; then

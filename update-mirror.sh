@@ -568,12 +568,12 @@ case $SELECTION in
           echo "Aborting..."
           exit $LASTERRORLEVEL
         fi
-        echo -e "\n"
+        echo " "
         echo "*******************************************************************************"
         echo "Calling apt-mirror - getting data from local Ukarumpa site"
         echo "  URL Prefix: $UkarumpaURLPrefix"
         echo "*******************************************************************************"
-        echo -e "\n"
+        echo " "
         # Note: For this option, the user's /etc/apt/mirror.list file now points to repositories with 
         # this path prefix:
         # http://linuxrepo.sil.org.pg/mirror/..."
@@ -598,20 +598,6 @@ case $SELECTION in
         
         # Note: Before apt-mirror finishes it will call postmirror.sh to clean the mirror and 
         # optionally call postmirror2.sh to correct any Hash Sum mismatches.
-        # Ensure that ownership of the mirror tree is apt-mirror:apt-mirror (otherwise cron won't run) 
-        # The $LOCALMIRRORSPATH is determined near the main beginning of this script
-        echo "Make $LOCALMIRRORSPATH owner be $APTMIRROR:$APTMIRROR"
-        chown -R $APTMIRROR:$APTMIRROR $LOCALMIRRORSPATH # chown -R apt-mirror:apt-mirror /media/$USER/<DISK_LABEL>/wasta-offline/apt-mirror
-        
-        # If apt-mirror updated the master local mirror (at /data/master/wasta-offline/...), then sync 
-        # it to the external USB mirror.
-        if [ "$UPDATINGEXTUSBDATA" = "YES" ]; then
-          # Call sync_Wasta_Offline_to_Ext_Drive.sh without any parameters: 
-          #   the $COPYFROMDIR will be /data/master/wasta-offline/
-          #   the $COPYTODIR will be /media/$USER/<DISK_LABEL>/wasta-offline
-          echo "[*** End of apt-mirror post-processing ***]"
-          bash $DIR/$SYNCWASTAOFFLINESCRIPT
-        fi
       else
         echo -e "\n****** WARNING ******"
         echo "Error: Could not install $APTMIRROR."
@@ -679,12 +665,12 @@ case $SELECTION in
         echo "Aborting..."
         exit $LASTERRORLEVEL
       fi
-      echo -e "\n"
+      echo " "
       echo "*******************************************************************************"
       echo "Calling apt-mirror - getting data from Internet"
       echo "  URL Prefix: $InternetURLPrefix"
       echo "*******************************************************************************"
-      echo -e "\n"
+      echo " "
       # Note: For this option, the user's /etc/apt/mirror.list file now points to repositories with this path prefix:
       # http://..."
       sleep 3s
@@ -772,19 +758,6 @@ EOF
       
       #echo "Change back to $CURRDIR"
       cd $CURRDIR
-      
-      # The $LOCALMIRRORSPATH is determined near the main beginning of this script
-      echo "Make $LOCALMIRRORSPATH owner be $APTMIRROR:$APTMIRROR"
-      chown -R $APTMIRROR:$APTMIRROR $LOCALMIRRORSPATH # chown -R apt-mirror:apt-mirror /media/$USER/<DISK_LABEL>/wasta-offline/apt-mirror
-      # If apt-mirror updated the master local mirror (at /data/master/wasta-offline/...), then sync 
-      # it to the external USB mirror.
-      if [ "$UPDATINGEXTUSBDATA" = "YES" ]; then
-        # Call sync_Wasta_Offline_to_Ext_Drive.sh without any parameters: 
-        #   the $COPYFROMDIR will be /data/master/wasta-offline/
-        #   the $COPYTODIR will be /media/$USER/<DISK_LABEL>/wasta-offline
-        echo "[*** End of apt-mirror post-processing ***]"
-        bash $DIR/$SYNCWASTAOFFLINESCRIPT
-      fi
     fi
    ;;
   "3")
@@ -818,12 +791,12 @@ EOF
             echo -e "\nError: Could not generate $MIRRORLIST at $MIRRORLISTPATH. Aborting..."
             exit $LASTERRORLEVEL
           fi
-          echo -e "\n"
+          echo " "
           echo "*******************************************************************************"
           echo "Calling apt-mirror - getting data from custom server site"
           echo "  URL Prefix: $CustomURLPrefix"
           echo "*******************************************************************************"
-          echo -e "\n"
+          echo " "
           # Note: For this option, the user's /etc/apt/mirror.list file now points to repositories with this path prefix:
           # "$CustomURLPrefix..."
           sleep 3s
@@ -849,17 +822,6 @@ EOF
           # Note: Before apt-mirror finishes it will call postmirror.sh to clean the mirror and 
           # optionally call postmirror2.sh to correct any Hash Sum mismatches.
           # The $LOCALMIRRORSPATH is determined near the main beginning of this script
-          echo "Make $LOCALMIRRORSPATH owner be $APTMIRROR:$APTMIRROR"
-          chown -R $APTMIRROR:$APTMIRROR $LOCALMIRRORSPATH # chown -R apt-mirror:apt-mirror /media/$USER/<DISK_LABEL>/wasta-offline/apt-mirror
-          # If apt-mirror updated the master local mirror (at /data/master/wasta-offline/...), then sync 
-          # it to the external USB mirror.
-          if [ "$UPDATINGEXTUSBDATA" = "YES" ]; then
-            # Call sync_Wasta_Offline_to_Ext_Drive.sh without any parameters: 
-            #   the $COPYFROMDIR will be /data/master/wasta-offline/
-            #   the $COPYTODIR will be /media/$USER/<DISK_LABEL>/wasta-offline
-            echo "[*** End of apt-mirror post-processing ***]"
-            bash $DIR/$SYNCWASTAOFFLINESCRIPT
-          fi
         fi
       else
         # User didn't type anything - abort
@@ -884,5 +846,20 @@ EOF
     exit 1
   ;;
 esac
+
+# Ensure that ownership of the mirror tree is apt-mirror:apt-mirror (otherwise cron won't run) 
+# The $LOCALMIRRORSPATH is determined near the main beginning of this script
+echo "Make $LOCALMIRRORSPATH owner be $APTMIRROR:$APTMIRROR"
+chown -R $APTMIRROR:$APTMIRROR $LOCALMIRRORSPATH # chown -R apt-mirror:apt-mirror /media/$USER/<DISK_LABEL>/wasta-offline/apt-mirror
+# If apt-mirror updated the master local mirror (at /data/master/wasta-offline/...), then sync 
+# it to the external USB mirror, if it was plugged in.
+if [ "$UPDATINGEXTUSBDATA" = "YES" ]; then
+  # Call sync_Wasta_Offline_to_Ext_Drive.sh without any parameters: 
+  #   the $COPYFROMDIR will be /data/master/wasta-offline/
+  #   the $COPYTODIR will be /media/$USER/<DISK_LABEL>/wasta-offline
+  echo "[*** End of apt-mirror post-processing ***]"
+  bash $DIR/$SYNCWASTAOFFLINESCRIPT
+fi
+        
 echo -e "\nThe $UPDATEMIRRORSCRIPT script has finished."
 
