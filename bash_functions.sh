@@ -482,15 +482,32 @@ get_a_default_path_for_COPYTODIR ()
 
 # This function uses rsync to copy the base directory and apt-mirror-setup directory
 # files from a source mirror's base directory to a destination mirror's base directory.
-# This function takes two parameters: $1 a source mirror's base path, and $2 a destination 
-# mirror's base path - usually "$COPYFROMBASEDIR" and "$COPYTOBASEDIR".
+# This function takes three parameters: 
+#   $1 a source mirror's base path - usually "$COPYFROMBASEDIR"
+#   $2 a destination mirror's base path - usually "$COPYTOBASEDIR".
+#   $3 the destination drive's format, i.e., "ext4", "ntfs", "vfat", etc.
 # The calling script should have assigned values to the following variables:
 #   $BILLSWASTADOCSDIR
 #   $WASTAOFFLINEDIR
 #   $APTMIRRORDIR
 #   $APTMIRRORSETUPDIR
 # This function is currently only used within the sync_Wasta-Offline_to_Ext_Drive.sh script.
-# TODO: Needs revision if the scripts are to support copying/syncing to NTFS formatted drive.
+#
+# Note that the sync_Wasta-Offline_to_Ext_Drive.sh script can be used with its $COPYTOBASEDIR
+# pointing to either the master mirror - as when make_Master_for_Wasta-Offline.sh script is
+# being called to initialize/kickstart a master mirror from a USB drive, or when $COPYTOBASEDIR
+# is pointing to the USB drive when updating the mirror (or creating a new one) on the USB drive.
+# We need to detect when the destination ($COPYTOBASEDIR) is formatted as ntfs or vfat, and
+# if so, we use the -rvhq --size-only --progress options with the rsync command (to avoid trying
+# to mess with ownership and permissions). Otherwise, when the destination ($COPYDOBASEDIR) is 
+# formatted as ext4 (Linux), we use the normal -avzq --update options with the rsync command (to
+# preserve ownership and permissions). The same considerations must be followed within the 
+# set_mirror_ownership_and_permissions () function farther below.
+
+# Revised 5Jan2019 to support copying/syncing to a destination drive that is formatted as
+# ntfs or vfat - normally a ntfs or vfat formatted drive would be at the destination only 
+# when the destination drive is a removable USB drive (the master mirror should always be 
+# located on a Linux Ext4 formatted partition on a dedicated computer).
 copy_mirror_base_dir_files ()
 {
   VARDIR="/var"
@@ -505,6 +522,22 @@ copy_mirror_base_dir_files ()
   #cd $DATADIR
   # Use wget to download the 32bit and 64bit wasta-offline*.deb packages from the ppa.launchpad.net repo
   #wget --recursive --no-directories --level 1 -A.deb $WASTAOFFLINEPKGURL/
+  
+  # Determine the rsync options to use.
+  # Note some calls of rsync below which copy to a different location on the 'source' 
+  # drive don't use $RSYNC_OPTIONS, but use the normal rsync options.
+  
+  # If the $2 parameter (destination) root dir is "/media", and if the $3 parameter 
+  # is "ntfs" or "vfat", set rsync options to "-rvh --size-only --progress" to avoid
+  # messing with ownership/permissions on a Windows format drive, otherwise use the
+  # default rsync options of "-avzq --update" for a Linux format drive.
+  RSYNC_OPTIONS="-avzq --update" # default rsync options for destination drive $2 formatted Linux ext4, ext3, etc.
+  ROOT_DIR_OF_COPYTOBASEDIR="/"$(echo "$2" | cut -d "/" -f2) # normally /media or /data
+  if [[ "$ROOT_DIR_OF_COPYTOBASEDIR" == "/media" ]]; then
+    if [[ "$3" == "ntfs" ]] || [[ "$3" == "vfat" ]]; then
+      RSYNC_OPTIONS="-rvh --size-only --progress"
+    fi
+  fi
 
   # $PKGPATH is assigned the path to the wasta-offline directory containing the deb packages 
   # deep in the ppa.launchpad.net part of the source mirror's "pool" repo:
@@ -522,7 +555,7 @@ copy_mirror_base_dir_files ()
   # to / (root), execute the find command, and then change the current directory back to what it
   # was previously (!).
   OLDDIR=`pwd` # Save the working dir path
-  cd / # temporarily change the working dir path to root
+  cd / # temporarily change the working dir path to root of the drive script is running from.
   # Store the found deb files, along with their absolute paths prefixed in a DEBS variable
   DEBS=`find "$PKGPATH" -type f -name wasta-offline_*_all.deb -printf '%T@ %p\n' | sort -n | cut -f2 -d" "`
   # Handle any find failure that leaves the DEBS variable empty and, if no failures,
@@ -537,22 +570,20 @@ copy_mirror_base_dir_files ()
     #echo -e "\nCopying packages from source mirror tree to: $1"
     echo -n "."
     # For these "base" level files we use --update option instead of the --delete option
-    # which updates the destination only if the source file is newer
-    # TODO: Adjust rsync command to use options: -rvh --size-only --progress
-    # if destination USB drive is not Linux ext4 (ntfs)
-    # Add -q (quiet) to options
-    rsync -avzq --update $DEBS $1
+    # which updates the destination only if the source file is newer.
+    # The rsync command's options in $RSYNC_OPTIONS below become: '-rvh --size-only --progress'
+    # if destination USB drive is not Linux ext4 (ntfs), otherwise they are '-avzq --update'
+    rsync -avzq --update $DEBS $1 # $1 is source mirror - use normal rsync options
     if ls $2/wasta-offline*.deb 1> /dev/null 2>&1; then
       rm $2/wasta-offline*.deb
     fi
     #echo -e "\nCopying packages from source mirror tree to: $2"
     echo -n "."
     # For these "base" level files we use --update option instead of the --delete option
-    # which updates the destination only if the source file is newer
-    # TODO: Adjust rsync command to use options: -rvh --size-only --progress
-    # if destination USB drive is not Linux ext4 (ntfs)
-    # Add -q (quiet) to options
-    rsync -avzq --update $DEBS $2
+    # which updates the destination only if the source file is newer.
+    # The rsync command's options in $RSYNC_OPTIONS below become: '-rvh --size-only --progress'
+    # if destination USB drive is not Linux ext4 (ntfs), otherwise they are '-avzq --update'
+    rsync $RSYNC_OPTIONS $DEBS $2 # $2 is destination mirror
   fi
   
   # whm 13July2017 added wasta-offline-setup deb packages to root dir files
@@ -573,23 +604,21 @@ copy_mirror_base_dir_files ()
     fi
     #echo -e "\nCopying packages from source mirror tree to: $1"
     echo -n "."
-    # For these "root" level files we use --update option instead of the --delete option
-    # which updates the destination only if the source file is newer
-    # TODO: Adjust rsync command to use options: -rvh --size-only --progress
-    # if destination USB drive is not Linux ext4 (ntfs)
-    # Add -q (quiet) to options
-    rsync -avzq --update $DEBS $1
+    # For these "base" level files we use --update option instead of the --delete option
+    # which updates the destination only if the source file is newer.
+    # The rsync command's options in $RSYNC_OPTIONS below become: '-rvh --size-only --progress'
+    # if destination USB drive is not Linux ext4 (ntfs), otherwise they are '-avzq --update'
+    rsync -avzq --update $DEBS $1 # $1 is source mirror - use normal rsync options
     if ls $2/wasta-offline-setup*.deb 1> /dev/null 2>&1; then
       rm $2/wasta-offline-setup*.deb
     fi
     #echo -e "\nCopying packages from source mirror tree to: $2"
     echo -n "."
-    # For these "root" level files we use --update option instead of the --delete option
-    # which updates the destination only if the source file is newer
-    # TODO: Adjust rsync command to use options: -rvh --size-only --progress
-    # if destination USB drive is not Linux ext4 (ntfs)
-    # Add -q (quiet) to options
-    rsync -avzq --update $DEBS $2
+    # For these "base" level files we use --update option instead of the --delete option
+    # which updates the destination only if the source file is newer.
+    # The rsync command's options in $RSYNC_OPTIONS below become: '-rvh --size-only --progress'
+    # if destination USB drive is not Linux ext4 (ntfs), otherwise they are '-avzq --update'
+    rsync $RSYNC_OPTIONS $DEBS $2
   fi
   
   cd $OLDDIR # Restore the working dir to what it was
@@ -598,14 +627,16 @@ copy_mirror_base_dir_files ()
   # destination of $1$WASTAOFFLINEDIR$APTMIRRORDIR$VARDIR
   #echo -e "\ncopying the *.sh files from: $1$APTMIRRORSETUPDIR/*.sh"
   #echo "                                to $1$WASTAOFFLINEDIR$APTMIRRORDIR$VARDIR"
-  # TODO: Adjust rsync command to use options: -rvh --size-only --progress
-  # if destination USB drive is not Linux ext4 (ntfs)
-  # Add -q (quiet) to options
-  rsync -avzq --update $1$APTMIRRORSETUPDIR/*.sh $1$WASTAOFFLINEDIR$APTMIRRORDIR$VARDIR
+  # For these "base" level files we use --update option instead of the --delete option
+  # which updates the destination only if the source file is newer.
+  # The rsync command's options in $RSYNC_OPTIONS below become: '-rvh --size-only --progress'
+  # if destination USB drive is not Linux ext4 (ntfs), otherwise they are '-avzq --update'
+  rsync -avzq --update $1$APTMIRRORSETUPDIR/*.sh $1$WASTAOFFLINEDIR$APTMIRRORDIR$VARDIR # $1 is source mirror - use normal rsync options
 
   # Copy other needed files to the external drive's root dir
   
-  # Find all Script files at base path $1 (-maxdepth 1 includes the $1 folder)  
+  # Find all Script files at base path $1 (-maxdepth 1 includes the $1 folder)
+  # and rsync them to base path of $2.
   #echo -e "\n"
   for script in `find $1 -maxdepth 1 -name '*.sh'` ; do 
     # The $script var will have the absolute path to the file in the source tree
@@ -625,15 +656,15 @@ copy_mirror_base_dir_files ()
     #echo "Synchronizing the script $script"
     #echo "  to $destscript"
     echo -n "."
-    # For these "root" level files we use --update option instead of the --delete option
-    # which updates the destination only if the source file is newer
-    # TODO: Adjust rsync command to use options: -rvh --size-only --progress
-    # if destination USB drive is not Linux ext4 (ntfs)
-    # Add -q (quiet) to options
-    rsync -avzq --update $script $destscript
+    # For these "base" level files we use --update option instead of the --delete option
+    # which updates the destination only if the source file is newer.
+    # The rsync command's options in $RSYNC_OPTIONS below become: '-rvh --size-only --progress'
+    # if destination USB drive is not Linux ext4 (ntfs), otherwise they are '-avzq --update'
+    rsync $RSYNC_OPTIONS $script $destscript
   done
 
-  # Find all Script files in the apt-mirror-setup folder and rsync them to #2
+  # Find all Script files in the apt-mirror-setup folder of $1  (-maxdepth 1 includes the 
+  # $1/apt-mirror setup/ folder) and rsync them to apt-mirror-setup folder of $2
   #echo -e "\n"
   for script in `find $1$APTMIRRORSETUPDIR -maxdepth 1 -name '*.sh'` ; do 
     # The $script var will have the absolute path to the file in the source tree
@@ -651,17 +682,16 @@ copy_mirror_base_dir_files ()
     mkdir -p "$DIROFSCRIPT"
     #echo -e "\nSynchronizing the script file $script to $destscript"
     echo -n "."
-    # For these "root" level files we use --update option instead of the --delete option
-    # which updates the destination only if the source file is newer
-    # TODO: Adjust rsync command to use options: -rvh --size-only --progress
-    # if destination USB drive is not Linux ext4 (ntfs)
-    # Add -q (quiet) to options
-    rsync -avzq --update $script $destscript
+    # For these "base" level files we use --update option instead of the --delete option
+    # which updates the destination only if the source file is newer.
+    # The rsync command's options in $RSYNC_OPTIONS below become: '-rvh --size-only --progress'
+    # if destination USB drive is not Linux ext4 (ntfs), otherwise they are '-avzq --update'
+    rsync $RSYNC_OPTIONS $script $destscript
   done
 
   # Find all the other Script files at $1$WASTAOFFLINEDIR$APTMIRRORDIR$VARDIR (includes only 
   # the clean.sh postmirror.sh and postmirror2.sh scripts in the 
-  # $1/wasta-offline/apt-mirror/var/ folder) and rsync them to $2
+  # $1/wasta-offline/apt-mirror/var/ folder) and rsync them to parallel folder in $2
   for script in `find $1$WASTAOFFLINEDIR$APTMIRRORDIR$VARDIR -maxdepth 1 -name '*.sh'` ; do 
     # The $script var will have the absolute path to the file in the source tree
     # We need to adjust the path to copy it to the same relative location in the 
@@ -677,37 +707,35 @@ copy_mirror_base_dir_files ()
     mkdir -p "$DIROFSCRIPT"
     #echo -e "\nSynchronizing the script file $script to $destscript"
     echo -n "."
-    # For these "root" level files we use --update option instead of the --delete option
-    # which updates the destination only if the source file is newer
-    # TODO: Adjust rsync command to use options: -rvh --size-only --progress
-    # if destination USB drive is not Linux ext4 (ntfs)
-    # Add -q (quiet) to options
-    rsync -avzq --update $script $destscript
+    # For these "base" level files we use --update option instead of the --delete option
+    # which updates the destination only if the source file is newer.
+    # The rsync command's options in $RSYNC_OPTIONS below become: '-rvh --size-only --progress'
+    # if destination USB drive is not Linux ext4 (ntfs), otherwise they are '-avzq --update'
+    rsync $RSYNC_OPTIONS $script $destscript
   done
   
   #echo "Synchronizing the ReadMe file to $2..."
-  # For these "root" level files we use --update option instead of the --delete option
-  # which updates the destination only if the source file is newer
-  # TODO: Adjust rsync command to use options: -rvh --size-only --progress
-  # if destination USB drive is not Linux ext4 (ntfs)
-  # Add -q (quiet) to options
-  rsync -avzq --update $1/ReadMe $2
+    # For these "base" level files we use --update option instead of the --delete option
+    # which updates the destination only if the source file is newer.
+    # The rsync command's options in $RSYNC_OPTIONS below become: '-rvh --size-only --progress'
+    # if destination USB drive is not Linux ext4 (ntfs), otherwise they are '-avzq --update'
+  rsync $RSYNC_OPTIONS $1/ReadMe $2
   #rsync -avz --progress --update $1/README.md $2
   #echo "Synchronizing the .git and .gitignore files to $2..."
   echo -n "."
-  # TODO: Adjust rsync command to use options: -rvh --size-only --progress
-  # if destination USB drive is not Linux ext4 (ntfs)
-  # Add -q (quiet) to options
-  rsync -avzq --update $1/.git* $2
+    # For these "base" level files we use --update option instead of the --delete option
+    # which updates the destination only if the source file is newer.
+    # The rsync command's options in $RSYNC_OPTIONS below become: '-rvh --size-only --progress'
+    # if destination USB drive is not Linux ext4 (ntfs), otherwise they are '-avzq --update'
+  rsync $RSYNC_OPTIONS $1/.git* $2
   
   if [ -d $1$BILLSWASTADOCSDIR ]; then
     #echo "Synchronizing the $BILLSWASTADOCS dir and contents to $2$BILLSWASTADOCSDIR..."
-    # Here again use --update option instead of the --delete option
-    # which updates the destination only if the source file is newer
-    # TODO: Adjust rsync command to use options: -rvh --size-only --progress
-    # if destination USB drive is not Linux ext4 (ntfs)
-    # Add -q (quiet) to options
-    rsync -avzq --update $1$BILLSWASTADOCSDIR/ $2$BILLSWASTADOCSDIR/
+    # For these "base" level files we use --update option instead of the --delete option
+    # which updates the destination only if the source file is newer.
+    # The rsync command's options in $RSYNC_OPTIONS below become: '-rvh --size-only --progress'
+    # if destination USB drive is not Linux ext4 (ntfs), otherwise they are '-avzq --update'
+    rsync $RSYNC_OPTIONS $1$BILLSWASTADOCSDIR/ $2$BILLSWASTADOCSDIR/
     if [ -L $1/docs-index ]; then
       #echo -e "\nSymbolic link docs-index already exists at $1"
       echo -n "."
@@ -732,22 +760,34 @@ copy_mirror_base_dir_files ()
 # A bash function that calls chown to set the ownership of the passed in mirror to apt-mirror:apt-mirror
 # and sets the permissions to read-write-execute for *.sh scripts and read-write for the mirror tree and
 # other files at the root of the mirror tree.
-# This function must have one parameter $1 passed to it, which is the base directory where the chown and
-# chmod operations are to initiate.
+# This function must have two parameters:
+#   $1 is the base directory where the chown and chmod operations are to initiate.
+#   $2 the destination drive's format, i.e., "ext4", "ntfs", "vfat", etc.
 # The calling script should have assigned values to the following variables:
 #   $BILLSWASTADOCSDIR
 #   $WASTAOFFLINEDIR
 #   $APTMIRROR
 #   $APTMIRRORDIR
-# TODO: Needs revision if the scripts are to support copying/syncing to NTFS formatted drive.
+# Revised to bypass setting of ownership/permissions when the drive 
+# at the $1 ($COPYTOBASEDIR) location is of type 'ntfs' or 'vfat' and the
+# location represented by $COPYTOBASEDIR is at the /media/... location.
 set_mirror_ownership_and_permissions ()
 {
-  # Although the destination may be a tree with no content created by the mkdir -p $COPYTODIR call 
+  # Although the destination may be a tree with no content created by the 'mkdir -p $COPYTODIR' call 
   # we can go ahead and take care of any mirror ownership and permissions issues for those
   # directories and files that exist, in case something has changed them. We don't want ownership
   # or permissions issues on any existing content there to foul up the sync operation.
   #echo -e "\nExecuting set_mirror_ownership_and_permissions function..."
   #echo "The 1 parameter is: $1"
+  
+  # If the $1 parameter (destination) root dir is /media, and if the $2 parameter 
+  # is "ntfs" or "vfat" don't attempt to set any ownership or permissions, just return 0.
+  ROOT_DIR_OF_COPYTOBASEDIR="/"$(echo "$1" | cut -d "/" -f2)
+  if [[ "$ROOT_DIR_OF_COPYTOBASEDIR" == "/media" ]]; then
+    if [[ "$2" == "ntfs" ]] || [[ "$2" == "vfat" ]]; then
+      return 0
+    fi
+  fi
   
   if [ $1 ]; then
     # Set ownership of the mirror tree starting at the wasta-offline directory
