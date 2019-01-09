@@ -310,13 +310,17 @@ if [ "x$USBMOUNTPOINT" = "x" ]; then
   # The $USBMOUNTPOINT variable is empty, i.e., a wasta-offline subdirectory on /media/... was not found
   echo -e "\nWasta-Offline data was NOT found at /media/..."
 else
-  USBMOUNTDIR=$USBMOUNTPOINT # normally USBMOUNTPOINT is /media/<DISK_LABEL>/wasta-offline or /media/$USER/<DISK_LABEL>/wasta-offline
-  WASTAOFFLINEEXTERNALAPTMIRRORPATH=$USBMOUNTDIR$APTMIRRORDIR # /media/$USER/<DISK_LABEL>/wasta-offline/apt-mirror
+  # The USBMOUNTDIR value should be the path up to, but not including /wasta-offline of $USBMOUNTPOINT
+  USBMOUNTDIR=$USBMOUNTPOINT # normally USBMOUNTDIR is /media/$USER/<DISK_LABEL>
+  if [[ "$USBMOUNTPOINT" == *"wasta-offline"* ]]; then 
+    USBMOUNTDIR=$(dirname "$USBMOUNTPOINT")
+  fi
+  WASTAOFFLINEEXTERNALAPTMIRRORPATH=$USBMOUNTPOINT$APTMIRRORDIR # /media/$USER/<DISK_LABEL>/wasta-offline/apt-mirror
   UPDATINGEXTUSBDATA="YES"
   echo -e "\nWasta-Offline data found at mount point: $USBMOUNTPOINT"
-  USBDEVICENAME=`get_device_name_of_usb_mount_point $USBMOUNTPOINT`
-  echo "Device Name of USB at $USBMOUNTPOINT: $USBDEVICENAME"
-  USBFILESYSTEMTYPE=`get_file_system_type_of_usb_partition $USBDEVICENAME`
+  USBDEVICENAME=`get_device_name_of_usb_mount_point "$USBMOUNTDIR"`
+  echo "Device Name of USB at $USBMOUNTDIR: $USBDEVICENAME"
+  USBFILESYSTEMTYPE=`get_file_system_type_of_usb_partition "$USBMOUNTDIR"`
   echo "File system TYPE of USB Drive at $USBDEVICENAME: $USBFILESYSTEMTYPE"
 fi
 sleep 3s
@@ -344,7 +348,7 @@ CURRDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 # If neither a local master mirror nor a USB drive with the full mirror is found notify
 # the user of the problem and abort, otherwise continue.
-if [ -d $WASTAOFFLINELOCALAPTMIRRORPATH ]; then
+if [ -d "$WASTAOFFLINELOCALAPTMIRRORPATH" ]; then
   LOCALMIRRORSPATH=$WASTAOFFLINELOCALAPTMIRRORPATH # /data/master/wasta-offline/apt-mirror
   LOCALBASEDIR=$DATADIR$MASTERDIR # /data/master
   UPDATINGLOCALDATA="YES"
@@ -367,7 +371,7 @@ fi
 # $CURRDIR (the directory in which this script is running). Warn user if the scripts are
 # not found.
 # Check for existence of postmirror.sh in $CURRDIR$APTMIRRORSETUPDIR
-if [ ! -f $CURRDIR$APTMIRRORSETUPDIR/$POSTMIRRORSCRIPT ]; then
+if [ ! -f "$CURRDIR$APTMIRRORSETUPDIR/$POSTMIRRORSCRIPT" ]; then
   echo -e "\n****** WARNING ******"
   echo "The $POSTMIRRORSCRIPT file was not found. It should be at:"
   echo "  $CURRDIR$APTMIRRORSETUPDIR/$POSTMIRRORSCRIPT"
@@ -378,7 +382,7 @@ if [ ! -f $CURRDIR$APTMIRRORSETUPDIR/$POSTMIRRORSCRIPT ]; then
   exit 1
 fi
 # Check for existence of postmirror2.sh in $CURRDIR$/APTMIRRORSETUPDIR
-if [ ! -f $CURRDIR$APTMIRRORSETUPDIR/$POSTMIRROR2SCRIPT ]; then
+if [ ! -f "$CURRDIR$APTMIRRORSETUPDIR/$POSTMIRROR2SCRIPT" ]; then
   echo -e "\n****** WARNING ******"
   echo "The $POSTMIRROR2SCRIPT file was not found. It should be at:"
   echo "  $CURRDIR$APTMIRRORSETUPDIR/$POSTMIRROR2SCRIPT"
@@ -401,7 +405,7 @@ echo "Are we updating a portable USB drive's mirror? $UPDATINGEXTUSBDATA"
 # but only if there is a wasta-offline directory in $CURRDIR. There will be a wasta-offline
 # dir if the user is running this script from either the master mirror at /data/master or
 # from a mirror on the external drive at /media/$USER/<DISK_LABEL>
-if [ -d $CURRDIR$WASTAOFFLINEDIR ]; then
+if [ -d "$CURRDIR$WASTAOFFLINEDIR" ]; then
 
   echo -e "\nCopying postmirror*.sh files to:"
   echo "   $CURRDIR$WASTAOFFLINEDIR$APTMIRRORDIR$VARDIR..."
@@ -492,7 +496,7 @@ else
 
   # Use dpkg to install the wasta-offline package
   echo "Find string: $CURRDIR/$WASTAOFFLINE*$LTSVERNUM*.deb"
-  DEB=`find $CURRDIR/$WASTAOFFLINE*$LTSVERNUM*.deb`
+  DEB=`find "$CURRDIR"/$WASTAOFFLINE*$LTSVERNUM*.deb`
   if [ "x$DEB" = "x" ]; then
     echo "Cannot install wasta-offline. A local deb package was not found."
     echo "You will need to install wasta-offline before you can use the mirror."
@@ -555,11 +559,11 @@ case $SELECTION in
     else
       echo -e "\nAccess to the http://linuxrepo.sil.org.pg/mirror server appears to be available!"
       # First, ensure that apt-mirror is installed
-      if smart_install_program $APTMIRROR -q ; then
+      if smart_install_program "$APTMIRROR" -q ; then
         # The apt-mirror program is installed
         echo -e "\nThe $APTMIRROR program is installed"
         # Create a custom mirror.list config file for this option
-        if generate_mirror_list_file $UkarumpaURLPrefix ; then
+        if generate_mirror_list_file "$UkarumpaURLPrefix" ; then
           echo "Successfully generated $MIRRORLIST at $MIRRORLISTPATH."
         else
           echo -e "\n****** WARNING ******"
@@ -610,13 +614,13 @@ case $SELECTION in
   "2")
     # Check if the full wasta-offline mirror is running and plugged in - we can install apt-mirror from it
     echo -e "\n"
-    if is_program_running $WASTAOFFLINE ; then
+    if is_program_running "$WASTAOFFLINE" ; then
       echo "$WASTAOFFLINE is running"
       # Check if it's the full wasta-offline USB mirror that is plugged in
-      if is_dir_available $WASTAOFFLINEEXTERNALAPTMIRRORPATH ; then  # /media/$USER/<DISK_LABEL>/wasta-offline/apt-mirror
+      if is_dir_available "$WASTAOFFLINEEXTERNALAPTMIRRORPATH" ; then  # /media/$USER/<DISK_LABEL>/wasta-offline/apt-mirror
         echo "Full Wasta-Offline mirror is plugged in"
         # Go ahead and install the apt-mirror program
-        if smart_install_program $APTMIRROR -q ; then
+        if smart_install_program "$APTMIRROR" -q ; then
           # The apt-mirror program is installed
           echo -e "\nThe $APTMIRROR program is installed"
         else
@@ -644,7 +648,7 @@ case $SELECTION in
     else
       echo -e "\nInternet access to www.archive.ubuntu.com appears to be available!"
       # First, ensure that apt-mirror is installed
-      if smart_install_program $APTMIRROR -q ; then
+      if smart_install_program "$APTMIRROR" -q ; then
         # The apt-mirror program is installed
         echo "The $APTMIRROR program is installed"
       else
@@ -656,7 +660,7 @@ case $SELECTION in
         exit $LASTERRORLEVEL
       fi
       # Create a custom mirror.list config file for this option
-      if generate_mirror_list_file $InternetURLPrefix ; then
+      if generate_mirror_list_file "$InternetURLPrefix" ; then
         echo "Successfully generated $MIRRORLIST at $MIRRORLISTPATH."
       else
         echo -e "\n****** WARNING ******"
@@ -711,7 +715,7 @@ case $SELECTION in
       # Update latest git repos for wasta-scripts and bills-wasta-docs
       #echo -e "\n"
       #echo "The LOCALBASEDIR is: $LOCALBASEDIR"
-      cd $LOCALBASEDIR
+      cd "$LOCALBASEDIR"
       if [ -d ".git" ]; then
         echo "The local wasta-scripts repo .git file exists"
         echo "Pull in any updates"
@@ -745,19 +749,19 @@ docs-index
 EOF
       chown $SUDO_USER:$SUDO_USER $GITIGNORE
       echo "The bills-wasta-docs path is: $LOCALBASEDIR$BILLSWASTADOCSDIR"
-      if [ -d $LOCALBASEDIR$BILLSWASTADOCSDIR ]; then
+      if [ -d "$LOCALBASEDIR$BILLSWASTADOCSDIR" ]; then
         #echo "The BILLSWASTADOCS dir exists"
-        cd $LOCALBASEDIR$BILLSWASTADOCSDIR
+        cd "$LOCALBASEDIR$BILLSWASTADOCSDIR"
         git pull
-        chown -R $SUDO_USER:$SUDO_USER $LOCALBASEDIR$BILLSWASTADOCSDIR
+        chown -R $SUDO_USER:$SUDO_USER "$LOCALBASEDIR$BILLSWASTADOCSDIR"
       else
         git clone https://github.com/pngbill-scripts/bills-wasta-docs.git
-        chown -R $SUDO_USER:$SUDO_USER $LOCALBASEDIR$BILLSWASTADOCSDIR
+        chown -R $SUDO_USER:$SUDO_USER "$LOCALBASEDIR$BILLSWASTADOCSDIR"
       fi
       # No need for a .gitignore file in bills-wasta-docs repo
       
       #echo "Change back to $CURRDIR"
-      cd $CURRDIR
+      cd "$CURRDIR"
     fi
    ;;
   "3")
@@ -771,7 +775,7 @@ EOF
       read CustomURLPrefix
       if [[ "x$CustomURLPrefix" != "x" ]]; then
         # Check for server access
-        ping -c1 -q $CustomURLPrefix
+        ping -c1 -q "$CustomURLPrefix"
         if [ "$?" != 0 ]; then
           echo -e "\n****** WARNING ******"
           echo "Cannot access the $CustomURLPrefix server!"
@@ -785,7 +789,7 @@ EOF
         else
           echo -e "\nAccess to the $CustomURLPrefix server appears to be available!"
           # Create a custom mirror.list config file for this option
-          if generate_mirror_list_file $CustomURLPrefix ; then
+          if generate_mirror_list_file "$CustomURLPrefix" ; then
             echo "Successfully generated $MIRRORLIST at $MIRRORLISTPATH."
           else
             echo -e "\nError: Could not generate $MIRRORLIST at $MIRRORLISTPATH. Aborting..."
@@ -850,7 +854,7 @@ esac
 # Ensure that ownership of the mirror tree is apt-mirror:apt-mirror (otherwise cron won't run) 
 # The $LOCALMIRRORSPATH is determined near the main beginning of this script
 echo "Make $LOCALMIRRORSPATH owner be $APTMIRROR:$APTMIRROR"
-chown -R $APTMIRROR:$APTMIRROR $LOCALMIRRORSPATH # chown -R apt-mirror:apt-mirror /media/$USER/<DISK_LABEL>/wasta-offline/apt-mirror
+chown -R $APTMIRROR:$APTMIRROR "$LOCALMIRRORSPATH" # chown -R apt-mirror:apt-mirror /media/$USER/<DISK_LABEL>/wasta-offline/apt-mirror
 # If apt-mirror updated the master local mirror (at /data/master/wasta-offline/...), then sync 
 # it to the external USB mirror, if it was plugged in.
 if [ "$UPDATINGEXTUSBDATA" = "YES" ]; then
@@ -858,7 +862,7 @@ if [ "$UPDATINGEXTUSBDATA" = "YES" ]; then
   #   the $COPYFROMDIR will be /data/master/wasta-offline/
   #   the $COPYTODIR will be /media/$USER/<DISK_LABEL>/wasta-offline
   echo "[*** End of apt-mirror post-processing ***]"
-  bash $DIR/$SYNCWASTAOFFLINESCRIPT
+  bash "$DIR/$SYNCWASTAOFFLINESCRIPT"
 fi
         
 echo -e "\nThe $UPDATEMIRRORSCRIPT script has finished."

@@ -306,7 +306,7 @@ echo -e "\nThis script calls the $SYNCWASTAOFFLINESCRIPT script to create"
 echo "   a master Wasta-Offline mirror."
 echo "Checking for the presence of the $SYNCWASTAOFFLINESCRIPT script..."
 sleep 2s
-if [ -x $DIR/$SYNCWASTAOFFLINESCRIPT ]; then
+if [ -x "$DIR/$SYNCWASTAOFFLINESCRIPT" ]; then
   echo "Script $DIR/$SYNCWASTAOFFLINESCRIPT exists, is executable."
 else
   echo -e "\n****** WARNING ******"
@@ -329,7 +329,7 @@ USBMOUNTPOINT=`get_wasta_offline_usb_mount_point`
 # empty string if the mirror.list file doesn't exist.
 BASEPATH_TO_MIRROR=`get_base_path_of_mirror_list_file` 
 # We'll sync to the wasta-offline directory (one level higher up), so remove /apt-mirror dir part.
-BASEPATH_TO_MIRROR=`dirname $BASEPATH_TO_MIRROR` # /data/master/wasta-offline
+BASEPATH_TO_MIRROR=`dirname "$BASEPATH_TO_MIRROR"` # /data/master/wasta-offline
 
 # Set some defaults for COPYFROMDIR and COPYTODIR, which may be overridden by parameters
 # given when invoking this script (see below).
@@ -525,12 +525,12 @@ fi
 # current full mirror that we're creating/syncing from the USB drive.
 # The USBMOUNTDIR value should be the path up to, but not including /wasta-offline of $USBMOUNTPOINT
 USBMOUNTDIR=$USBMOUNTPOINT # normally USBMOUNTDIR is /media/$USER/<DISK_LABEL>
-if [[ $USBMOUNTPOINT == *"wasta-offline"* ]]; then 
+if [[ "$USBMOUNTPOINT" == *"wasta-offline"* ]]; then 
   USBMOUNTDIR=$(dirname "$USBMOUNTPOINT")
 fi
-USBDEVICENAME=`get_device_name_of_usb_mount_point $USBMOUNTPOINT`
+USBDEVICENAME=`get_device_name_of_usb_mount_point "$USBMOUNTDIR"`
 echo "   Device NAME of USB Drive: $USBDEVICENAME"
-USBFILESYSTEMTYPE=`get_file_system_type_of_usb_partition $USBDEVICENAME`
+USBFILESYSTEMTYPE=`get_file_system_type_of_usb_partition "$USBMOUNTDIR"`
 echo "   File system TYPE of USB Drive: $USBFILESYSTEMTYPE"
   
 # Get more information about the destination's master mirror taking into account any
@@ -577,8 +577,8 @@ fi
 # Using df rather than lsblk, because lsblk just has one 'SIZE' field, and doesn't 
 # appear to have fields that differentiate between a 'used' and an 'avail' fields
 # that are available in the df --output= fields.
-USB_BYTES_USED=`df -B1 --output=fstype,used,target $USBMOUNTDIR | awk '{if(NR>1)print}' | tr -s " " | cut -f2 -d" "`
-MASTER_BYTES_AVAIL=`df -B1 --output=fstype,avail,target $ROOT_DIRECTORY_OF_MASTER | awk '{if(NR>1)print}' | tr -s " " | cut -f2 -d" "`
+USB_BYTES_USED=`df -B1 --output=fstype,used,target "$USBMOUNTDIR" | awk '{if(NR>1)print}' | tr -s " " | cut -f2 -d" "`
+MASTER_BYTES_AVAIL=`df -B1 --output=fstype,avail,target "$ROOT_DIRECTORY_OF_MASTER" | awk '{if(NR>1)print}' | tr -s " " | cut -f2 -d" "`
 #USB_BYTES_USED=`lsblk -o SIZE,MOUNTPOINT -b | grep $USBMOUNTDIR | cut -f1 -d" "`
 #MASTER_BYTES_AVAIL=`lsblk -o SIZE,MOUNTPOINT -b | grep $ROOT_DIRECTORY_OF_MASTER | cut -f1 -d" "`
 ONE_TB_BYTES="1000000000000"
@@ -673,7 +673,7 @@ SAVEEXT=".save" # used in generate_mirror_list_file () function
 # the entries in the mirror.list file each time the user runs update-mirror.sh depending
 # on the menu choice (of where to get the mirror data) the user makes in the process
 # of running the update-mirror.sh script.
-if generate_mirror_list_file $SOURCES_LIST_PROTOCOL ; then
+if generate_mirror_list_file "$SOURCES_LIST_PROTOCOL" ; then
   echo "Successfully generated $MIRRORLIST at $MIRRORLISTPATH."
 else
   echo -e "\n****** WARNING ******"
@@ -719,7 +719,7 @@ sleep 3s
 echo -e "\nCalling the $SYNCWASTAOFFLINESCRIPT script with these parameters:"
 echo "  Source mirror (parameter 1): $COPYFROMDIR"
 echo "  Destination mirror (parameter 2): $COPYTODIR"
-bash $DIR/$SYNCWASTAOFFLINESCRIPT $COPYFROMDIR $COPYTODIR
+bash $DIR/$SYNCWASTAOFFLINESCRIPT "$COPYFROMDIR" "$COPYTODIR"
 
 # Once the 'sync_Wasta-Offline_to_Ext_Drive.sh' script finishes, program
 # execution returns here, and this script also finishes at this point.

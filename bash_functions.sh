@@ -26,6 +26,9 @@
 #      Did a general cleanup of the scripts and comments.
 #      Removed 'export' from all variables - not needed for variable visibility.
 #      Added [currently unused] for move_mirror_from_data_to_data_master () function
+#   - 8 January 2019 Revised functions/routines that used lsblk to be able to better handle <DISK_LABEL>
+#      with embedded spaces.
+#      Added a new get_rsync_options () function
 # Name: bash_functions.sh
 # Distribution: 
 # This script is included with all Wasta-Offline Mirrors supplied by Bill Martin.
@@ -45,6 +48,7 @@
 #   get_base_path_of_mirror_list_file ()
 #   get_a_default_path_for_COPYFROMDIR ()
 #   get_a_default_path_for_COPYTODIR ()
+#   get_rsync_options ()
 #   copy_mirror_base_dir_files ()
 #   set_mirror_ownership_and_permissions ()
 #   ensure_user_in_apt_mirror_group ()
@@ -83,7 +87,7 @@
 is_dir_available ()
 {
   # This function should not produce any echo output other than its return value
-  if [ -d $1 ]; then
+  if [ -d "$1" ]; then
     return 0
   else
     return 1
@@ -134,16 +138,16 @@ is_program_running ()
 }
 
 # A bash function that echos the file system type of the USB mount point.
-# The $USBMOUNTPOINT must be passed to this function as the first parameter $1.
-# If $USBMOUNTPOINT parameter is not found, this function echos an empty string,
+# The $USBMOUNTDIR must be passed to this function as the first parameter $1.
+# If $USBMOUNTDIR parameter is not found, this function echos an empty string,
 # otherwise, if mount point was found, it echos the file system type, i.e., ext4.
 # No echo statements should appear in this function other than the echo "$FSTYPE" 
 # at the last line of the function.
 get_file_system_type_of_usb_partition ()
 {
-	MNTPT=$1 # Passed in $USBMOUNTPOINT
+	MNTPT=$1 # Passed in $USBMOUNTDIR, for example /media/bill/UPDATES, or /media/bill/SP PHD U3  [<DISK_LABEL> can have space(s)]
 	# Note: The lsblk command's MOUNTPOINT option never has a / at the end of its output string,
-	# so remove any final / from MNTPT (esp since Tab auto-completion puts a final / on path)
+	# so remove any final / from MNTPT (esp since Tab auto-completion puts a final / on path)	
 	MNTPT=${MNTPT%/}
     # Note on lsblk options/switches below: 
     #   -o FSTYPE,NAME,MOUNTPOINT selects the 3 columns listed with FSTYPE first, separated by a space
@@ -151,7 +155,10 @@ get_file_system_type_of_usb_partition ()
     #     of FSTYPE and NAME [i.e., /dev/sdb1] which won't have internal spaces
     #   -p (full path) optionlists full device as, for example, /dev/sdb1
     #   -r (raw output) eliminates graphic tree chars prefixing device path
-	FSTYPE=`lsblk -o FSTYPE,NAME,MOUNTPOINT -pr | grep $MNTPT | cut -f1 -d" "`
+    # NOTE: lsblk command's MOUNTPOINT option embeds \x20 chars in place of space chars
+    # so we can use sed to replace \x20 with plain space in the piped stream, in order
+    # for grep to be able to match the "$MNTPT", which won't have \x20 for spaces.
+	FSTYPE=$(lsblk -o FSTYPE,NAME,MOUNTPOINT -pr | sed 's/\\x20/ /g' | grep "$MNTPT" | cut -f1 -d" ")
 	# Note: Use of lsblk doesn't require sudo and is more flexible than blkid
 	# A less reliable, more obscure way using blkid is given below:
 	#BLKID=`blkid ! grep $MNTPT`
@@ -160,8 +167,8 @@ get_file_system_type_of_usb_partition ()
 }
 
 # A bash function that echos the device name of the USB mount point.
-# The $USBDEVICENAME (from the get_file_system_type_of_usb_partition function above) must be 
-# passed to this function as the first parameter $1.
+# The $USBMOUNTDIR must be passed to this function as the first parameter $1.
+# If $USBMOUNTDIR parameter is not found, this function echos an empty string,
 # No echo statements should appear in this function other than the echo "$DEVNAME" line
 # at the last line of the function.
 get_device_name_of_usb_mount_point ()
@@ -173,16 +180,16 @@ get_device_name_of_usb_mount_point ()
     #     of FSTYPE and NAME [i.e., /dev/sdb1] which won't have internal spaces
     #   -p (full path) optionlists full device as, for example, /dev/sdb1
     #   -r (raw output) eliminates graphic tree chars prefixing device path
+    # NOTE: lsblk command's MOUNTPOINT option embeds \x20 chars in place of space chars
+    # so we need to use sed to replace \x20 with plain space in the piped stream, in order
+    # for grep to be able to match the "$MNTPT".
     # NOTE: The MOUNTPOINT stored in the lsblk output only includes the path up to the main/root 
-    # dir, i.e., /media/$USER/<DISK_LABEL>. So first we need to remove any /wasta-offline from 
-    # right end of incoming $1 parameter MNTPT
-    if [[ $MNTPT == *"wasta-offline"* ]]; then 
-      MNTPT=$(dirname "$MNTPT")
-    fi
+    # dir, i.e., /media/$USER/<DISK_LABEL>. So the incoming $1 parameter for MNTPT must
+    # be $USBMOUNTDIR rather than $USBMOUNTPOINT in the caller.
 	# Note: The lsblk command's MOUNTPOINT option never has a / at the end of its output string,
 	# so remove any final / from MNTPT (esp since Tab auto-completion puts a final / on path)
-	MNTPT=${MNTPT%/}
-    DEVNAME=`lsblk -o FSTYPE,NAME,MOUNTPOINT -pr | grep $MNTPT | cut -f2 -d" "`
+	MNTPT=${MNTPT%/}	
+    DEVNAME=$(lsblk -o FSTYPE,NAME,MOUNTPOINT -pr | sed 's/\\x20/ /g' | grep "$MNTPT" | cut -f2 -d" ")
     # Note: Use of lsblk is more flexible and reliable than df -h 
     # A less reliable way using df is given below:
     #DEVNAME=`df -h | grep $MNTPT | cut -f1 -d" "`
@@ -213,12 +220,13 @@ get_wasta_offline_usb_mount_point ()
     # 2014-04-24 rik: $USER, $(logname), $(whoami), $(who) all not working when
     #   launch with gksu.  So, just setting to /media/*/*/wasta-offline :-(
     START_FOLDER=$(ls -1d /media/*/*/wasta-offline 2> /dev/null | sort -r | head -1)
-    
-    if [ -z "$START_FOLDER" ]
-    then
-        # second, look for wasta-offline folder under /media (12.04 and older)
-        START_FOLDER=$(ls -1d /media/*/wasta-offline 2>/dev/null | sort -r | head -1)
-    fi
+    # whm 7Jan2019 removed following test as it can give false if disk label has space char 
+    # in it, and is obsolete as we no longer support 12.04.
+    #if [ -z "$START_FOLDER" ]
+    #then
+    #    # second, look for wasta-offline folder under /media (12.04 and older)
+    #    START_FOLDER=$(ls -1d /media/*/wasta-offline 2>/dev/null | sort -r | head -1)
+    #fi
     # The following echo returns the USB mount point as a string when the function is
     # assigned to a variable, i.e., USBMOUNTPOINT=`get_wasta_offline_usb_mount_point`
     # No other echo statements should appear in this function.
@@ -254,7 +262,7 @@ smart_install_program ()
   # Check if $1 is already installed. If not, offer to install the $1 program.
   echo " "
   echo -n "Checking if $1 is installed..."
-  if (is_program_installed $1); then
+  if (is_program_installed "$1"); then
     echo "YES"
     # Program already installed, so do nothing more just return 0
     return 0
@@ -375,10 +383,10 @@ smart_install_program ()
         # installed using a full wasta-offline USB drive. User should be warned if wasta-offline
         # is not actually running, or a full mirror at /media/$USER/<DISK_LABEL>/wasta-offline/... 
         # can't be found.
-        if (is_program_running $WASTAOFFLINE); then
+        if (is_program_running "$WASTAOFFLINE"); then
           # wasta-offline is running
           # If wasta-offline is running against the full mirror it should be mounted at /media/.../<DISK_LABEL>
-          if (is_dir_available $USBMOUNTDIR); then
+          if (is_dir_available "$USBMOUNTDIR"); then
             echo "The $WASTAOFFLINE program is running with the full mirror on:"
             echo "   $USBMOUNTDIR."
           else
@@ -469,7 +477,7 @@ get_a_default_path_for_COPYTODIR ()
   BasePath=""
   BasePath=`get_base_path_of_mirror_list_file` # most likely /data/master/wasta-offline/apt-mirror, if it exists
   # We'll sync to the wasta-offline directory (one level higher up), so remove /apt-mirror part.
-  COPYTODIRFROMMIRRORLISTFILE=`dirname $BasePath` # strip off the .../apt-mirror dir, i.e., /data/master/wasta-offline
+  COPYTODIRFROMMIRRORLISTFILE=`dirname "$BasePath"` # strip off the .../apt-mirror dir, i.e., /data/master/wasta-offline
   if [[ "x$COPYTODIRFROMMIRRORLISTFILE" == "x" ]]; then
     # COPYTODIRFROMMIRRORLISTFILE is empty string, i.e., no mirror.list value was retrieved for base_path
     # In this case echo a default value of /data/master/wasta-offline as return value
@@ -480,12 +488,55 @@ get_a_default_path_for_COPYTODIR ()
   fi
 }
 
+# This function echos a string of the main options to be used with rsync calls:
+# The function takes one parameter:
+#   parameter $1 must be the 'base directory' of the destination path that will be 
+#   used in the rsync command, for example: /media/<username>/<DISK_LABEL>, 
+#   or /data/master. Since it is easy to wrongly use parameters that include
+#   the .../wasta-offline directory as a parameter to this function, we proactively 
+#   make sure that doesn't happen by removing any .../wasta-offline directory from $1.
+# Note: other parameters like -q (quiet) and --progress can be added to individual
+#   rsync calls - the -q option should be used for rsync calls that copy the root dir
+#   files from source to destination, but not for the main rsync call in 
+#   sync_Wasta-Offline_to_Ext_Drive.sh, and the --progress options should be used
+#   for the main rsync call in sync_Wasta-Offline_to_Ext_Drive.sh.
+# The function determines if the destination path includes "/media" in the path,
+# and, if so, calls the get_file_system_type_of_usb_partition () function to see
+# if that destination USB drive also represents a "ntfs" or "vfat" file system. 
+# If both conditions are true, then the alternate set of rsync options
+# are used that are safer for rsync operations to non-Linux formatted drives.
+# This get_rsync_options () function calls another function 
+# get_file_system_type_of_usb_partition () to get the USB file system type of the
+# destination drive indicated by parameter $1.
+get_rsync_options ()
+{
+  # Remove any .../wasta-offline directory from the input parameter $1
+  if [[ "$1" == *"wasta-offline"* ]]; then 
+    USBMNTDIR=$(dirname "$1")
+  fi
+
+  # If the $1 parameter (destination) root dir is "/media", and if the file sys type 
+  # is "ntfs" or "vfat", set rsync options to "-rvh --size-only" to avoid messing
+  # too much with ownership/permissions on a Windows format drive, otherwise use the
+  # default rsync options of "-avz --update" for a Linux format drive.
+  RSYNC_OPTS="-avz --update" # default rsync options for destination drive is formatted Linux ext4, ext3, etc.
+  ROOT_DIR_OF_COPYTOBASEDIR="/"$(echo "$USBMNTDIR" | cut -d "/" -f2) # normally /media or /data
+  if [[ "$ROOT_DIR_OF_COPYTOBASEDIR" == "/media" ]]; then
+    USBFSTYPE=$(get_file_system_type_of_usb_partition "$USBMNTDIR")
+    if [[ "$USBFSTYPE" == "ntfs" ]] || [[ "$USBFSTYPE" == "vfat" ]]; then
+      RSYNC_OPTS="-rvh --size-only"
+    fi
+  fi
+  echo "$RSYNC_OPTS"
+}
+
+
+
 # This function uses rsync to copy the base directory and apt-mirror-setup directory
 # files from a source mirror's base directory to a destination mirror's base directory.
-# This function takes three parameters: 
+# This function takes two parameters: 
 #   $1 a source mirror's base path - usually "$COPYFROMBASEDIR"
 #   $2 a destination mirror's base path - usually "$COPYTOBASEDIR".
-#   $3 the destination drive's format, i.e., "ext4", "ntfs", "vfat", etc.
 # The calling script should have assigned values to the following variables:
 #   $BILLSWASTADOCSDIR
 #   $WASTAOFFLINEDIR
@@ -523,21 +574,21 @@ copy_mirror_base_dir_files ()
   # Use wget to download the 32bit and 64bit wasta-offline*.deb packages from the ppa.launchpad.net repo
   #wget --recursive --no-directories --level 1 -A.deb $WASTAOFFLINEPKGURL/
   
-  # Determine the rsync options to use.
-  # Note some calls of rsync below which copy to a different location on the 'source' 
-  # drive don't use $RSYNC_OPTIONS, but use the normal rsync options.
-  
-  # If the $2 parameter (destination) root dir is "/media", and if the $3 parameter 
-  # is "ntfs" or "vfat", set rsync options to "-rvh --size-only --progress" to avoid
-  # messing with ownership/permissions on a Windows format drive, otherwise use the
-  # default rsync options of "-avzq --update" for a Linux format drive.
-  RSYNC_OPTIONS="-avzq --update" # default rsync options for destination drive $2 formatted Linux ext4, ext3, etc.
-  ROOT_DIR_OF_COPYTOBASEDIR="/"$(echo "$2" | cut -d "/" -f2) # normally /media or /data
-  if [[ "$ROOT_DIR_OF_COPYTOBASEDIR" == "/media" ]]; then
-    if [[ "$3" == "ntfs" ]] || [[ "$3" == "vfat" ]]; then
-      RSYNC_OPTIONS="-rvh --size-only --progress"
-    fi
-  fi
+  # Determine the rsync options to use for destination $2 and source $1 to apply later below.
+  # Use the bash function get_rsync_options () to determine the correct rsync options:
+  # If the destination's path root dir is "/media", and if it determines the file system
+  # there is "ntfs" or "vfat", it sets rsync options to "-rvh --size-only" to avoid
+  # messing with ownership/permissions on a Windows format drive, otherwise it uses the
+  # default rsync options of "-avz --update" for a Linux format drive.
+  # For this copy_mirror_base_dir_files () function we use the -q (quiet) option
+  # to minimize output to the console for the file copying.
+  RSYNC_OPTIONS_2=$(get_rsync_options "$2")
+  RSYNC_OPTIONS_1=$(get_rsync_options "$1") 
+  USBFSTYPE_2=$(get_file_system_type_of_usb_partition "$2")
+  USBFSTYPE_1=$(get_file_system_type_of_usb_partition "$1")
+  #echo "Debug: RSYNC_OPTIONS_1 are [$RSYNC_OPTIONS_1]"
+  #echo "Debug: RSYNC_OPTIONS_2 are [$RSYNC_OPTIONS_2]"
+  #exit 1
 
   # $PKGPATH is assigned the path to the wasta-offline directory containing the deb packages 
   # deep in the ppa.launchpad.net part of the source mirror's "pool" repo:
@@ -564,8 +615,8 @@ copy_mirror_base_dir_files ()
     echo -e "\nCould not find the wasta-offline deb packages in source mirror"
   else
     # Remove any old/existing deb files
-    if ls $1/wasta-offline*.deb 1> /dev/null 2>&1; then
-      rm $1/wasta-offline*.deb
+    if ls "$1"/wasta-offline*.deb 1> /dev/null 2>&1; then
+      rm "$1"/wasta-offline*.deb
     fi
     #echo -e "\nCopying packages from source mirror tree to: $1"
     echo -n "."
@@ -573,9 +624,9 @@ copy_mirror_base_dir_files ()
     # which updates the destination only if the source file is newer.
     # The rsync command's options in $RSYNC_OPTIONS below become: '-rvh --size-only --progress'
     # if destination USB drive is not Linux ext4 (ntfs), otherwise they are '-avzq --update'
-    rsync -avzq --update $DEBS $1 # $1 is source mirror - use normal rsync options
-    if ls $2/wasta-offline*.deb 1> /dev/null 2>&1; then
-      rm $2/wasta-offline*.deb
+    rsync $RSYNC_OPTIONS_1 -q $DEBS "$1" # $1 is source mirror - use normal rsync options
+    if ls "$2"/wasta-offline*.deb 1> /dev/null 2>&1; then
+      rm "$2"/wasta-offline*.deb
     fi
     #echo -e "\nCopying packages from source mirror tree to: $2"
     echo -n "."
@@ -583,14 +634,14 @@ copy_mirror_base_dir_files ()
     # which updates the destination only if the source file is newer.
     # The rsync command's options in $RSYNC_OPTIONS below become: '-rvh --size-only --progress'
     # if destination USB drive is not Linux ext4 (ntfs), otherwise they are '-avzq --update'
-    rsync $RSYNC_OPTIONS $DEBS $2 # $2 is destination mirror
+    rsync $RSYNC_OPTIONS_2 -q $DEBS "$2" # $2 is destination mirror
   fi
   
   # whm 13July2017 added wasta-offline-setup deb packages to root dir files
   # $PKGPATH is assigned the path to the wasta-offline directory containing the deb packages 
   # deep in the ppa.launchpad.net part of the source mirror's "pool" repo:
   # Note: Since COPYFROMDIR generally has a final /, append $APPMIRROR to it rather than $APPMIRRORDIR
-  PKGPATH=$1$WASTAOFFLINEDIR$APTMIRRORDIR"/mirror/ppa.launchpad.net/wasta-linux/wasta-apps/ubuntu/pool/main/w/wasta-offline-setup"
+  PKGPATH="$1"$WASTAOFFLINEDIR$APTMIRRORDIR"/mirror/ppa.launchpad.net/wasta-linux/wasta-apps/ubuntu/pool/main/w/wasta-offline-setup"
   # Store the found deb files, along with their absolute paths prefixed in a DEBS variable
   DEBS=`find "$PKGPATH" -type f -name wasta-offline-setup_*_all.deb -printf '%T@ %p\n' | sort -n | cut -f2 -d" "`
   # Handle any find failure that leaves the DEBS variable empty and, if no failures,
@@ -599,8 +650,8 @@ copy_mirror_base_dir_files ()
     echo -e "\nCould not find the wasta-offline-setup deb packages in source mirror"
   else
     # Remove any old/existing deb files
-    if ls $1/wasta-offline-setup*.deb 1> /dev/null 2>&1; then
-      rm $1/wasta-offline-setup*.deb
+    if ls "$1"/wasta-offline-setup*.deb 1> /dev/null 2>&1; then
+      rm "$1"/wasta-offline-setup*.deb
     fi
     #echo -e "\nCopying packages from source mirror tree to: $1"
     echo -n "."
@@ -608,9 +659,9 @@ copy_mirror_base_dir_files ()
     # which updates the destination only if the source file is newer.
     # The rsync command's options in $RSYNC_OPTIONS below become: '-rvh --size-only --progress'
     # if destination USB drive is not Linux ext4 (ntfs), otherwise they are '-avzq --update'
-    rsync -avzq --update $DEBS $1 # $1 is source mirror - use normal rsync options
-    if ls $2/wasta-offline-setup*.deb 1> /dev/null 2>&1; then
-      rm $2/wasta-offline-setup*.deb
+    rsync $RSYNC_OPTIONS_1 -q $DEBS "$1" # $1 is source mirror - use normal rsync options
+    if ls "$2"/wasta-offline-setup*.deb 1> /dev/null 2>&1; then
+      rm "$2"/wasta-offline-setup*.deb
     fi
     #echo -e "\nCopying packages from source mirror tree to: $2"
     echo -n "."
@@ -618,27 +669,27 @@ copy_mirror_base_dir_files ()
     # which updates the destination only if the source file is newer.
     # The rsync command's options in $RSYNC_OPTIONS below become: '-rvh --size-only --progress'
     # if destination USB drive is not Linux ext4 (ntfs), otherwise they are '-avzq --update'
-    rsync $RSYNC_OPTIONS $DEBS $2
+    rsync $RSYNC_OPTIONS_2 -q $DEBS "$2"
   fi
   
-  cd $OLDDIR # Restore the working dir to what it was
+  cd "$OLDDIR" # Restore the working dir to what it was
 
   # Copy the *.sh file in the $1$APTMIRRORSETUPDIR to their ultimate 
-  # destination of $1$WASTAOFFLINEDIR$APTMIRRORDIR$VARDIR
-  #echo -e "\ncopying the *.sh files from: $1$APTMIRRORSETUPDIR/*.sh"
-  #echo "                                to $1$WASTAOFFLINEDIR$APTMIRRORDIR$VARDIR"
+  # destination of "$1"$WASTAOFFLINEDIR$APTMIRRORDIR$VARDIR
+  #echo -e "\ncopying the *.sh files from: "$1"$APTMIRRORSETUPDIR/*.sh"
+  #echo "                                to "$1"$WASTAOFFLINEDIR$APTMIRRORDIR$VARDIR"
   # For these "base" level files we use --update option instead of the --delete option
   # which updates the destination only if the source file is newer.
   # The rsync command's options in $RSYNC_OPTIONS below become: '-rvh --size-only --progress'
   # if destination USB drive is not Linux ext4 (ntfs), otherwise they are '-avzq --update'
-  rsync -avzq --update $1$APTMIRRORSETUPDIR/*.sh $1$WASTAOFFLINEDIR$APTMIRRORDIR$VARDIR # $1 is source mirror - use normal rsync options
+  rsync $RSYNC_OPTIONS_1 -q "$1"$APTMIRRORSETUPDIR/*.sh "$1"$WASTAOFFLINEDIR$APTMIRRORDIR$VARDIR # $1 is source mirror - use normal rsync options
 
   # Copy other needed files to the external drive's root dir
   
   # Find all Script files at base path $1 (-maxdepth 1 includes the $1 folder)
   # and rsync them to base path of $2.
   #echo -e "\n"
-  for script in `find $1 -maxdepth 1 -name '*.sh'` ; do 
+  for script in `find "$1" -maxdepth 1 -name '*.sh'` ; do 
     # The $script var will have the absolute path to the file in the source tree
     # We need to adjust the path to copy it to the same relative location in the 
     # destination tree. 
@@ -646,7 +697,7 @@ copy_mirror_base_dir_files ()
     # Handle any find failure that leaves the $script variables empty, and if no failures,
     # rsync the script to the destination mirror at same relative location. Create the
     # directory structure at the destination if necessary.
-    destscript=$2${script#$1}
+    destscript="$2"${script#"$1"}
     #echo -e "\nFound script in Base DIR $1"
     #echo "  at: $script"
     #echo "Dest at: $destscript"
@@ -660,13 +711,13 @@ copy_mirror_base_dir_files ()
     # which updates the destination only if the source file is newer.
     # The rsync command's options in $RSYNC_OPTIONS below become: '-rvh --size-only --progress'
     # if destination USB drive is not Linux ext4 (ntfs), otherwise they are '-avzq --update'
-    rsync $RSYNC_OPTIONS $script $destscript
+    rsync $RSYNC_OPTIONS_2 -q "$script" "$destscript"
   done
 
   # Find all Script files in the apt-mirror-setup folder of $1  (-maxdepth 1 includes the 
   # $1/apt-mirror setup/ folder) and rsync them to apt-mirror-setup folder of $2
   #echo -e "\n"
-  for script in `find $1$APTMIRRORSETUPDIR -maxdepth 1 -name '*.sh'` ; do 
+  for script in `find "$1"$APTMIRRORSETUPDIR -maxdepth 1 -name '*.sh'` ; do 
     # The $script var will have the absolute path to the file in the source tree
     # We need to adjust the path to copy it to the same relative location in the 
     # destination tree. 
@@ -674,7 +725,7 @@ copy_mirror_base_dir_files ()
     # Handle any find failure that leaves the $script variables empty, and if no failures,
     # rsync the script to the destination mirror at same relative location. Create the
     # directory structure at the destination if necessary.
-    destscript=$2${script#$1}
+    destscript="$2"${script#"$1"}
     #echo "Found script in $1$APTMIRRORSETUPDIR at: $script"
     #echo "The destination script will be at: $destscript"
     DIROFSCRIPT=${destscript%/*}
@@ -686,20 +737,20 @@ copy_mirror_base_dir_files ()
     # which updates the destination only if the source file is newer.
     # The rsync command's options in $RSYNC_OPTIONS below become: '-rvh --size-only --progress'
     # if destination USB drive is not Linux ext4 (ntfs), otherwise they are '-avzq --update'
-    rsync $RSYNC_OPTIONS $script $destscript
+    rsync $RSYNC_OPTIONS_2 -q "$script" "$destscript"
   done
 
   # Find all the other Script files at $1$WASTAOFFLINEDIR$APTMIRRORDIR$VARDIR (includes only 
   # the clean.sh postmirror.sh and postmirror2.sh scripts in the 
   # $1/wasta-offline/apt-mirror/var/ folder) and rsync them to parallel folder in $2
-  for script in `find $1$WASTAOFFLINEDIR$APTMIRRORDIR$VARDIR -maxdepth 1 -name '*.sh'` ; do 
+  for script in `find "$1"$WASTAOFFLINEDIR$APTMIRRORDIR$VARDIR -maxdepth 1 -name '*.sh'` ; do 
     # The $script var will have the absolute path to the file in the source tree
     # We need to adjust the path to copy it to the same relative location in the 
     # destination tree. 
     # We remove the $1 part of the $script path and substitute the $2 part.
     # Handle any find failure that leaves tje $script variables empty, and if no failures,
     # rsync the script to the destination mirror at same relative location.
-    destscript=$2${script#$1}
+    destscript="$2"${script#"$1"}
     #echo "Found script in $1$WASTAOFFLINEDIR$APTMIRRORDIR$VARDIR dir of source tree at: $script"
     #echo "The destination script will be at: $destscript"
     DIROFSCRIPT=${destscript%/*}
@@ -711,7 +762,7 @@ copy_mirror_base_dir_files ()
     # which updates the destination only if the source file is newer.
     # The rsync command's options in $RSYNC_OPTIONS below become: '-rvh --size-only --progress'
     # if destination USB drive is not Linux ext4 (ntfs), otherwise they are '-avzq --update'
-    rsync $RSYNC_OPTIONS $script $destscript
+    rsync $RSYNC_OPTIONS_2 -q "$script" "$destscript"
   done
   
   #echo "Synchronizing the ReadMe file to $2..."
@@ -719,38 +770,41 @@ copy_mirror_base_dir_files ()
     # which updates the destination only if the source file is newer.
     # The rsync command's options in $RSYNC_OPTIONS below become: '-rvh --size-only --progress'
     # if destination USB drive is not Linux ext4 (ntfs), otherwise they are '-avzq --update'
-  rsync $RSYNC_OPTIONS $1/ReadMe $2
-  #rsync -avz --progress --update $1/README.md $2
+  rsync $RSYNC_OPTIONS_2 -q "$1"/ReadMe "$2"
   #echo "Synchronizing the .git and .gitignore files to $2..."
   echo -n "."
     # For these "base" level files we use --update option instead of the --delete option
     # which updates the destination only if the source file is newer.
     # The rsync command's options in $RSYNC_OPTIONS below become: '-rvh --size-only --progress'
     # if destination USB drive is not Linux ext4 (ntfs), otherwise they are '-avzq --update'
-  rsync $RSYNC_OPTIONS $1/.git* $2
+  rsync $RSYNC_OPTIONS_2 -q "$1"/.git* "$2"
   
-  if [ -d $1$BILLSWASTADOCSDIR ]; then
+  if [ -d "$1"$BILLSWASTADOCSDIR ]; then
     #echo "Synchronizing the $BILLSWASTADOCS dir and contents to $2$BILLSWASTADOCSDIR..."
     # For these "base" level files we use --update option instead of the --delete option
     # which updates the destination only if the source file is newer.
     # The rsync command's options in $RSYNC_OPTIONS below become: '-rvh --size-only --progress'
     # if destination USB drive is not Linux ext4 (ntfs), otherwise they are '-avzq --update'
-    rsync $RSYNC_OPTIONS $1$BILLSWASTADOCSDIR/ $2$BILLSWASTADOCSDIR/
-    if [ -L $1/docs-index ]; then
+    rsync $RSYNC_OPTIONS_2 -q "$1"$BILLSWASTADOCSDIR/ "$2"$BILLSWASTADOCSDIR/
+    if [ -L "$1"/docs-index ]; then
       #echo -e "\nSymbolic link docs-index already exists at $1"
       echo -n "."
     else
       #echo -e "\nCreating symbolic link docs-index at $1"
       echo -n "."
-      ln -s $1$BILLSWASTADOCSDIR/index.html $1/docs-index
+      if [[ "$USBFSTYPE_1" != "vfat" ]]; then
+        ln -s "$1"$BILLSWASTADOCSDIR/index.html "$1"/docs-index
+      fi
     fi
-    if [ -L $2/docs-index ]; then
+    if [ -L "$2"/docs-index ]; then
       #echo "Symbolic link docs-index already exists at $2"
       echo -n "."
     else
       #echo "Creating symbolic link docs-index at $2"
       echo -n "."
-      ln -s $2$BILLSWASTADOCSDIR/index.html $2/docs-index
+      if [[ "$USBFSTYPE_2" != "vfat" ]]; then
+        ln -s "$2"$BILLSWASTADOCSDIR/index.html "$2"/docs-index
+      fi
     fi
   fi
   #echo "Exiting copy_mirror_base_dir_files function."
@@ -770,7 +824,7 @@ copy_mirror_base_dir_files ()
 #   $APTMIRRORDIR
 # Revised to bypass setting of ownership/permissions when the drive 
 # at the $1 ($COPYTOBASEDIR) location is of type 'ntfs' or 'vfat' and the
-# location represented by $COPYTOBASEDIR is at the /media/... location.
+# location represented by $COPYTOBASEDIR is at a USB /media/... location.
 set_mirror_ownership_and_permissions ()
 {
   # Although the destination may be a tree with no content created by the 'mkdir -p $COPYTODIR' call 
@@ -789,46 +843,46 @@ set_mirror_ownership_and_permissions ()
     fi
   fi
   
-  if [ $1 ]; then
+  if [ "$1" ]; then
     # Set ownership of the mirror tree starting at the wasta-offline directory
     #echo "SUDO_USER is: $SUDO_USER"
     #echo "Setting $1$WASTAOFFLINEDIR owner: $APTMIRROR:$APTMIRROR"
     echo -n "." 
-    chown -R $APTMIRROR:$APTMIRROR $1$WASTAOFFLINEDIR
+    chown -R $APTMIRROR:$APTMIRROR "$1"$WASTAOFFLINEDIR
     # Set ownership of the mirror tree at the apt-mirror-setup directory
     #echo "Setting $1$APTMIRRORSETUPDIR owner: $APTMIRROR:$APTMIRROR"
     echo -n "." 
-    chown -R $APTMIRROR:$APTMIRROR $1$APTMIRRORSETUPDIR
+    chown -R $APTMIRROR:$APTMIRROR "$1"$APTMIRRORSETUPDIR
     # Set ownership of scripts, ReadMe file, and bills-wasta-docs directory to $SUDO_USER
     #echo "Setting $1/*.sh owner: $SUDO_USER:$SUDO_USER"
     echo -n "." 
-    chown $SUDO_USER:$SUDO_USER $1/*.sh
+    chown $SUDO_USER:$SUDO_USER "$1"/*.sh
     #echo "Setting $1/ReadMe owner: $SUDO_USER:$SUDO_USER"
     echo -n "." 
-    chown $SUDO_USER:$SUDO_USER $1/ReadMe
+    chown $SUDO_USER:$SUDO_USER "$1"/ReadMe
     #echo "Setting $1$BILLSWASTADOCSDIR owner: $SUDO_USER:$SUDO_USER"
     echo -n "." 
-    chown -R $SUDO_USER:$SUDO_USER $1$BILLSWASTADOCSDIR
+    chown -R $SUDO_USER:$SUDO_USER "$1"$BILLSWASTADOCSDIR
     #echo "Setting content at $1 read-write for everyone"
     echo -n "." 
-    chmod -R ugo+rw $1
+    chmod -R ugo+rw "$1"
     # Find all Script files at $1 and set them read-write-executable
     # Note: The for loops with find command below should echo those in the last half of the 
     # copy_mirror_base_dir_files () function above.
-    for script in `find $1 -maxdepth 1 -name '*.sh'` ; do 
+    for script in `find "$1" -maxdepth 1 -name '*.sh'` ; do 
       #echo "Setting $script executable"
       echo -n "." 
-      chmod ugo+rwx $script
+      chmod ugo+rwx "$script"
     done
-    for script in `find $1$APTMIRRORSETUPDIR -maxdepth 1 -name '*.sh'` ; do 
+    for script in `find "$1"$APTMIRRORSETUPDIR -maxdepth 1 -name '*.sh'` ; do 
       #echo "Setting $script executable"
       echo -n "." 
-      chmod ugo+rwx $script
+      chmod ugo+rwx "$script"
     done
-    for script in `find $1$WASTAOFFLINEDIR$APTMIRRORDIR$VARDIR -maxdepth 1 -name '*.sh'` ; do 
+    for script in `find "$1"$WASTAOFFLINEDIR$APTMIRRORDIR$VARDIR -maxdepth 1 -name '*.sh'` ; do 
       #echo "Setting $script executable"
       echo -n "." 
-      chmod ugo+rwx $script
+      chmod ugo+rwx "$script"
     done
   fi
   #echo "Exiting set_mirror_ownership_and_permissions function."
@@ -857,7 +911,7 @@ ensure_user_in_apt_mirror_group ()
     echo "Parameter passed in to ensure_user_in_apt_mirror_group was: $1"
     return 1  
   fi
-  usermod -a -G apt-mirror $1
+  usermod -a -G apt-mirror "$1"
   LASTERRORLEVEL=$?
   if [ $LASTERRORLEVEL != 0 ]; then
     #echo -e "\nWARNING: Could not add user: $1 to the apt-mirror group"
@@ -1100,11 +1154,11 @@ generate_mirror_list_file ()
   echo -e "\nGenerating $MIRRORLIST configuration file at $MIRRORLISTPATH..."
   
   SKYPEURL="repo.skype.com/deb"
-  if [[ $1 == "http://"* ]]; then 
+  if [[ "$1" == "http://"* ]]; then 
     SKYPEPATH=${1#http://}
     SKYPEPREFIX="https://$SKYPEURL"
   else
-    SKYPEPREFIX=$1$SKYPEURL
+    SKYPEPREFIX="$1"$SKYPEURL
   fi
   #echo "SKYPEPATH is: $SKYPEPATH"
   #echo "SKYPEPREFIX is: $SKYPEPREFIX"
@@ -1391,7 +1445,7 @@ is_there_a_wasta_offline_mirror_at ()
 
   # Check to see if there is a valid wasta-offline path at the $1 parameter location. If not,
   # return 1 (for failure)
-  if [ ! -d $1 ]; then
+  if [ ! -d "$1" ]; then
     return 1
   fi
   
@@ -1509,7 +1563,7 @@ is_this_mirror_older_than_that_mirror ()
   #echo "Destination mirror is at: $1"
   #echo "Source mirror is at: $2"
   # Check that both parameters were provided by caller
-  if [[ $1 = "" ]] || [[ $2 = "" ]]; then
+  if [[ "$1" = "" ]] || [[ "$2" = "" ]]; then
     # Programming Error
     return 6
   fi
@@ -1517,24 +1571,25 @@ is_this_mirror_older_than_that_mirror ()
   # Check that both parameters point to valid wasta-offline directories.
   # Check to see if there is a valid wasta-offline path at the $1 parameter location. If not,
   # return 1 (for failure)
-  if [ ! -d $1 ]; then
+  if [ ! -d "$1" ]; then
     return 3
   fi
   # Check to see if there is a valid wasta-offline path at the $2 parameter location. If not,
   # return 1 (for failure)
-  if [ ! -d $2 ]; then
+  if [ ! -d "$2" ]; then
     return 4
   fi
 
   # Check that the parateters given to this function point to different mirrors.
-  if [ $1 = $2 ]; then
+  if [ "$1" = "$2" ]; then
     # Programming Error
     return 5
   fi
 
   # Check to see if the destination mirror ($1) has a $LastAppMirrorUpdate file. If not we assume
   # that the destination tree is older
-  if ! [ -f $1"/log/$LastAppMirrorUpdate" ]; then
+  LastAppMirrorUpdate="last-apt-mirror-update" # used in is_this_mirror_older_than_that_mirror () function
+  if ! [ -f "$1/log/$LastAppMirrorUpdate" ]; then
     # No $LastAppMirrorUpdate file found at destination
     return 7
   fi
@@ -1545,9 +1600,9 @@ is_this_mirror_older_than_that_mirror ()
 
   # Get the $1 and $2 mirrors' timestamps and compare them
   echo -e "\nComparing time stamps of the destination and source mirrors..."
-  timestamp1=$(head -n 1 $2"/log/$LastAppMirrorUpdate")
+  timestamp1=$(head -n 1 "$2/log/$LastAppMirrorUpdate")
   echo "  Timestamp of mirror at destination is: $timestamp1"
-  timestamp2=$(head -n 1 $1"/log/$LastAppMirrorUpdate")
+  timestamp2=$(head -n 1 "$1/log/$LastAppMirrorUpdate")
   echo "  Timestamp of mirror at source is: $timestamp2"
   if [[ "$timestamp1" = "$timestamp2" ]]; then
     # The mirror at the destination has the same time stamp as the source mirror

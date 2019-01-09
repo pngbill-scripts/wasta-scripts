@@ -276,21 +276,68 @@ POSTMIRRORSCRIPT="postmirror.sh"
 POSTMIRROR2SCRIPT="postmirror2.sh"
 
 # See NOTEs later in this script that explain what paths can be pointed to by $COPYFROMDIR and $COPYTODIR.
-COPYFROMDIR=$DATADIR$MASTERDIR$WASTAOFFLINEDIR"/"  # /data/master/wasta-offline/ is now the default source dir
-USBDEVICENAME=""
-USBFILESYSTEMTYPE=""
 WAIT=60
 start=`date +%s` # keep track of run-time of script
 
 echo -e "\n[*** Now executing the $SYNCWASTAOFFLINESCRIPT script ***]"
 sleep 3s
 
-# Use the get_wasta_offline_usb_mount_point () function to get a value for USBMOUNTPOINT
+# ------------------------------------------------------------------------------
+# Main program starts here
+# ------------------------------------------------------------------------------
+
+COPYFROMDIR=$DATADIR$MASTERDIR$WASTAOFFLINEDIR"/"  # /data/master/wasta-offline/ is the default source dir
+# Use the get_wasta_offline_usb_mount_point () function to get an initial value for USBMOUNTPOINT
+# to fill in the "Directory to sync to is: " field echoed to console below
 USBMOUNTPOINT=`get_wasta_offline_usb_mount_point`  # normally USBMOUNTPOINT is /media/$USER/<DISK_LABEL>/wasta-offline
 if [ "x$USBMOUNTPOINT" = "x" ]; then
+  COPYTODIR="UNKNOWN"
+  # See the other actions taken after the case statement below, when COPYTODIR is "UNKNOWN".
+else
+  COPYTODIR=$USBMOUNTPOINT
+fi
+
+#echo -e "\nNumber of parameters: $#"
+#echo -e "\nThe SUDO_USER is: $SUDO_USER"
+sleep 3s
+case $# in
+    0) 
+      echo -e "\nThis $SYNCWASTAOFFLINESCRIPT script invoked without any parameters:"
+      echo "  Directory to sync from is: $COPYFROMDIR (default)"
+      if [[ "$COPYTODIR" == "UNKNOWN" ]]; then
+        echo "  Directory to sync to is:   $COPYTODIR"
+      else
+        echo "  Directory to sync to is:   $COPYTODIR (default)"
+      fi
+        ;;
+    1) 
+      COPYTODIR="$1"
+      echo -e "\nThis $SYNCWASTAOFFLINESCRIPT script was invoked with 1 parameter:"
+      echo "  Directory to sync from is: $COPYFROMDIR (default)"
+      echo "  Directory to sync to is:   $COPYTODIR (parameter 1)"
+        ;;
+    2) 
+      COPYFROMDIR="$1"
+      COPYTODIR="$2"
+      echo -e "\nThis $SYNCWASTAOFFLINESCRIPT script was invoked with 2 parameters:"
+      echo "  Directory to sync from is: $COPYFROMDIR (parameter 1)"
+      echo "  Directory to sync to is:   $COPYTODIR (parameter 2)"
+        ;;
+    *)
+      echo -e "\nUnrecognized parameters used with script."
+      echo "Usage:"
+      echo "$SYNCWASTAOFFLINESCRIPT [<source-dir-path>] [<destination-dir-path>]"
+      exit 1
+        ;;
+esac
+
+if [[ "$COPYTODIR" = "UNKNOWN" ]]; then
   # $USBMOUNTPOINT for a USB drive containing a wasta-offline subfolder was not found
-  USBMOUNTDIR=""
   COPYTODIR=""
+  USBMOUNTPOINT=""
+  USBMOUNTDFIR=""
+  USBDEVICENAME=""
+  USBFILESYSTEMTYPE=""
   # The $USBMOUNTPOINT variable is empty, i.e., a wasta-offline subdirectory on /media/... was not found
   echo -e "\nWasta-Offline data was NOT found at /media/..."
   #sleep 3s
@@ -303,7 +350,7 @@ if [ "x$USBMOUNTPOINT" = "x" ]; then
   total=0
   REMOVABLE_DRIVES=""
   for _device in /sys/block/*/device; do
-    if echo $(readlink -f "$_device")|egrep -q "usb"; then # egrep -q "usb" returns 0 (success) if "usb" is in the readlink -f output of "$_device"
+    if echo $(readlink -f "$_device") | egrep -q "usb"; then # egrep -q "usb" returns 0 (success) if "usb" is in the readlink -f output of "$_device"
         _disk=$(echo "$_device" | cut -f4 -d/) # gets 4th '/' path element of $_device, for example, for /sys/block/sde/device cuts out "sde"
         REMOVABLE_DRIVES="$REMOVABLE_DRIVES $_disk"
         let total=total+1
@@ -314,7 +361,7 @@ if [ "x$USBMOUNTPOINT" = "x" ]; then
   if [ "$total" -gt "0" ]; then
     # get partition(s) and mount points paired with above device names
     #echo "Removable USB drive devices found: $REMOVABLE_DRIVES"
-    echo -e "\nPotential USB Drive(s) found for creating a new wasta-offline mirror..."
+    echo -e "\nFound potential USB Drive(s) for creating a new wasta-offline mirror..."
     echo "Select a USB partition NUMBER from this list to create a new mirror:"
     #sleep 1s
     echo "NUMBER PARTITION TYPE MOUNTPOINT"
@@ -323,17 +370,18 @@ if [ "x$USBMOUNTPOINT" = "x" ]; then
     USBMOUNTPTARRAY=() # Create an empty array for mount points
     # display partitions and mount points paired with above removable drive names
     for devname in $REMOVABLE_DRIVES; do
-      USBMOUNTPTARRAY[itemnum]=`lsblk -o NAME,FSTYPE,MOUNTPOINT -pr | grep "/media" | grep $devname | cut -f3 -d" "`
-      # Use printf to change any \x20 hex values for space to actual space in the array string
-      tempstr=${USBMOUNTPTARRAY[itemnum]}
-      #echo "tempstr before is: $tempstr"
-      tempstr=`printf "${USBMOUNTPTARRAY[itemnum]}"`
-      USBMOUNTPTARRAY[itemnum]=$tempstr
-      #echo "tempstr after is: $tempstr"
+      # Note: Use sed in lsblk command to replace any \x20 chars with spaces in the MOUNTPOINT output
+      # before grep does its matching and the value is stored in $USBMOUNTPTARRAY.
+      #USBMOUNTPTARRAY[itemnum]=$(lsblk -o NAME,FSTYPE,MOUNTPOINT -pr | sed 's/\\x20/ /g' | grep "/media" | grep $devname | cut -f3 -d" ")
+      # Note: Can't do '| cut -f3 -d" "' to get MOUNTPOINT that has embedded space(s), so get the raw line first:
+      TEMP_MEDIA_LINE=$(lsblk -o NAME,FSTYPE,MOUNTPOINT -pr | sed 's/\\x20/ /g' | grep "/media" | grep $devname)
+      MEDIA="/media/"
+      # Use bash parameter expansion to get the part /media/... to the end of the line
+      USBMOUNTPTARRAY[itemnum]=$MEDIA${TEMP_MEDIA_LINE##*$MEDIA}
+      #echo "TEMP_MEDIA_LINE is: $TEMP_MEDIA_LINE"
       #echo "Item $itemnum ${USBMOUNTPTARRAY[itemnum]}"
       let itemnum=itemnum+1
-      DEV=`lsblk -o NAME,FSTYPE,MOUNTPOINT -pr | grep "/media" | grep $devname`
-      printf "  $itemnum)   $DEV \n"
+      printf "  $itemnum)   $TEMP_MEDIA_LINE \n"
       let total=total+1
     done  
 
@@ -360,11 +408,12 @@ if [ "x$USBMOUNTPOINT" = "x" ]; then
     # If we get this far, the user has typed a valid selection
     echo -e "\n"
     echo "Your choice was $SELECTION"
-    # Set a value for the USBMOUNTPOINT variable
+    # Set a value for the $USBMOUNTDIR and $USBMOUNTPOINT variable corresponding to
+    # the newly selected USB drive selected.
     USBMOUNTDIR=${USBMOUNTPTARRAY[((SELECTION - 1))]} # adjust SELECTION value to zero index value
     USBMOUNTPOINT=$USBMOUNTDIR$WASTAOFFLINEDIR
-    echo -e "\nCreating initial wasta-offline tree"
-    mkdir -p $USBMOUNTPOINT
+    echo -e "\nCreating initial wasta-offline tree at: $USBMOUNTPOINT"
+    mkdir -p "$USBMOUNTPOINT"
     LASTERRORLEVEL=$?
     if [ $LASTERRORLEVEL != 0 ]; then
       echo -e "\n****** WARNING ******"
@@ -374,15 +423,9 @@ if [ "x$USBMOUNTPOINT" = "x" ]; then
       echo "Aborting..."
       exit $LASTERRORLEVEL
     fi
+    # COPYTODIR needs to be set to the newly selected $USBMOUNTPOINT value
     COPYTODIR=$USBMOUNTPOINT  # /media/$USER/<DISK_LABEL>/wasta-offline
     #echo -e "\nWasta-Offline data was found at: $USBMOUNTPOINT"
-    # Use the get_device_name_of_usb_mount_point () function with $USBMOUNTPOINT parameter to get USBDEVICENAME
-    USBDEVICENAME=`get_device_name_of_usb_mount_point $USBMOUNTPOINT`
-    #echo "Device Name of USB at $USBMOUNTPOINT: $USBDEVICENAME"
-    # Use the get_file_system_type_of_usb_partition () function with $USBDEVICENAME parameter to get USBFILESYSTEMTYPE
-    USBFILESYSTEMTYPE=`get_file_system_type_of_usb_partition $USBDEVICENAME`
-    #echo "File system TYPE of USB Drive: $USBFILESYSTEMTYPE"
-    echo -e "\nThe USB drive mount point is: $USBMOUNTPOINT"
   else
     # No USB drive available to create mirror, so warn and abort
     echo -e "\n****** WARNING ******"
@@ -392,80 +435,26 @@ if [ "x$USBMOUNTPOINT" = "x" ]; then
     echo "Aborting..."
     exit 1  
   fi
-  #echo "Device Name of USB at $USBMOUNTPOINT: Unknown"
-  #echo "File system TYPE of USB Drive: Unknown"
 else
+  # The $USBMOUNTPOINT was initially determined - not an empty string
   # The USBMOUNTDIR value should be the path up to, but not including /wasta-offline of $USBMOUNTPOINT
-  echo -e "\nThe USB drive mount point is: $USBMOUNTPOINT"
   USBMOUNTDIR=$USBMOUNTPOINT
-  if [[ $USBMOUNTPOINT == *"wasta-offline"* ]]; then 
+  if [[ "$USBMOUNTPOINT" == *"wasta-offline"* ]]; then 
     USBMOUNTDIR=$(dirname "$USBMOUNTPOINT")
   fi
+  # COPYTODIR needs to be set to the detected $USBMOUNTPOINT value
   COPYTODIR=$USBMOUNTPOINT  # /media/$USER/<DISK_LABEL>/wasta-offline
   #echo -e "\nWasta-Offline data was found at: $USBMOUNTPOINT"
-  # Use the get_device_name_of_usb_mount_point () function with $USBMOUNTPOINT parameter to get USBDEVICENAME
-  USBDEVICENAME=`get_device_name_of_usb_mount_point $USBMOUNTPOINT`
-  #echo "Device Name of USB at $USBMOUNTPOINT: $USBDEVICENAME"
-  # Use the get_file_system_type_of_usb_partition () function with $USBDEVICENAME parameter to get USBFILESYSTEMTYPE
-  USBFILESYSTEMTYPE=`get_file_system_type_of_usb_partition $USBDEVICENAME`
-  #echo "File system TYPE of USB Drive: $USBFILESYSTEMTYPE"
 fi
-DATADIRVARDIR=$DATADIR$MASTERDIR$WASTAOFFLINEDIR$APTMIRRORDIR"/var" # /data/master/wasta-offline/apt-mirror/var
-CLEANSCRIPT=$COPYFROMDIR"apt-mirror/var/clean.sh" # /data/master/wasta-offline/apt-mirror/var/clean.sh
-WAIT=60
-LastAppMirrorUpdate="last-apt-mirror-update" # used in is_this_mirror_older_than_that_mirror () function
 
-# ------------------------------------------------------------------------------
-# Main program starts here
-# ------------------------------------------------------------------------------
-#echo -e "\nNumber of parameters: $#"
-echo -e "\nThe SUDO_USER is: $SUDO_USER"
-sleep 3s
-case $# in
-    0) 
-      echo -e "\nThis $SYNCWASTAOFFLINESCRIPT script invoked without any parameters:"
-      echo "  Directory to sync from is: $COPYFROMDIR (default)"
-      echo "  Directory to sync to is:   $COPYTODIR (default)"
-        ;;
-    1) 
-      COPYTODIR="$1"
-      echo -e "\nThis $SYNCWASTAOFFLINESCRIPT script was invoked with 1 parameter:"
-      echo "  Directory to sync from is: $COPYFROMDIR (default)"
-      echo "  Directory to sync to is:   $COPYTODIR (parameter 1)"
-        ;;
-    2) 
-      COPYFROMDIR="$1"
-      COPYTODIR="$2"
-      echo -e "\nThis $SYNCWASTAOFFLINESCRIPT script was invoked with 2 parameters:"
-      echo "  Directory to sync from is: $COPYFROMDIR (parameter 1)"
-      echo "  Directory to sync to is:   $COPYTODIR (parameter 2)"
-        ;;
-    3) 
-      COPYFROMDIR="$1"
-      COPYTODIR="$2"
-      PREPNEWUSB="$3"
-      echo -e "\nThis $SYNCWASTAOFFLINESCRIPT script was invoked with 2 parameters:"
-      echo "  Directory to sync from is: $COPYFROMDIR (parameter 1)"
-      echo "  Directory to sync to is:   $COPYTODIR (parameter 2)"
-      echo "  Parameter '$3' included"
-        ;;
-    *)
-      echo -e "\nUnrecognized parameters used with script."
-      echo "Usage:"
-      echo "$SYNCWASTAOFFLINESCRIPT [<source-dir-path>] [<destination-dir-path>]"
-      exit 1
-        ;;
-esac
-
-# Determine if user still has mirror directly off /data dir rather than the better /data/master dir
-# If the user still has mirror at /data then offer to move (mv) it to /data/master
-# Removed call of move_mirror_from_data_to_data_master () function below. Probably not needed anymore.
-#if ! move_mirror_from_data_to_data_master ; then
-#  # User opted not to move mirror from /data to /data/master
-#  echo -e "\nUser opted not to move (mv) the master mirror directories to: $DATADIR$MASTERDIR"
-#  echo "Aborting..."
-#  exit 1
-#fi
+# Use the get_device_name_of_usb_mount_point () function with $USBMOUNTDIR parameter to get USBDEVICENAME
+USBDEVICENAME=`get_device_name_of_usb_mount_point "$USBMOUNTDIR"`
+# Use the get_file_system_type_of_usb_partition () function with $USBMOUNTDIR parameter to get USBFILESYSTEMTYPE
+USBFILESYSTEMTYPE=`get_file_system_type_of_usb_partition "$USBMOUNTDIR"`
+echo -e "\nThe USB drive mount point is: $USBMOUNTPOINT"
+echo "The USB Mount Dir from mount point is: $USBMOUNTDIR"
+echo "Device Name of USB at $USBMOUNTDIR: $USBDEVICENAME"
+echo "File system TYPE of USB Drive: $USBFILESYSTEMTYPE"
 
 # Check that there is a wasta-offline mirror at the source location. If not there is no
 # sync operation that we can do.
@@ -685,13 +674,13 @@ if is_there_a_wasta_offline_mirror_at "$COPYTODIR" ; then
 else
     echo -e "\n  No existing mirror found at: $COPYTODIR"
     # We can proceed with the copy process - same as the 'y' (YES) case above.
-    echo -e "\nCreating a NEW full Wasta-Offline Mirror at: $COPYTODIR..."
+    echo -e "\nCreating a NEW Wasta-Offline Mirror at: $COPYTODIR..."
     # The main rsync command is called below
 fi
 
 # Ensure that there is an initial mirror directory structure at the destination (in case
 # one doesn't exist yet)
-mkdir -p $COPYTODIR
+mkdir -p "$COPYTODIR"
 LASTERRORLEVEL=$?
 if [ $LASTERRORLEVEL != 0 ]; then
   echo -e "\n****** WARNING ******"
@@ -714,8 +703,8 @@ else
   #echo -e "\nFound $COPYTODIR"
   # Calculate the COPYFROMBASEDIR and COPYTOBASEDIR paths. This should be calculated by
   # removing the wasta-offline dir from the end of the COPYFROMDIR and COPYTODIR paths
-  COPYFROMBASEDIR=`dirname $COPYFROMDIR`
-  COPYTOBASEDIR=`dirname $COPYTODIR`
+  COPYFROMBASEDIR=`dirname "$COPYFROMDIR"`
+  COPYTOBASEDIR=`dirname "$COPYTODIR"`
   # See NOTEs below that explain what paths can be pointed to by $COPYFROMDIR and $COPYTODIR.
   echo "  The Source Base Directory is: $COPYFROMBASEDIR"
   echo "  The Destination Base Directory is: $COPYTOBASEDIR"
@@ -771,7 +760,7 @@ else
   # copy_mirror_base_dir_files () function, which uses rsync to copy all of
   # the necessary files from the source's base directory to the destination.
   # Parameters: # $COPYFROMBASEDIR (normally: /data/master) and $COPYTOBASEDIR (normally: /media/<DISK_LABEL>).
-  # NOTE the following about the parameter passed to the copy_mirror_base_dir_files ()
+  # NOTE the following about the parameters passed to the copy_mirror_base_dir_files ()
   # function call below:
   # When this sync_Wasta-Offline_to_Ext_Drive.sh is called DIRECTLY (routine updating):
   #   $COPYFROMBASEDIR - When this script is called directly, $COPYFROMBASEDIR will be the 
@@ -806,13 +795,15 @@ else
   #     to create a master Wasta-Offline mirror on a dedicated computer. In this (rare or
   #     specialized) case the designated master mirror location is functioning as the 
   #     'destination' whose path is pointed to in $COPYTOBASEDIR.
-  # Note: If $USBFILESYSTEMTYPE (3rd parameter) in the function call below is "ntfs" or "vfat"  
-  # and $COPYTOBASEDIR starts with '/media/' the copy_mirror_base_dir_files () function applies 
-  # different options to the rsync command so that it avoids attempting to preserve 
-  # ownership/permissions in the copy/sync process.
+  # Note: The copy_mirror_base_dir_files () function call below internally determines the
+  # USB file system type of the path at $COPYTOBASEDIR, and adjusts the options it uses
+  # on its calls of rsync accordingly applying different options to the rsync command so 
+  # that it avoids attempting to preserve ownership/permissions in the copy/sync process
+  # when the destination is a non-Linux USB drive.
+  
   sleep 3s
   echo -e "\nCopying mirror root files from $COPYFROMBASEDIR to $COPYTOBASEDIR..."
-  if copy_mirror_base_dir_files "$COPYFROMBASEDIR" "$COPYTOBASEDIR" "$USBFILESYSTEMTYPE" ; then
+  if copy_mirror_base_dir_files "$COPYFROMBASEDIR" "$COPYTOBASEDIR" ; then
     # All copy operations were successful
     echo -e "\n  Source mirror's root directory files copied to destination mirror."
   else
@@ -850,9 +841,9 @@ else
   if set_mirror_ownership_and_permissions "$COPYTOBASEDIR" "$USBFILESYSTEMTYPE" ; then
     # All chown and chmod operations were successful, or skipped if "ntfs" or "vfat"
     if [[ "$USBFILESYSTEMTYPE" == "ntfs" ]] || [[ "$USBFILESYSTEMTYPE" == "vfat" ]]; then
-      echo -e "\n  Destination format is $USBFILESYSTEMTYPE - no ownership/permissions were set."
+      echo "  Destination format is $USBFILESYSTEMTYPE - no ownership/permissions were set."
     else
-      echo -e "\n  Mirror ownership and permissions set successfully at: $COPYTOBASEDIR."
+      echo "  Mirror ownership and permissions set successfully at: $COPYTOBASEDIR."
     fi
   else
     echo -e "\nNot all mirror ownership and permissions could be set at: $COPYTOBASEDIR."
@@ -875,34 +866,33 @@ fi
 COPYTODIR=${COPYTODIR%/}
 
 # Determine the rsync options to use.
-# Note some calls of rsync below which copy to a different location on the 'source' 
-# drive don't use $RSYNC_OPTIONS, but use the normal rsync options.
-  
-# If the $2 parameter (destination) root dir is "/media", and if the $3 parameter 
-# is "ntfs" or "vfat", set rsync options to "-rvh --size-only --progress" to avoid
+# Use the bash function get_rsync_options () to determine the correct rsync options:
+# If the destination's path root dir is "/media", and if its file system type 
+# is "ntfs" or "vfat", set rsync options to "-rvh --size-only" to avoid
 # messing with ownership/permissions on a Windows format drive, otherwise use the
-# default rsync options of "-avzq --update" for a Linux format drive.
-RSYNC_OPTIONS="-avz --update" # default rsync options for destination drive $2 formatted Linux ext4, ext3, etc.
-ROOT_DIR_OF_COPYTOBASEDIR="/"$(echo "$COPYTODIR" | cut -d "/" -f2) # normally /media or /data
-if [[ "$ROOT_DIR_OF_COPYTOBASEDIR" == "/media" ]]; then
-  if [[ "$USBFILESYSTEMTYPE" == "ntfs" ]] || [[ "$USBFILESYSTEMTYPE" == "vfat" ]]; then
-    RSYNC_OPTIONS="-rvh --size-only --progress"
-  fi
+# default rsync options of "-avz --update" for a Linux format drive.
+# For this main sync operation use the "--progress" option in addition to the
+# main RSYNC_OPTIONS.
+# The get_rsync_options () function needs a $USBMOUNTDIR as input parameter, so get 
+# it from $COPYTODIR:
+if [[ "$COPYTODIR" == *"wasta-offline"* ]]; then 
+  USBMOUNTDIR=$(dirname "$COPYTODIR")
 fi
-
+RSYNC_OPTIONS=$(get_rsync_options "$USBMOUNTDIR")
+#echo "Debug: RSYNC_OPTIONS are: $RSYNC_OPTIONS"
 
 ############### The Main Sync Operation Happens Here ########################
 # Sync the data from the 'source' mirror to the 'destination' mirror.
 # See NOTE above for the copy_mirror_base_dir_files () function call describing
 # what paths can be pointed to by $COPYFROMDIR and $COPYTODIR in the rsync call below.
-# Note: The rsync call below should preserve all ownership and permissions
-# from the source mirror's tree (set above) to the destination mirror's tree.
-# whm 23 November 2018 Note: Use rsync -rvh --size-only --progress --delete /path/to/ext4/ /path/to/ntfs/
-# to rsync between Ext4/Xfs and NTFS partitions.
+# Note: The rsync call below does not attempt to preserve all ownership and permissions
+# when syncing from the source mirror's tree (set above) to the destination mirror's 
+# tree when the destination is a "ntfs" or "vfat" format file system.
+# See the get_rsync_options () function in bash_functions.sh for more info.
 echo " "
 echo "*******************************************************************************"
 echo "Synchronizinging data via the following rsync command:"
-echo "rsync $RSYNC_OPTIONS <Sync From Path> <Sync To Path>"
+echo "rsync $RSYNC_OPTIONS -progress <Sync From Path> <Sync To Path>"
 echo "  Sync From Path is: $COPYFROMDIR"
 echo "  Sync To Path is: $COPYTODIR"
 echo "  Destination drive is $USBFILESYSTEMTYPE file system."
@@ -912,22 +902,25 @@ echo "**************************************************************************
 echo ""
 sleep 5s
 # Here is the main rsync command. The rsync options differ depending on the
-# value of $USBFILESYSTEMTYPE and if the destination $COPYTODIR path has "/media/... 
+# value of $USBFILESYSTEMTYPE and if the destination $COPYTODIR path has "/media/...
+# The --progress option is always used here for the main sync operation, but in other
+# places (copying *.sh *.deb, bills-wasta-docs, etc) the -q (quiet) options is used 
+# in place of --progress.
 # When $USBFILESYSTEMTYPE is "ntfs" or "vfat" and destination is /media/... the rsync options are:
 #   -r recurses through directories
 #   -v verbose
 #   -h output numbers in a human-readable format
 #   --size-only skip files that match in size
-#   -- progress show progress during transfer
+#   --progress  show progress during transfer
 # When $USBFILESYSTEMTYPE is other than "ntfs"/"vfat" or destination is other than /media/... the rsync options are:
 #   -a archive mode (recurses thru dirs, preserves symlinks, permissions, times, group, owner)
 #   -v verbose
 #   -z compress file data during transfer
-#   --progress show progress during transfer
-#   --delete delete extraneous files from the destination dirs
-# The RSYNC_OPTIONS djust rsync command to use options: -rvh --size-only --progress
+#   --delete  delete extraneous files from the destination dirs
+#   --progress  show progress during transfer
+# The RSYNC_OPTIONS adjust rsync command to use options: -rvhq --size-only --progress
 # if destination USB drive is not Linux ext4 (ntfs)
-rsync $RSYNC_OPTIONS $COPYFROMDIR $COPYTODIR
+rsync $RSYNC_OPTIONS --progress "$COPYFROMDIR" "$COPYTODIR"
 ############### The Main Sync Operation Happens Here ########################
 
 LASTERRORLEVEL=$?
