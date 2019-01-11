@@ -254,7 +254,7 @@ echo "SUDO_USER is: $SUDO_USER"
 # declared before the above block from being visible to the code below.
 # ------------------------------------------------------------------------------
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-. $DIR/bash_functions.sh # $DIR is the path prefix to bash_functions.sh as well as to the current script
+. "$DIR/bash_functions.sh" # $DIR is the path prefix to bash_functions.sh as well as to the current script
 
 # ------------------------------------------------------------------------------
 # Set up some script variables
