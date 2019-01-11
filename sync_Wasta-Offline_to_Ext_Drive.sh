@@ -252,7 +252,7 @@ fi
 # declared before the above block from being visible to the code below.
 # ------------------------------------------------------------------------------
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-. $DIR/bash_functions.sh # $DIR is the path prefix to bash_functions.sh as well as to the current script
+. "$DIR/"bash_functions.sh # $DIR is the path prefix to bash_functions.sh as well as to the current script
 
 # ------------------------------------------------------------------------------
 # Set up some script variables
@@ -452,9 +452,9 @@ USBDEVICENAME=`get_device_name_of_usb_mount_point "$USBMOUNTDIR"`
 # Use the get_file_system_type_of_usb_partition () function with $USBMOUNTDIR parameter to get USBFILESYSTEMTYPE
 USBFILESYSTEMTYPE=`get_file_system_type_of_usb_partition "$USBMOUNTDIR"`
 echo -e "\nThe USB drive mount point is: $USBMOUNTPOINT"
-echo "The USB Mount Dir from mount point is: $USBMOUNTDIR"
-echo "Device Name of USB at $USBMOUNTDIR: $USBDEVICENAME"
-echo "File system TYPE of USB Drive: $USBFILESYSTEMTYPE"
+#echo "Debug: The USBMOUNTDIR from USBMOUNTPOINT is: $USBMOUNTDIR"
+#echo "Debug: USBDEVICENAME of USB at USBMOUNTDIR is: $USBDEVICENAME"
+#echo "Debug: File system TYPE of USB Drive: $USBFILESYSTEMTYPE"
 
 # Check that there is a wasta-offline mirror at the source location. If not there is no
 # sync operation that we can do.

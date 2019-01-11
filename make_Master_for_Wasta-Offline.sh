@@ -253,7 +253,7 @@ fi
 # declared before the above block from being visible to the code below.
 # ------------------------------------------------------------------------------
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-. $DIR/bash_functions.sh # $DIR is the path prefix to bash_functions.sh as well as to the current script
+. "$DIR/"bash_functions.sh # $DIR is the path prefix to bash_functions.sh as well as to the current script
 
 # ------------------------------------------------------------------------------
 # Set up some script variables and default source and destination variables
@@ -306,8 +306,13 @@ echo -e "\nThis script calls the $SYNCWASTAOFFLINESCRIPT script to create"
 echo "   a master Wasta-Offline mirror."
 echo "Checking for the presence of the $SYNCWASTAOFFLINESCRIPT script..."
 sleep 2s
-if [ -x "$DIR/$SYNCWASTAOFFLINESCRIPT" ]; then
-  echo "Script $DIR/$SYNCWASTAOFFLINESCRIPT exists, is executable."
+if [ -f "$DIR/$SYNCWASTAOFFLINESCRIPT" ]; then
+  echo -n "Script $DIR/$SYNCWASTAOFFLINESCRIPT exists"
+  if [ -x "$DIR/$SYNCWASTAOFFLINESCRIPT" ]; then
+    echo ", is executable"
+  else
+    echo ", is not executable"
+  fi
 else
   echo -e "\n****** WARNING ******"
   echo "Cannot find the $DIR/$SYNCWASTAOFFLINESCRIPT script"
@@ -719,7 +724,7 @@ sleep 3s
 echo -e "\nCalling the $SYNCWASTAOFFLINESCRIPT script with these parameters:"
 echo "  Source mirror (parameter 1): $COPYFROMDIR"
 echo "  Destination mirror (parameter 2): $COPYTODIR"
-bash $DIR/$SYNCWASTAOFFLINESCRIPT "$COPYFROMDIR" "$COPYTODIR"
+bash "$DIR/$SYNCWASTAOFFLINESCRIPT" "$COPYFROMDIR" "$COPYTODIR"
 
 # Once the 'sync_Wasta-Offline_to_Ext_Drive.sh' script finishes, program
 # execution returns here, and this script also finishes at this point.
