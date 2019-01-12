@@ -30,7 +30,7 @@
 #      output from the get_wasta_offline_usb_mount_point () function.
 #      Used a new get_device_name_of_usb_mount_point () function to determine
 #      the device name of the USB drive's mount point.
-#      Used a new get_file_system_type_of_usb_partition () function to determine
+#      Used a new get_file_system_type_of_partition () function to determine
 #      the file system type of the USB drive at the mount point.
 #      Added sleep statements to paus output for better monitoring of progress.
 #      Made Abort warnings more visible in console output.
@@ -320,7 +320,7 @@ else
   echo -e "\nWasta-Offline data found at mount point: $USBMOUNTPOINT"
   USBDEVICENAME=`get_device_name_of_usb_mount_point "$USBMOUNTDIR"`
   echo "Device Name of USB at $USBMOUNTDIR: $USBDEVICENAME"
-  USBFILESYSTEMTYPE=`get_file_system_type_of_usb_partition "$USBMOUNTDIR"`
+  USBFILESYSTEMTYPE=`get_file_system_type_of_partition "$USBMOUNTDIR"`
   echo "File system TYPE of USB Drive at $USBDEVICENAME: $USBFILESYSTEMTYPE"
 fi
 sleep 3s
@@ -412,12 +412,13 @@ if [ -d "$CURRDIR$WASTAOFFLINEDIR" ]; then
   # Here is the main rsync command. The rsync options are:
   #   -a archive mode (recurses thru dirs, preserves symlinks, permissions, times, group, owner)
   #   -v verbose
-  #   -z compress file data during transfer
+  #   -h human readable
+  #   -q quiet
   #   --progress show progress during transfer
   #   --update overwrite only if file is newer than existing file
   # TODO: Adjust rsync command to use options: -rvh --size-only --progress
   # if destination USB drive is not Linux ext4 (ntfs)
-  rsync -avzq --progress --update $CURRDIR$APTMIRRORSETUPDIR/*.sh $CURRDIR$WASTAOFFLINEDIR$APTMIRRORDIR$VARDIR
+  rsync -avh -q --progress --update $CURRDIR$APTMIRRORSETUPDIR/*.sh $CURRDIR$WASTAOFFLINEDIR$APTMIRRORDIR$VARDIR
   # Ensure that postmirror.sh and postmirror2.sh scripts are executable for everyone.
   chmod ugo+rwx $CURRDIR$WASTAOFFLINEDIR$APTMIRRORDIR$VARDIR/*.sh
 fi

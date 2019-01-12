@@ -25,7 +25,7 @@
 #      output from the get_wasta_offline_usb_mount_point () function.
 #      Used a new get_device_name_of_usb_mount_point () function to determine
 #      the device name of the USB drive's mount point.
-#      Used a new get_file_system_type_of_usb_partition () function to determine
+#      Used a new get_file_system_type_of_partition () function to determine
 #      the file system type of the USB drive at the mount point.
 #      Added sleep statements to pause output for better monitoring of progress.
 #      Made Abort warnings more visible in console output.
@@ -449,8 +449,8 @@ fi
 
 # Use the get_device_name_of_usb_mount_point () function with $USBMOUNTDIR parameter to get USBDEVICENAME
 USBDEVICENAME=`get_device_name_of_usb_mount_point "$USBMOUNTDIR"`
-# Use the get_file_system_type_of_usb_partition () function with $USBMOUNTDIR parameter to get USBFILESYSTEMTYPE
-USBFILESYSTEMTYPE=`get_file_system_type_of_usb_partition "$USBMOUNTDIR"`
+# Use the get_file_system_type_of_partition () function with $USBMOUNTDIR parameter to get USBFILESYSTEMTYPE
+USBFILESYSTEMTYPE=`get_file_system_type_of_partition "$USBMOUNTDIR"`
 echo -e "\nThe USB drive mount point is: $USBMOUNTPOINT"
 #echo "Debug: The USBMOUNTDIR from USBMOUNTPOINT is: $USBMOUNTDIR"
 #echo "Debug: USBDEVICENAME of USB at USBMOUNTDIR is: $USBDEVICENAME"
@@ -638,9 +638,9 @@ if is_there_a_wasta_offline_mirror_at "$COPYTODIR" ; then
       ;;
       "7")
       echo "*******************************************************************************"
-      echo "No Timestamp file found at destination, assuming the mirror there is older."
+      echo "No Time stamp file found at destination, assuming the mirror there is older."
       # A mirror without our Timestamp is probably older mirror. Hence, an automatic default 
-      # response to a mirror updating a mirror with no Timestamp probably should be "Yes".
+      # response to a mirror updating a mirror with no Time stamp probably should be "Yes".
       # so, have a 60 second countdown that auto selects 'y' at the end of the countdown, but if
       # a user is in attendance, the user can opt for 'n' by choice. 
       echo "Replace it with the mirror from the source location? [y/n] (default is 'y')"
@@ -705,9 +705,16 @@ else
   # removing the wasta-offline dir from the end of the COPYFROMDIR and COPYTODIR paths
   COPYFROMBASEDIR=`dirname "$COPYFROMDIR"`
   COPYTOBASEDIR=`dirname "$COPYTODIR"`
+  RSYNC_OPTIONS_1=$(get_rsync_options "$COPYFROMBASEDIR") 
+  RSYNC_OPTIONS_2=$(get_rsync_options "$COPYTOBASEDIR")
+  USBFSTYPE_1=$(get_file_system_type_of_partition "$COPYFROMBASEDIR")
+  USBFSTYPE_2=$(get_file_system_type_of_partition "$COPYTOBASEDIR")
+  #echo "  Debug: RSYNC_OPTIONS_1 for $COPYFROMBASEDIR are [$RSYNC_OPTIONS_1] [$USBFSTYPE_1]"
+  #echo "  Debug: RSYNC_OPTIONS_2 for $COPYTOBASEDIR are [$RSYNC_OPTIONS_2] [$USBFSTYPE_2]"
+
   # See NOTEs below that explain what paths can be pointed to by $COPYFROMDIR and $COPYTODIR.
-  echo "  The Source Base Directory is: $COPYFROMBASEDIR"
-  echo "  The Destination Base Directory is: $COPYTOBASEDIR"
+  echo "  The Source Base Directory is: $COPYFROMBASEDIR [$USBFSTYPE_1]"
+  echo "  The Destination Base Directory is: $COPYTOBASEDIR [$USBFSTYPE_2]"
   
   # whm 5Jan2019 removed the set_mirror_ownership_and_permissions () function call on the
   # 'source' $COPYFROMBASEDIR below. This should not be needed since when this sync_... script
@@ -833,15 +840,15 @@ else
   #     to create a master Wasta-Offline mirror on a dedicated computer. In this (rare or
   #     specialized) case the designated master mirror location is functioning as the 
   #     'destination' whose path is pointed to in $COPYTOBASEDIR.
-  # Note: If $USBFILESYSTEMTYPE (2nd parameter) in the function call below is "ntfs" or "vfat"
+  # Note: If $USBFSTYPE_2 (2nd parameter) in the function call below is "ntfs" or "vfat"
   # and $COPYTOBASEDIR starts with '/media/' the set_mirror_ownership_and_permissions () 
   # function does nothing - no ownership/permissions are set.
   sleep 3s
   echo -e "\nSetting destination mirror ownership and permissions at $COPYTOBASEDIR..."
-  if set_mirror_ownership_and_permissions "$COPYTOBASEDIR" "$USBFILESYSTEMTYPE" ; then
+  if set_mirror_ownership_and_permissions "$COPYTOBASEDIR" "$USBFSTYPE_2" ; then
     # All chown and chmod operations were successful, or skipped if "ntfs" or "vfat"
-    if [[ "$USBFILESYSTEMTYPE" == "ntfs" ]] || [[ "$USBFILESYSTEMTYPE" == "vfat" ]]; then
-      echo "  Destination format is $USBFILESYSTEMTYPE - no ownership/permissions were set."
+    if [[ "$USBFSTYPE_2" == "ntfs" ]] || [[ "$USBFSTYPE_2" == "vfat" ]]; then
+      echo "  Destination format is $USBFSTYPE_2 - no ownership/permissions were set."
     else
       echo "  Mirror ownership and permissions set successfully at: $COPYTOBASEDIR."
     fi
@@ -870,7 +877,7 @@ COPYTODIR=${COPYTODIR%/}
 # If the destination's path root dir is "/media", and if its file system type 
 # is "ntfs" or "vfat", set rsync options to "-rvh --size-only" to avoid
 # messing with ownership/permissions on a Windows format drive, otherwise use the
-# default rsync options of "-avz --update" for a Linux format drive.
+# default rsync options of "-avh --update" for a Linux format drive.
 # For this main sync operation use the "--progress" option in addition to the
 # main RSYNC_OPTIONS.
 # The get_rsync_options () function needs a $USBMOUNTDIR as input parameter, so get 
@@ -878,10 +885,8 @@ COPYTODIR=${COPYTODIR%/}
 if [[ "$COPYTODIR" == *"wasta-offline"* ]]; then 
   USBMOUNTDIR=$(dirname "$COPYTODIR")
 fi
-RSYNC_OPTIONS=$(get_rsync_options "$USBMOUNTDIR")
-#echo "Debug: RSYNC_OPTIONS are: $RSYNC_OPTIONS"
 
-############### The Main Sync Operation Happens Here ########################
+############### The Main Sync Operation Happens Below Here ########################
 # Sync the data from the 'source' mirror to the 'destination' mirror.
 # See NOTE above for the copy_mirror_base_dir_files () function call describing
 # what paths can be pointed to by $COPYFROMDIR and $COPYTODIR in the rsync call below.
@@ -892,36 +897,36 @@ RSYNC_OPTIONS=$(get_rsync_options "$USBMOUNTDIR")
 echo " "
 echo "*******************************************************************************"
 echo "Synchronizinging data via the following rsync command:"
-echo "rsync $RSYNC_OPTIONS -progress <Sync From Path> <Sync To Path>"
-echo "  Sync From Path is: $COPYFROMDIR"
-echo "  Sync To Path is: $COPYTODIR"
-echo "  Destination drive is $USBFILESYSTEMTYPE file system."
+echo "rsync $RSYNC_OPTIONS_2 --progress --delete <Sync From Path> <Sync To Path>"
+echo "  Sync From Path is: $COPYFROMDIR [$USBFSTYPE_1]"
+echo "  Sync To Path is: $COPYTODIR [$USBFSTYPE_2]"
+echo "  Destination drive is $USBFSTYPE_2 file system."
 echo "Expect a lot of screen output during Sync operation."
 echo "This may take a while - press CTRL-C anytime to abort..."
 echo "*******************************************************************************"
 echo ""
 sleep 5s
 # Here is the main rsync command. The rsync options differ depending on the
-# value of $USBFILESYSTEMTYPE and if the destination $COPYTODIR path has "/media/...
+# value of $RSYNC_OPTIONS_2 and if the destination $COPYTODIR path has "/media/...
 # The --progress option is always used here for the main sync operation, but in other
 # places (copying *.sh *.deb, bills-wasta-docs, etc) the -q (quiet) options is used 
 # in place of --progress.
-# When $USBFILESYSTEMTYPE is "ntfs" or "vfat" and destination is /media/... the rsync options are:
+# When $RSYNC_OPTIONS_2 is "ntfs" or "vfat" and destination is /media/... the rsync options are:
 #   -r recurses through directories
 #   -v verbose
 #   -h output numbers in a human-readable format
 #   --size-only skip files that match in size
-#   --progress  show progress during transfer
-# When $USBFILESYSTEMTYPE is other than "ntfs"/"vfat" or destination is other than /media/... the rsync options are:
-#   -a archive mode (recurses thru dirs, preserves symlinks, permissions, times, group, owner)
-#   -v verbose
-#   -z compress file data during transfer
 #   --delete  delete extraneous files from the destination dirs
 #   --progress  show progress during transfer
-# The RSYNC_OPTIONS adjust rsync command to use options: -rvhq --size-only --progress
-# if destination USB drive is not Linux ext4 (ntfs)
-rsync $RSYNC_OPTIONS --progress "$COPYFROMDIR" "$COPYTODIR"
-############### The Main Sync Operation Happens Here ########################
+# When $RSYNC_OPTIONS_2 is other than "ntfs"/"vfat" or destination is other than /media/... the rsync options are:
+#   -a archive mode (recurses thru dirs, preserves symlinks, permissions, times, group, owner)
+#   -v verbose
+#   -h output numbers in a human-readable format
+#   --delete  delete extraneous files from the destination dirs
+#   --progress  show progress during transfer
+#
+rsync $RSYNC_OPTIONS_2 --progress --delete "$COPYFROMDIR" "$COPYTODIR"
+############### The Main Sync Operation Happens Above Here ########################
 
 LASTERRORLEVEL=$?
 if [ $LASTERRORLEVEL != 0 ]; then

@@ -19,7 +19,7 @@
 #      generalized. Removed the "PREP_NEW_USB" parameter option from which was unused. 
 #      Streamlined the detection of the USB drive's mount point using echoed output from the new
 #      get_wasta_offline_usb_mount_point () function.
-#      Added a new get_file_system_type_of_usb_partition () function.
+#      Added a new get_file_system_type_of_partition () function.
 #      Added a new get_device_name_of_usb_mount_point () function.
 #      Added a new get_a_default_path_for_COPYFROMDIR () function.
 #      Added a new get_a_default_path_for_COPYTODIR () function.
@@ -41,7 +41,7 @@
 #   is_dir_available ()
 #   is_program_installed ()
 #   is_program_running ()
-#   get_file_system_type_of_usb_partition ()
+#   get_file_system_type_of_partition ()
 #   get_device_name_of_usb_mount_point ()
 #	get_wasta_offline_usb_mount_point ()
 #   smart_install_program ()
@@ -138,27 +138,34 @@ is_program_running ()
 }
 
 # A bash function that echos the file system type of the USB mount point.
-# The $USBMOUNTDIR must be passed to this function as the first parameter $1.
-# If $USBMOUNTDIR parameter is not found, this function echos an empty string,
-# otherwise, if mount point was found, it echos the file system type, i.e., ext4.
+# A directory path must be passed to this function as the first parameter $1.
+# We extract the directory path's 'root' directory as only that is what can match
+# lsblk's MOUNTPOINT output i.e., /media/bill/UPDATES or /data [not /data/master]
+# If the $1 parameter is not found, this function echos an empty string,
+# otherwise, if the root directory of the path in $1 was found, this function
+# echos the file system type, i.e., ext4, ntfs, vfat.
 # No echo statements should appear in this function other than the echo "$FSTYPE" 
 # at the last line of the function.
-get_file_system_type_of_usb_partition ()
+get_file_system_type_of_partition ()
 {
-	MNTPT=$1 # Passed in $USBMOUNTDIR, for example /media/bill/UPDATES, or /media/bill/SP PHD U3  [<DISK_LABEL> can have space(s)]
+	MNTPT=$1 # Passed in Root Directory, for example /media/bill/UPDATES, or /media/bill/SP PHD U3, or /data
+	# which must match the lsblk's MOUNTPOINT output.
 	# Note: The lsblk command's MOUNTPOINT option never has a / at the end of its output string,
 	# so remove any final / from MNTPT (esp since Tab auto-completion puts a final / on path)	
 	MNTPT=${MNTPT%/}
+	# For an accurate look up of FSTYPE, we have to grep for the root directory
+	ROOT_DIR="/"$(echo "$MNTPT" | cut -d "/" -f2) # normally /media or /data
+    
     # Note on lsblk options/switches below: 
     #   -o FSTYPE,NAME,MOUNTPOINT selects the 3 columns listed with FSTYPE first, separated by a space
-    #     and having the MOUNTPOINT (which may have spaces) allows better delimiter selection
-    #     of FSTYPE and NAME [i.e., /dev/sdb1] which won't have internal spaces
+    #     and having the MOUNTPOINT (which may have spaces) last option allows better delimiter 
+    #     selection of FSTYPE and NAME [i.e., /dev/sdb1] which won't have internal spaces
     #   -p (full path) optionlists full device as, for example, /dev/sdb1
     #   -r (raw output) eliminates graphic tree chars prefixing device path
     # NOTE: lsblk command's MOUNTPOINT option embeds \x20 chars in place of space chars
     # so we can use sed to replace \x20 with plain space in the piped stream, in order
     # for grep to be able to match the "$MNTPT", which won't have \x20 for spaces.
-	FSTYPE=$(lsblk -o FSTYPE,NAME,MOUNTPOINT -pr | sed 's/\\x20/ /g' | grep "$MNTPT" | cut -f1 -d" ")
+	FSTYPE=$(lsblk -o FSTYPE,NAME,MOUNTPOINT -pr | sed 's/\\x20/ /g' | grep "$ROOT_DIR" | cut -f1 -d" ")
 	# Note: Use of lsblk doesn't require sudo and is more flexible than blkid
 	# A less reliable, more obscure way using blkid is given below:
 	#BLKID=`blkid ! grep $MNTPT`
@@ -501,15 +508,16 @@ get_a_default_path_for_COPYTODIR ()
 #   sync_Wasta-Offline_to_Ext_Drive.sh, and the --progress options should be used
 #   for the main rsync call in sync_Wasta-Offline_to_Ext_Drive.sh.
 # The function determines if the destination path includes "/media" in the path,
-# and, if so, calls the get_file_system_type_of_usb_partition () function to see
+# and, if so, calls the get_file_system_type_of_partition () function to see
 # if that destination USB drive also represents a "ntfs" or "vfat" file system. 
 # If both conditions are true, then the alternate set of rsync options
 # are used that are safer for rsync operations to non-Linux formatted drives.
 # This get_rsync_options () function calls another function 
-# get_file_system_type_of_usb_partition () to get the USB file system type of the
+# get_file_system_type_of_partition () to get the USB file system type of the
 # destination drive indicated by parameter $1.
 get_rsync_options ()
 {
+  USBMNTDIR=$1
   # Remove any .../wasta-offline directory from the input parameter $1
   if [[ "$1" == *"wasta-offline"* ]]; then 
     USBMNTDIR=$(dirname "$1")
@@ -518,11 +526,11 @@ get_rsync_options ()
   # If the $1 parameter (destination) root dir is "/media", and if the file sys type 
   # is "ntfs" or "vfat", set rsync options to "-rvh --size-only" to avoid messing
   # too much with ownership/permissions on a Windows format drive, otherwise use the
-  # default rsync options of "-avz --update" for a Linux format drive.
-  RSYNC_OPTS="-avz --update" # default rsync options for destination drive is formatted Linux ext4, ext3, etc.
+  # default rsync options of "-avh --update" for a Linux format drive.
+  RSYNC_OPTS="-avh --update" # default rsync options for destination drive is formatted Linux ext4, ext3, etc.
   ROOT_DIR_OF_COPYTOBASEDIR="/"$(echo "$USBMNTDIR" | cut -d "/" -f2) # normally /media or /data
   if [[ "$ROOT_DIR_OF_COPYTOBASEDIR" == "/media" ]]; then
-    USBFSTYPE=$(get_file_system_type_of_usb_partition "$USBMNTDIR")
+    USBFSTYPE=$(get_file_system_type_of_partition "$USBMNTDIR")
     if [[ "$USBFSTYPE" == "ntfs" ]] || [[ "$USBFSTYPE" == "vfat" ]]; then
       RSYNC_OPTS="-rvh --size-only"
     fi
@@ -549,9 +557,9 @@ get_rsync_options ()
 # being called to initialize/kickstart a master mirror from a USB drive, or when $COPYTOBASEDIR
 # is pointing to the USB drive when updating the mirror (or creating a new one) on the USB drive.
 # We need to detect when the destination ($COPYTOBASEDIR) is formatted as ntfs or vfat, and
-# if so, we use the -rvhq --size-only --progress options with the rsync command (to avoid trying
-# to mess with ownership and permissions). Otherwise, when the destination ($COPYDOBASEDIR) is 
-# formatted as ext4 (Linux), we use the normal -avzq --update options with the rsync command (to
+# if so, we use the -rvh --size-only options with the rsync command (to avoid trying to mess with  
+# ownership and permissions). Otherwise, when the destination ($COPYDOBASEDIR) is formatted as  
+# ext4 (Linux), we use the normal -avh --update options with the rsync command (in order to 
 # preserve ownership and permissions). The same considerations must be followed within the 
 # set_mirror_ownership_and_permissions () function farther below.
 
@@ -579,15 +587,15 @@ copy_mirror_base_dir_files ()
   # If the destination's path root dir is "/media", and if it determines the file system
   # there is "ntfs" or "vfat", it sets rsync options to "-rvh --size-only" to avoid
   # messing with ownership/permissions on a Windows format drive, otherwise it uses the
-  # default rsync options of "-avz --update" for a Linux format drive.
+  # default rsync options of "-avh --update" for a Linux format drive.
   # For this copy_mirror_base_dir_files () function we use the -q (quiet) option
   # to minimize output to the console for the file copying.
-  RSYNC_OPTIONS_2=$(get_rsync_options "$2")
   RSYNC_OPTIONS_1=$(get_rsync_options "$1") 
-  USBFSTYPE_2=$(get_file_system_type_of_usb_partition "$2")
-  USBFSTYPE_1=$(get_file_system_type_of_usb_partition "$1")
-  #echo "Debug: RSYNC_OPTIONS_1 are [$RSYNC_OPTIONS_1]"
-  #echo "Debug: RSYNC_OPTIONS_2 are [$RSYNC_OPTIONS_2]"
+  RSYNC_OPTIONS_2=$(get_rsync_options "$2")
+  USBFSTYPE_1=$(get_file_system_type_of_partition "$1")
+  USBFSTYPE_2=$(get_file_system_type_of_partition "$2")
+  #echo "  Debug: RSYNC_OPTIONS_1 for $1 are [$RSYNC_OPTIONS_1] USBFSTYPE_1 is [$USBFSTYPE_1]"
+  #echo "  Debug: RSYNC_OPTIONS_2 for $2 are [$RSYNC_OPTIONS_2] USBFSTYPE_2 is [$USBFSTYPE_2]"
   #exit 1
 
   # $PKGPATH is assigned the path to the wasta-offline directory containing the deb packages 
@@ -622,8 +630,8 @@ copy_mirror_base_dir_files ()
     echo -n "."
     # For these "base" level files we use --update option instead of the --delete option
     # which updates the destination only if the source file is newer.
-    # The rsync command's options in $RSYNC_OPTIONS below become: '-rvh --size-only --progress'
-    # if destination USB drive is not Linux ext4 (ntfs), otherwise they are '-avzq --update'
+    # The rsync command's options in $RSYNC_OPTIONS below become: '-rvh --size-only'
+    # if destination USB drive is not Linux ext4 (ntfs), otherwise they are '-avh --update'
     rsync $RSYNC_OPTIONS_1 -q $DEBS "$1" # $1 is source mirror - use normal rsync options
     if ls "$2"/wasta-offline*.deb 1> /dev/null 2>&1; then
       rm "$2"/wasta-offline*.deb
@@ -632,8 +640,8 @@ copy_mirror_base_dir_files ()
     echo -n "."
     # For these "base" level files we use --update option instead of the --delete option
     # which updates the destination only if the source file is newer.
-    # The rsync command's options in $RSYNC_OPTIONS below become: '-rvh --size-only --progress'
-    # if destination USB drive is not Linux ext4 (ntfs), otherwise they are '-avzq --update'
+    # The rsync command's options in $RSYNC_OPTIONS below become: '-rvh --size-only'
+    # if destination USB drive is not Linux ext4 (ntfs), otherwise they are '-avh --update'
     rsync $RSYNC_OPTIONS_2 -q $DEBS "$2" # $2 is destination mirror
   fi
   
@@ -657,8 +665,8 @@ copy_mirror_base_dir_files ()
     echo -n "."
     # For these "base" level files we use --update option instead of the --delete option
     # which updates the destination only if the source file is newer.
-    # The rsync command's options in $RSYNC_OPTIONS below become: '-rvh --size-only --progress'
-    # if destination USB drive is not Linux ext4 (ntfs), otherwise they are '-avzq --update'
+    # The rsync command's options in $RSYNC_OPTIONS below become: '-rvh --size-only'
+    # if destination USB drive is not Linux ext4 (ntfs), otherwise they are '-avh --update'
     rsync $RSYNC_OPTIONS_1 -q $DEBS "$1" # $1 is source mirror - use normal rsync options
     if ls "$2"/wasta-offline-setup*.deb 1> /dev/null 2>&1; then
       rm "$2"/wasta-offline-setup*.deb
@@ -667,8 +675,8 @@ copy_mirror_base_dir_files ()
     echo -n "."
     # For these "base" level files we use --update option instead of the --delete option
     # which updates the destination only if the source file is newer.
-    # The rsync command's options in $RSYNC_OPTIONS below become: '-rvh --size-only --progress'
-    # if destination USB drive is not Linux ext4 (ntfs), otherwise they are '-avzq --update'
+    # The rsync command's options in $RSYNC_OPTIONS below become: '-rvh --size-only'
+    # if destination USB drive is not Linux ext4 (ntfs), otherwise they are '-avh --update'
     rsync $RSYNC_OPTIONS_2 -q $DEBS "$2"
   fi
   
@@ -680,8 +688,8 @@ copy_mirror_base_dir_files ()
   #echo "                                to "$1"$WASTAOFFLINEDIR$APTMIRRORDIR$VARDIR"
   # For these "base" level files we use --update option instead of the --delete option
   # which updates the destination only if the source file is newer.
-  # The rsync command's options in $RSYNC_OPTIONS below become: '-rvh --size-only --progress'
-  # if destination USB drive is not Linux ext4 (ntfs), otherwise they are '-avzq --update'
+  # The rsync command's options in $RSYNC_OPTIONS below become: '-rvh --size-only'
+  # if destination USB drive is not Linux ext4 (ntfs), otherwise they are '-avh --update'
   rsync $RSYNC_OPTIONS_1 -q "$1"$APTMIRRORSETUPDIR/*.sh "$1"$WASTAOFFLINEDIR$APTMIRRORDIR$VARDIR # $1 is source mirror - use normal rsync options
 
   # Copy other needed files to the external drive's root dir
@@ -709,8 +717,8 @@ copy_mirror_base_dir_files ()
     echo -n "."
     # For these "base" level files we use --update option instead of the --delete option
     # which updates the destination only if the source file is newer.
-    # The rsync command's options in $RSYNC_OPTIONS below become: '-rvh --size-only --progress'
-    # if destination USB drive is not Linux ext4 (ntfs), otherwise they are '-avzq --update'
+    # The rsync command's options in $RSYNC_OPTIONS below become: '-rvh --size-only'
+    # if destination USB drive is not Linux ext4 (ntfs), otherwise they are '-avh --update'
     rsync $RSYNC_OPTIONS_2 -q "$script" "$destscript"
   done
 
@@ -735,8 +743,8 @@ copy_mirror_base_dir_files ()
     echo -n "."
     # For these "base" level files we use --update option instead of the --delete option
     # which updates the destination only if the source file is newer.
-    # The rsync command's options in $RSYNC_OPTIONS below become: '-rvh --size-only --progress'
-    # if destination USB drive is not Linux ext4 (ntfs), otherwise they are '-avzq --update'
+    # The rsync command's options in $RSYNC_OPTIONS below become: '-rvh --size-only'
+    # if destination USB drive is not Linux ext4 (ntfs), otherwise they are '-avh --update'
     rsync $RSYNC_OPTIONS_2 -q "$script" "$destscript"
   done
 
@@ -760,31 +768,31 @@ copy_mirror_base_dir_files ()
     echo -n "."
     # For these "base" level files we use --update option instead of the --delete option
     # which updates the destination only if the source file is newer.
-    # The rsync command's options in $RSYNC_OPTIONS below become: '-rvh --size-only --progress'
-    # if destination USB drive is not Linux ext4 (ntfs), otherwise they are '-avzq --update'
+    # The rsync command's options in $RSYNC_OPTIONS below become: '-rvh --size-only'
+    # if destination USB drive is not Linux ext4 (ntfs), otherwise they are '-avh --update'
     rsync $RSYNC_OPTIONS_2 -q "$script" "$destscript"
   done
   
   #echo "Synchronizing the ReadMe file to $2..."
     # For these "base" level files we use --update option instead of the --delete option
     # which updates the destination only if the source file is newer.
-    # The rsync command's options in $RSYNC_OPTIONS below become: '-rvh --size-only --progress'
-    # if destination USB drive is not Linux ext4 (ntfs), otherwise they are '-avzq --update'
+    # The rsync command's options in $RSYNC_OPTIONS below become: '-rvh --size-only'
+    # if destination USB drive is not Linux ext4 (ntfs), otherwise they are '-avh --update'
   rsync $RSYNC_OPTIONS_2 -q "$1"/ReadMe "$2"
   #echo "Synchronizing the .git and .gitignore files to $2..."
   echo -n "."
     # For these "base" level files we use --update option instead of the --delete option
     # which updates the destination only if the source file is newer.
-    # The rsync command's options in $RSYNC_OPTIONS below become: '-rvh --size-only --progress'
-    # if destination USB drive is not Linux ext4 (ntfs), otherwise they are '-avzq --update'
+    # The rsync command's options in $RSYNC_OPTIONS below become: '-rvh --size-only'
+    # if destination USB drive is not Linux ext4 (ntfs), otherwise they are '-avh --update'
   rsync $RSYNC_OPTIONS_2 -q "$1"/.git* "$2"
   
   if [ -d "$1"$BILLSWASTADOCSDIR ]; then
     #echo "Synchronizing the $BILLSWASTADOCS dir and contents to $2$BILLSWASTADOCSDIR..."
     # For these "base" level files we use --update option instead of the --delete option
     # which updates the destination only if the source file is newer.
-    # The rsync command's options in $RSYNC_OPTIONS below become: '-rvh --size-only --progress'
-    # if destination USB drive is not Linux ext4 (ntfs), otherwise they are '-avzq --update'
+    # The rsync command's options in $RSYNC_OPTIONS below become: '-rvh --size-only'
+    # if destination USB drive is not Linux ext4 (ntfs), otherwise they are '-avh --update'
     rsync $RSYNC_OPTIONS_2 -q "$1"$BILLSWASTADOCSDIR/ "$2"$BILLSWASTADOCSDIR/
     if [ -L "$1"/docs-index ]; then
       #echo -e "\nSymbolic link docs-index already exists at $1"
