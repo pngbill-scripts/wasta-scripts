@@ -153,6 +153,7 @@ get_file_system_type_of_partition ()
 	# Note: The lsblk command's MOUNTPOINT option never has a / at the end of its output string,
 	# so remove any final / from MNTPT (esp since Tab auto-completion puts a final / on path)	
 	MNTPT=${MNTPT%/}
+	DEVNAME=$(lsblk -o FSTYPE,NAME,MOUNTPOINT -pr | sed 's/\\x20/ /g' | grep "$MNTPT" | cut -f2 -d" ")
 	# For an accurate look up of FSTYPE, we have to grep for the root directory
 	ROOT_DIR="/"$(echo "$MNTPT" | cut -d "/" -f2) # normally /media or /data
     
@@ -165,7 +166,9 @@ get_file_system_type_of_partition ()
     # NOTE: lsblk command's MOUNTPOINT option embeds \x20 chars in place of space chars
     # so we can use sed to replace \x20 with plain space in the piped stream, in order
     # for grep to be able to match the "$MNTPT", which won't have \x20 for spaces.
-	FSTYPE=$(lsblk -o FSTYPE,NAME,MOUNTPOINT -pr | sed 's/\\x20/ /g' | grep "$ROOT_DIR" | cut -f1 -d" ")
+    # Add a pipe to grep "$DEVNAME" to narrow down the FSTYPE in case more than one
+    # /media/... devices are plugged in.
+	FSTYPE=$(lsblk -o FSTYPE,NAME,MOUNTPOINT -pr | sed 's/\\x20/ /g' | grep "$DEVNAME" | grep "$ROOT_DIR" | cut -f1 -d" ")
 	# Note: Use of lsblk doesn't require sudo and is more flexible than blkid
 	# A less reliable, more obscure way using blkid is given below:
 	#BLKID=`blkid ! grep $MNTPT`

@@ -52,9 +52,9 @@
 # computer or server, or to update an external USB drive such as the Full Wasta-Offline 
 # drive supplied by Bill Martin, up to date. This script may also be used to do 
 # the initial setup of apt-mirror on a computer (installing apt-mirror if needed), 
-# and automatically configuring the computer's apt-mirror configuration file 
-# (/etc/apt/mirror.list) depending on the user's choice of sources (from a menu) 
-# for such apt-mirror updates.
+# and automatically configuring the computer's apt-mirror mirror.list configuration  
+# file (at: /etc/apt/mirror.list) depending on the user's choice of sources (from 
+# a menu) for such apt-mirror updates.
 #
 # NOTE: These Wasta-Offline scripts are for use by administrators and not normal
 # Wasta-Linux users. The Wasta-Offline program itself need not be running when you, 
@@ -88,9 +88,12 @@
 # to be identical with the newly updated master copy of the mirror.
 # It can be very useful to have a master on a dedicated computer and use updata-mirror.sh
 # to keep that master mirror updated. With a master mirror, if more than one portable
-# Wasta-Offline USB drive is being maintained, it is more efficient to use this script to
+# Wasta-Offline USB drive are being maintained, it is more efficient to use this script to
 # update the master mirror from the Local server or Internet repositories, and then sync 
-# from the master mirror to any external USB mirror that is attached to the system. 
+# from that master mirror to any external USB mirror that is attached to the system,
+# removing the update USB drive and attaching another USB drive, and calling the 
+# sync_Wasta-Offline_to_Ext_Drive.sh script for each additional USB drive mirror that needs
+# updating.
 #
 # When multiple Wasta-Offline portable USB drive mirrors are being maintained (as at 
 # Ukarumpa), subsequent USB drive mirrors can be attached to the computer containing the 
@@ -174,7 +177,8 @@
 #    the external USB drive's mirror to be identical with the newly updated master 
 #    copy of the mirror.
 #
-# Usage: 
+# Usage: TODO: Revise below probably disallowing use of a <path-prefix> option
+#
 #   Automatic: bash update-mirror.sh - or, use the File Manager to navigate to the
 #      master mirror or external USB drive containing the Full Wasta-Offline Mirror.
 #      If the external USB drive is formatted with Linux partition(s), double-click 
@@ -245,7 +249,7 @@ if [ "$(whoami)" != "root" ]; then
     exit $LASTERRORLEVEL
 fi
 
-echo "SUDO_USER is: $SUDO_USER"
+#echo "SUDO_USER is: $SUDO_USER"
 
 # ------------------------------------------------------------------------------
 # Include bash_functions.sh to source certain functions for this script
@@ -267,8 +271,10 @@ MASTERDIR="/master"
 APTMIRRORDIR="/$APTMIRROR" # /apt-mirror
 WASTAOFFLINE="wasta-offline"
 WASTAOFFLINEDIR="/wasta-offline"
-WASTAOFFLINELOCALAPTMIRRORPATH=$DATADIR$MASTERDIR$WASTAOFFLINEDIR$APTMIRRORDIR # /data/master/wasta-offline/apt-mirror
+WASTAOFFLINELOCALAPTMIRRORPATH=$DATADIR$MASTERDIR$WASTAOFFLINEDIR$APTMIRRORDIR # default to /data/master/wasta-offline/apt-mirror
 LOCALMIRRORSPATH=$WASTAOFFLINELOCALAPTMIRRORPATH # default to $WASTAOFFLINELOCALAPTMIRRORPATH above [may be changed below]
+ROOT_DIRECTORY_OF_MASTER=$DATADIR # default to /data
+LOCALBASEDIR=$DATADIR$MASTERDIR # default to /data/master
 MIRRORLIST="mirror.list"
 SOURCESLIST="sources.list"
 ETCAPT="/etc/apt/"
@@ -296,10 +302,115 @@ VARDIR="/var"
 UPDATINGLOCALDATA="YES" # [may be changed below]
 UPDATINGEXTUSBDATA="YES" # [may be changed below]
 
+# ------------------------------------------------------------------------------
+# Main program starts here
+# ------------------------------------------------------------------------------
+
 echo -e "\n[*** Now executing the $UPDATEMIRRORSCRIPT script ***]"
 sleep 3s
 
-# Use the get_wasta_offline_usb_mount_point () function to get a value for USBMOUNTPOINT
+# Get information about the master mirror if it exists. If a master mirror
+# exists, we need to verify its location on the local computer, and also we would
+# like to verify its file system type by determining the "root" directory of its
+# location path, and from that its file system type.
+# Normally the file system type for a master mirror on a Linux computer would be
+# Ext4 (or possibly Ext3 or Ext2), but we want to verify that in order to use the
+# appropriate -avh or -rvh rsync options when copying the postmirror.sh and 
+# postmirror2.sh scripts to the .../var directory where apt-mirror will look for them.
+#
+# Get the BASEPATH_TO_MIRROR and ROOT_DIRECTORY_OF_MASTER if a mirror.list file exists.
+# The base_path would most likely be:
+#   /data/master/wasta-offline/apt-mirror, if mirror.list it exists, or possibly
+#   /media/<User-Name>/<DISK_LABEL>/wasta-offline/apt-mirror (see below), or
+#   an empty string if the mirror.list file doesn't exist.
+MASTER_MIRROR_FOUND="FALSE"
+BASEPATH_FROM_MIRROR_LIST=`get_base_path_of_mirror_list_file` # expect default of /data/master/wasta-offline/apt-mirror
+if [ "x$BASEPATH_FROM_MIRROR_LIST" = "x" ]; then
+  # No base_path exists, probably because no mirror.list exists
+  MASTER_MIRROR_FOUND="FALSE"
+else
+  # Found a mirror.list set base_path, which most likely will be either:
+  # /data/master/wasta-offline/apt-mirror or possibly /media/<User-Name>/<DISK_LABEL>/wasta-offline/apt-mirror.
+  # A base path at /data/master/wasta-offline/apt-mirror is the default location if
+  # an administrator set up the master mirror using the make_Master_for_Wasta-Offline.sh
+  # script, so if we extract a "root" directory ($ROOT_DIRECTORY_OF_MASTER) from
+  # the BASEPATH_FROM_MIRROR_LIST, and its "root" directory is NOT "/media"
+  # then we proceed with confidence that we've found the master mirror.
+  BASEPATH_TO_APT_MIRROR=${BASEPATH_FROM_MIRROR_LIST%/wasta-offline/apt-mirror/*} # /data/master/wasta-offline
+  BASEPATH_TO_MIRROR=${BASEPATH_FROM_MIRROR_LIST%/wasta-offline/*} # /data/master
+  ROOT_DIRECTORY_OF_MASTER="/"$(echo "$BASEPATH_TO_MIRROR" | cut -d "/" -f2)
+  
+  if [[ "x$ROOT_DIRECTORY_OF_MASTER" != "x" ]]; then
+    if [[ "$ROOT_DIRECTORY_OF_MASTER" != "/media" ]]; then
+      MASTER_MIRROR_FOUND="TRUE"
+      # Set some variables that point to the master mirror
+      WASTAOFFLINELOCALAPTMIRRORPATH=$BASEPATH_FROM_MIRROR_LIST
+      if [ -d "$WASTAOFFLINELOCALAPTMIRRORPATH" ]; then
+        LOCALMIRRORSPATH=$WASTAOFFLINELOCALAPTMIRRORPATH # /data/master/wasta-offline/apt-mirror
+        LOCALBASEDIR="$BASEPATH_TO_MIRROR"
+      fi
+      echo -e "\nWasta-Offline data found in a master mirror at: $BASEPATH_TO_APT_MIRROR"
+      #echo "Debug: The root directory of the master mirror is: $ROOT_DIRECTORY_OF_MASTER"
+    else
+      # The "root" directly from the base_path is /media
+      # A base_path at /media/... might be the case if an administrator had been using
+      # the update-mirror.sh script to have apt-mirror directly update a USB drive's 
+      # mirror (at /media/...) without having a master mirror present where this script 
+      # is being called from. An administrator, of course, could have set up a master 
+      # mirror apart from using the make_Master_for_Wasta-Offline.sh script to do so,
+      # and in the process of doing so didn't reconfigure the mirror.list to have its 
+      # base_path updated to the current master mirror (the make_Master... script
+      # would have ensured that the base_path in mirror.list points to the actual master
+      # mirror). While unlikely, we attempt to determine if a master mirror is actually
+      # present at a different path on a fixed drive even while the mirror.list file 
+      # says the base_path is at a /media/... location.
+      # Use find to search from root / for a master mirror tree of the form 
+      # /.../wasta-offline/apt-mirror/mirror/archive.ubuntu.com
+      # find options:
+      #   /  <-- start finding from root /
+      #   -not -path "/media/*" ... <--this will exclude looking in dirs at /media/*, /bin/* ... etc (to speed up find)
+      #   2>/dev/null <-- don't echo any error output
+      #   -name "archive.ubuntu.com" <-- find this directory name
+      # The pipe to grep ensures that any path returned has the form .../wasta-offline/apt-mirror/mirror/archive.ubuntu.com
+      echo "Searching for a master mirror on this computer. This may take a while..."
+      TEMP_PATH=$(find / -not -path "/media/*" -not -path "/bin/*" -not -path "/usr/*" -not -path "/tmp/*" \
+      -not -path "/sys/*" -not -path "/proc/*" -not -path "/etc/*" -not -path "/lib*/*" \
+      -not -path "/opt/*" -not -path "/run/*" -not -path "/root/*" -not -path "/dev/*" \
+      -not -path "/var/*" -not -path "/sbin/*" -not -path "/boot/*" -not -path "/lost+found/*" \
+      2>/dev/null -name "archive.ubuntu.com" | grep "/wasta-offline/apt-mirror/mirror/archive.ubuntu.com")
+      #TEMP_PATH=$(find / -not -path "/media/*" 2>/dev/null -name "archive.ubuntu.com" | grep "/wasta-offline/apt-mirror/mirror/archive.ubuntu.com")
+      if [ "x$TEMP_PATH" = "x" ]; then
+        echo "No master mirror found."
+      else
+        # TODO: Need to test scenario below
+        # Get the $BASEPATH_TO_MIRROR from TEMP_PATH, i.e., the first part of the path 
+        # up to "/wasta-offline/apt-mirror/mirror/archive.ubuntu.com"
+        # if TEMP_PATH is: /mydata/master/wasta-offline/apt-mirror/mirror/archive.canonical.com
+        # the BASEPATH_TO_MIRROR would be /mydata/master, and the $ROOT_DIRECTORY_OF_MASTER would be /mydata
+        # Also get the BASE_PATH_TO_APT_MIRROR from TEMP_PATH, i.e., the path up to the .../mirror/ dir
+        BASE_PATH_TO_APT_MIRROR=${TEMP_PATH%/mirror/*} # /data/master/wasta-offline/apt-mirror
+        echo "Debug: Base path up to /mirror/ dir is: $BASE_PATH_TO_APT_MIRROR"
+        BASEPATH_TO_MIRROR=${TEMP_PATH%/wasta-offline/*} # /data/master
+        echo "Debug: Base path to mirror dir is: $BASEPATH_TO_MIRROR"
+        ROOT_DIRECTORY_OF_MASTER="/"$(echo "$BASEPATH_TO_MIRROR" | cut -d "/" -f2) # /data
+        echo "Debug: The root directory of the master mirror is: $ROOT_DIRECTORY_OF_MASTER"
+        MASTER_MIRROR_FOUND="TRUE"
+        WASTAOFFLINELOCALAPTMIRRORPATH=$BASEPATH_FROM_MIRROR_LIST
+        if [ -d "$WASTAOFFLINELOCALAPTMIRRORPATH" ]; then
+          LOCALMIRRORSPATH=$WASTAOFFLINELOCALAPTMIRRORPATH # /data/master/wasta-offline/apt-mirror
+          LOCALBASEDIR="$BASEPATH_TO_MIRROR"
+        fi
+        echo "Found master mirror at: $BASEPATH_TO_MIRROR"
+      fi
+    
+    fi
+  else
+    # The $ROOT_DIRECTORY_OF_MASTER is a blank string
+    MASTER_MIRROR_FOUND="FALSE"
+  fi
+fi
+
+# Use the get_wasta_offline_usb_mount_point () function to get a value for USBMOUNTPOINT, if it exists.
 USBMOUNTPOINT=`get_wasta_offline_usb_mount_point` # normally USBMOUNTPOINT is /media/$USER/<DISK_LABEL>/wasta-offline
 
 if [ "x$USBMOUNTPOINT" = "x" ]; then
@@ -308,7 +419,7 @@ if [ "x$USBMOUNTPOINT" = "x" ]; then
   WASTAOFFLINEEXTERNALAPTMIRRORPATH=""
   UPDATINGEXTUSBDATA="NO"
   # The $USBMOUNTPOINT variable is empty, i.e., a wasta-offline subdirectory on /media/... was not found
-  echo -e "\nWasta-Offline data was NOT found at /media/..."
+  echo "Wasta-Offline data was NOT found on a USB drive."
 else
   # The USBMOUNTDIR value should be the path up to, but not including /wasta-offline of $USBMOUNTPOINT
   USBMOUNTDIR=$USBMOUNTPOINT # normally USBMOUNTDIR is /media/$USER/<DISK_LABEL>
@@ -317,42 +428,28 @@ else
   fi
   WASTAOFFLINEEXTERNALAPTMIRRORPATH=$USBMOUNTPOINT$APTMIRRORDIR # /media/$USER/<DISK_LABEL>/wasta-offline/apt-mirror
   UPDATINGEXTUSBDATA="YES"
-  echo -e "\nWasta-Offline data found at mount point: $USBMOUNTPOINT"
+  echo "Wasta-Offline data found on USB drive at: $USBMOUNTPOINT"
   USBDEVICENAME=`get_device_name_of_usb_mount_point "$USBMOUNTDIR"`
-  echo "Device Name of USB at $USBMOUNTDIR: $USBDEVICENAME"
+  #echo "Debug: Device Name of USB at $USBMOUNTDIR: $USBDEVICENAME"
   USBFILESYSTEMTYPE=`get_file_system_type_of_partition "$USBMOUNTDIR"`
-  echo "File system TYPE of USB Drive at $USBDEVICENAME: $USBFILESYSTEMTYPE"
+  #echo "Debug: File system TYPE of USB Drive at $USBMOUNTDIR: $USBFILESYSTEMTYPE"
 fi
 sleep 3s
 
-CURRDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-
-#echo "Some calculated variable values (useful for debugging):"
-#echo "   USBMOUNTPOINT: $USBMOUNTPOINT"
-#echo "   USBMOUNTDIR: $USBMOUNTDIR"
-#echo "   WASTAOFFLINEEXTERNALAPTMIRRORPATH: $WASTAOFFLINEEXTERNALAPTMIRRORPATH"
-#echo "   WASTAOFFLINELOCALAPTMIRRORPATH: $WASTAOFFLINELOCALAPTMIRRORPATH"
-#echo "   LOCALMIRRORSPATH: $LOCALMIRRORSPATH"
-#echo "   "
-#sleep 3s
-
-# ------------------------------------------------------------------------------
-# Main program starts here
-# ------------------------------------------------------------------------------
-
-# the second USB drive with modified suffix added to the USB drive's label name - something
-# like "UPDATES1" or "UPDATES_" - with a number or underscore character suffixed. 
-# These scripts will only detect the mount point of the first USB drive inserted having a
-# Wasta-Offline mirror. Any second or additional USB drives mounted with the same disk label
+# NOTE: If a second USB drive is mounted with the same DISK_LABEL, the second USB drive  
+# will get a modified suffix added to the USB drive's label name - something like
+# "UPDATES1" or "UPDATES_" - with a number or underscore character suffixed to its DISK_LABEL. 
+# This script will only detect the mount point of the first USB drive inserted having a
+# Wasta-Offline mirror. Any second or additional USB drives mounted with the same DISK_LABEL
 # name will be ignored. 
 
 # If neither a local master mirror nor a USB drive with the full mirror is found notify
 # the user of the problem and abort, otherwise continue.
 if [ -d "$WASTAOFFLINELOCALAPTMIRRORPATH" ]; then
-  LOCALMIRRORSPATH=$WASTAOFFLINELOCALAPTMIRRORPATH # /data/master/wasta-offline/apt-mirror
-  LOCALBASEDIR=$DATADIR$MASTERDIR # /data/master
   UPDATINGLOCALDATA="YES"
 else
+  # The $WASTAOFFLINELOCALAPTMIRRORPATH doesn't exist. Check if $WASTAOFFLINEEXTERNALAPTMIRRORPATH
+  # is also empty, if so, warn and abort.
   if [ "x$WASTAOFFLINEEXTERNALAPTMIRRORPATH" = "x" ]; then
     echo -e "\n****** WARNING ******"
     echo "A USB drive with wasta-offline data was not found."
@@ -361,66 +458,151 @@ else
     echo "Aborting..."
     exit 1
   fi
-  LOCALMIRRORSPATH=$WASTAOFFLINEEXTERNALAPTMIRRORPATH # /media/$USER/<DISK_LABEL>/wasta-offline/apt-mirror
-  LOCALBASEDIR=$USBMOUNTDIR # /media/$USER/<DISK_LABEL>
   UPDATINGLOCALDATA="NO"
 fi
 
+#echo "Debug: Some calculated variable values (useful for debugging):"
+#echo "Debug:  USBMOUNTPOINT: $USBMOUNTPOINT"
+#echo "Debug:  USBMOUNTDIR: $USBMOUNTDIR"
+#echo "Debug:  WASTAOFFLINEEXTERNALAPTMIRRORPATH: $WASTAOFFLINEEXTERNALAPTMIRRORPATH"
+#echo "Debug:  WASTAOFFLINELOCALAPTMIRRORPATH: $WASTAOFFLINELOCALAPTMIRRORPATH"
+#echo "Debug:  LOCALMIRRORSPATH: $LOCALMIRRORSPATH"
+#sleep 3s
+
 # Check for the postmirror.sh and postmirror2.sh scripts that are needed for this script.
 # These postmirror scripts should exist in a subfolder called apt-mirror-setup in the
-# $CURRDIR (the directory in which this script is running). Warn user if the scripts are
-# not found.
-# Check for existence of postmirror.sh in $CURRDIR$APTMIRRORSETUPDIR
-if [ ! -f "$CURRDIR$APTMIRRORSETUPDIR/$POSTMIRRORSCRIPT" ]; then
+# $LOCALBASEDIR. Warn user if the scripts are not found.
+# Check for existence of postmirror.sh in $LOCALBASEDIR$APTMIRRORSETUPDIR
+if [ ! -f "$LOCALBASEDIR$APTMIRRORSETUPDIR/$POSTMIRRORSCRIPT" ]; then
   echo -e "\n****** WARNING ******"
   echo "The $POSTMIRRORSCRIPT file was not found. It should be at:"
-  echo "  $CURRDIR$APTMIRRORSETUPDIR/$POSTMIRRORSCRIPT"
-  echo "  in the $APTMIRRORSETUPDIR subfolder of the $CURRDIR directory."
+  echo "  $LOCALBASEDIR$APTMIRRORSETUPDIR/$POSTMIRRORSCRIPT"
+  echo "  in the $APTMIRRORSETUPDIR subfolder of the $LOCALBASEDIR directory."
   echo "Cannot continue $UPDATEMIRRORSCRIPT processing! Please try again..."
   echo "****** WARNING ******"
   echo "Aborting..."
   exit 1
 fi
-# Check for existence of postmirror2.sh in $CURRDIR$/APTMIRRORSETUPDIR
-if [ ! -f "$CURRDIR$APTMIRRORSETUPDIR/$POSTMIRROR2SCRIPT" ]; then
+# Check for existence of postmirror2.sh in $LOCALBASEDIR$/APTMIRRORSETUPDIR
+if [ ! -f "$LOCALBASEDIR$APTMIRRORSETUPDIR/$POSTMIRROR2SCRIPT" ]; then
   echo -e "\n****** WARNING ******"
   echo "The $POSTMIRROR2SCRIPT file was not found. It should be at:"
-  echo "  $CURRDIR$APTMIRRORSETUPDIR/$POSTMIRROR2SCRIPT"
-  echo "  in the $APTMIRRORSETUPDIR subfolder of the $CURRDIR directory."
+  echo "  $LOCALBASEDIR$APTMIRRORSETUPDIR/$POSTMIRROR2SCRIPT"
+  echo "  in the $APTMIRRORSETUPDIR subfolder of the $LOCALBASEDIR directory."
   echo "Cannot continue $UPDATEMIRRORSCRIPT processing! Please try again..."
   echo "****** WARNING ******"
   echo "Aborting..."
   exit 1
 fi
 
-echo -e "\nCurrent working directory is: $CURRDIR"
-echo "Mirror to receive updates is: $LOCALMIRRORSPATH"
-echo "Base dir to receive wasta-scripts updates is: $LOCALBASEDIR"
+#echo "Debug: Mirror to receive updates is: $LOCALMIRRORSPATH"
+#echo "Debug: Base dir to receive wasta-scripts updates is: $LOCALBASEDIR"
 echo -e "\nAre we updating the master copy of the mirror? $UPDATINGLOCALDATA"
 sleep 2s
 echo "Are we updating a portable USB drive's mirror? $UPDATINGEXTUSBDATA"
+sleep 2s
 
-# Ensure the postmirror.sh and postmirror2.sh scripts are freshly copied from the
-# $CURRDIR/apt-mirror-setup folder to the $CURRDIR/wasta-offline/apt-mirror/var folder,
-# but only if there is a wasta-offline directory in $CURRDIR. There will be a wasta-offline
-# dir if the user is running this script from either the master mirror at /data/master or
-# from a mirror on the external drive at /media/$USER/<DISK_LABEL>
-if [ -d "$CURRDIR$WASTAOFFLINEDIR" ]; then
+# There are 3 possible configurations to consider for rsync copying of the postmirror.sh and
+# postmirror2.sh scripts from their apt-mirror-setup folder to the .../wasta-offline/apt-mirror/var
+# destination:
+#
+# 1. No USB Drive is attached/mounted. In this case $USBMOUNTPOINT and $USBMOUNTDIR will both
+# be empty strings. In this case there has to be a master mirror present to receive data or 
+# the script aborts. In this configuration the update-mirror.sh script can only update the 
+# master mirror, and:
+#   $UPDATINGLOCALDATA will be "YES" 
+#   $UPDATINGEXTUSBDATA will be "NO"
+# Also, rsync's source root partition will be the same as the destination root partition - 
+# and both will be of the same file system type, namely that of the master mirror's 
+# partition on the dedicated computer.
+#
+# 2. A USB drive is attached/mounted, but there is NO master mirror available. In this case
+# $USBMOUNTPOINT must be a valid path to a USB drive to receive the mirror data, and the
+# script does not attempt to sync any data to a master mirror (nor does it try to create
+# a master mirror). In this configuration the update-mirror.sh script can only update the
+# USB drive's mirror with data, and:
+#   $UPDATINGLOCALDATA will be "NO" 
+#   $UPDATINGEXTUSBDATA will be "YES"
+# Also, rsync's source root partition will be the same as the destination root partition -
+# and both will be of the same file system type, namely that of the attached USB drive's 
+# partition
+#
+# 3. A USB drive is attached/mounted, AND there is also a master mirror available. In this 
+# case the master mirror will be the first to receive mirror updates, and once that process 
+# is finished, this update-mirror.sh script calls the sync_Wasta-Offline_to_Ext_Drive.sh 
+# script to sync the newly updated master mirror data to the external USB drive. In this
+# configuration the update-mirror.sh script updates BOTH the master mirror's data and the 
+# USB drive's mirror data, and:
+#   $UPDATINGLOCALDATA will be "YES" 
+#   $UPDATINGEXTUSBDATA will be "YES"
+#
+# Get RSYNC_OPTIONS_LOCAL and RSYNC_OPTIONS_USB
+# The rsync options are:
+# For FSTYPE of "ext4" (Linux):
+#   -a archive mode (recurses thru dirs, preserves symlinks, permissions, times, group, owner)
+#   -v verbose
+#   -h human readable
+#   -q quiet
+#   --update overwrite only if file is newer than existing file
+# For FSTYPE of "ntfs" or "vfat":
+#   -r recursive mode (recurses thru dirs)
+#   -v verbose
+#   -h human readable
+#   --size-only
+#   -q quiet
+RSYNC_OPTIONS_LOCAL=$(get_rsync_options "$LOCALBASEDIRR") 
+RSYNC_OPTIONS_USB=$(get_rsync_options "$USBMOUNTDIR")
+# Get FSTYPE_LOCAL and FSTYPE_USB
+FSTYPE_LOCAL=$(get_file_system_type_of_partition "$LOCALBASEDIR")
+FSTYPE_USB=$(get_file_system_type_of_partition "$USBMOUNTDIR")
 
-  echo -e "\nCopying postmirror*.sh files to:"
-  echo "   $CURRDIR$WASTAOFFLINEDIR$APTMIRRORDIR$VARDIR..."
-  # Here is the main rsync command. The rsync options are:
-  #   -a archive mode (recurses thru dirs, preserves symlinks, permissions, times, group, owner)
-  #   -v verbose
-  #   -h human readable
-  #   -q quiet
-  #   --progress show progress during transfer
-  #   --update overwrite only if file is newer than existing file
-  # TODO: Adjust rsync command to use options: -rvh --size-only --progress
-  # if destination USB drive is not Linux ext4 (ntfs)
-  rsync -avh -q --progress --update $CURRDIR$APTMIRRORSETUPDIR/*.sh $CURRDIR$WASTAOFFLINEDIR$APTMIRRORDIR$VARDIR
-  # Ensure that postmirror.sh and postmirror2.sh scripts are executable for everyone.
-  chmod ugo+rwx $CURRDIR$WASTAOFFLINEDIR$APTMIRRORDIR$VARDIR/*.sh
+if [[ "$UPDATINGLOCALDATA" == "YES" ]] && [[ "$UPDATINGEXTUSBDATA" == "YES" ]]; then
+  # Both local and usb are YES, so local can do all copying: first copy local to local, and then local to usb
+  # First, local to local - since destination is local use RSYNC_OPTIONS_LOCAL and FSTYPE_LOCAL
+  rsync $RSYNC_OPTIONS_LOCAL -q "$LOCALBASEDIR$APTMIRRORSETUPDIR/"*.sh "$LOCALBASEDIR$WASTAOFFLINEDIR$APTMIRRORDIR$VARDIR"
+  echo -e "\nCopying postmirror*.sh files (locally to local):"
+  echo "   from: $LOCALBASEDIR$APTMIRRORSETUPDIR [$FSTYPE_LOCAL]"
+  echo "   to:   $LOCALBASEDIR$WASTAOFFLINEDIR$APTMIRRORDIR$VARDIR [$FSTYPE_LOCAL]"   
+  # Ensure that destination postmirror.sh and postmirror2.sh scripts are executable for everyone
+  # but only for FSTYPEs that are not "ntfs" or "vfat"
+  if [[ "$FSTYPE_LOCAL" != "ntfs" ]] && [[ "$FSTYPE_LOCAL" != "vfat" ]]; then
+    chmod ugo+rwx "$LOCALBASEDIR$WASTAOFFLINEDIR$APTMIRRORDIR$VARDIR/"*.sh
+  fi
+  # Then, local to usb - since destination is usb use RSYNC_OPTIONS_USB and FSTYPE_USB
+  rsync $RSYNC_OPTIONS_USB -q "$LOCALBASEDIR$APTMIRRORSETUPDIR/"*.sh "$USBMOUNTDIR$WASTAOFFLINEDIR$APTMIRRORDIR$VARDIR"
+  echo "Copying postmirror*.sh files (local to USB drive):"
+  echo "   from: $LOCALBASEDIR$APTMIRRORSETUPDIR [$FSTYPE_LOCAL]"
+  echo "   to:   $USBMOUNTDIR$WASTAOFFLINEDIR$APTMIRRORDIR$VARDIR [$FSTYPE_USB]"
+  # Ensure that destination postmirror.sh and postmirror2.sh scripts are executable for everyone
+  # but only for FSTYPEs that are not "ntfs" or "vfat"
+  if [[ "$FSTYPE_USB" != "ntfs" ]] && [[ "$FSTYPE_USB" != "vfat" ]]; then
+    chmod ugo+rwx "$USBMOUNTDIR$WASTAOFFLINEDIR$APTMIRRORDIR$VARDIR/"*.sh
+  fi
+else
+  # Either local or usb are NO
+  if [[ "$UPDATINGLOCALDATA" == "YES" ]]; then
+    # local is YES, but usb is NO, so just copy local to local
+    rsync $RSYNC_OPTIONS_LOCAL -q "$LOCALBASEDIR$APTMIRRORSETUPDIR/"*.sh "$LOCALBASEDIR$WASTAOFFLINEDIR$APTMIRRORDIR$VARDIR"
+    echo -e "\nCopying postmirror*.sh files (locally to local):"
+    echo "   from: $LOCALBASEDIR$APTMIRRORSETUPDIR [$FSTYPE_LOCAL]"
+    echo "   to:   $LOCALBASEDIR$WASTAOFFLINEDIR$APTMIRRORDIR$VARDIR [$FSTYPE_LOCAL]"   
+    # Ensure that destination postmirror.sh and postmirror2.sh scripts are executable for everyone
+    # but only for FSTYPEs that are not "ntfs" or "vfat"
+    if [[ "$FSTYPE_LOCAL" != "ntfs" ]] && [[ "$FSTYPE_LOCAL" != "vfat" ]]; then
+      chmod ugo+rwx "$LOCALBASEDIR$WASTAOFFLINEDIR$APTMIRRORDIR$VARDIR/"*.sh
+    fi
+  else
+    # usb is YES and local is NO, so just copy usb to usb
+    rsync $RSYNC_OPTIONS_USB -q "$USBMOUNTDIR$APTMIRRORSETUPDIR/"*.sh "$USBMOUNTDIR$WASTAOFFLINEDIR$APTMIRRORDIR$VARDIR"
+    echo -e "\nCopying postmirror*.sh files (USB drive to USB drive):"
+    echo "   from: $USBMOUNTDIR$APTMIRRORSETUPDIR [$FSTYPE_USB]"
+    echo "   to:   $USBMOUNTDIR$WASTAOFFLINEDIR$APTMIRRORDIR$VARDIR [$FSTYPE_USB]"
+    # Ensure that destination postmirror.sh and postmirror2.sh scripts are executable for everyone
+    # but only for FSTYPEs that are not "ntfs" or "vfat"
+    if [[ "$FSTYPE_USB" != "ntfs" ]] && [[ "$FSTYPE_USB" != "vfat" ]]; then
+      chmod ugo+rwx "$USBMOUNTDIR$WASTAOFFLINEDIR$APTMIRRORDIR$VARDIR/"*.sh
+    fi
+  fi
 fi
 
 # Check and ensure that wasta-offline is installed. This may not be the
@@ -496,8 +678,8 @@ else
   echo -e "\nCodename is: $CODENAME LTS Version is: $LTSVERNUM"
 
   # Use dpkg to install the wasta-offline package
-  echo "Find string: $CURRDIR/$WASTAOFFLINE*$LTSVERNUM*.deb"
-  DEB=`find "$CURRDIR"/$WASTAOFFLINE*$LTSVERNUM*.deb`
+  echo "Find string: $LOCALBASEDIR/$WASTAOFFLINE*$LTSVERNUM*.deb"
+  DEB=`find "$LOCALBASEDIR"/$WASTAOFFLINE*$LTSVERNUM*.deb`
   if [ "x$DEB" = "x" ]; then
     echo "Cannot install wasta-offline. A local deb package was not found."
     echo "You will need to install wasta-offline before you can use the mirror."
@@ -506,11 +688,12 @@ else
     dpkg -i $DEB
   fi 
 fi
+sleep 2s
 
 # Make sure there is an apt-mirror group on the user's computer and
 # add the non-root user to the apt-mirror group
 echo -e "\nEnsuring apt-mirror group exists and user $SUDO_USER is in apt-mirror group..."
-sleep 3s
+sleep 2s
 if ! ensure_user_in_apt_mirror_group "$SUDO_USER" ; then
   # Issue a warning, but continue the script
   echo "WARNING: Could not add user: $SUDO_USER to the apt-mirror group"
@@ -761,8 +944,8 @@ EOF
       fi
       # No need for a .gitignore file in bills-wasta-docs repo
       
-      #echo "Change back to $CURRDIR"
-      cd "$CURRDIR"
+      #echo "Change back to $LOCALBASEDIR"
+      cd "$LOCALBASEDIR"
     fi
    ;;
   "3")

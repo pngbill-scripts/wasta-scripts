@@ -549,7 +549,7 @@ echo "   File system TYPE of USB Drive: $USBFILESYSTEMTYPE"
 # value as the $COPYTODIR, which, the above code assured $COPYTODIR will not be an 
 # empty string, but will be either a default value of /data/master/wasta-offline or 
 # whatever path value set by parameter.
-# The $COPYTODIR/$BASEPATH_TO_MIRROR will also be used later when updating the master
+# The $COPYTODIR or $BASEPATH_TO_MIRROR will also be used later when updating the master
 # mirror computer's mirror.list file with an accurate base_path pointing to the
 # master mirror.
 BASEPATH_TO_MIRROR=$COPYTODIR

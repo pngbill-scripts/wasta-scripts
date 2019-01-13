@@ -850,7 +850,7 @@ else
     if [[ "$USBFSTYPE_2" == "ntfs" ]] || [[ "$USBFSTYPE_2" == "vfat" ]]; then
       echo "  Destination format is $USBFSTYPE_2 - no ownership/permissions were set."
     else
-      echo "  Mirror ownership and permissions set successfully at: $COPYTOBASEDIR."
+      echo -e "\n  Mirror ownership and permissions set successfully at: $COPYTOBASEDIR."
     fi
   else
     echo -e "\nNot all mirror ownership and permissions could be set at: $COPYTOBASEDIR."
