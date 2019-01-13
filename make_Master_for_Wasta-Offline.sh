@@ -584,8 +584,9 @@ fi
 # that are available in the df --output= fields.
 USB_BYTES_USED=`df -B1 --output=fstype,used,target "$USBMOUNTDIR" | awk '{if(NR>1)print}' | tr -s " " | cut -f2 -d" "`
 MASTER_BYTES_AVAIL=`df -B1 --output=fstype,avail,target "$ROOT_DIRECTORY_OF_MASTER" | awk '{if(NR>1)print}' | tr -s " " | cut -f2 -d" "`
-#USB_BYTES_USED=`lsblk -o SIZE,MOUNTPOINT -b | grep $USBMOUNTDIR | cut -f1 -d" "`
-#MASTER_BYTES_AVAIL=`lsblk -o SIZE,MOUNTPOINT -b | grep $ROOT_DIRECTORY_OF_MASTER | cut -f1 -d" "`
+# Alternate way to get size in bytes is to use the lsblk command as commented out below:
+#USB_BYTES_USED=`lsblk -o SIZE,MOUNTPOINT -b | grep "$USBMOUNTDIR" | cut -f1 -d" "`
+#MASTER_BYTES_AVAIL=`lsblk -o SIZE,MOUNTPOINT -b | grep "$ROOT_DIRECTORY_OF_MASTER" | cut -f1 -d" "`
 ONE_TB_BYTES="1000000000000"
 # If the disk space used by the USB drive's data > space available, warn user and abort
 sleep 3s
