@@ -239,7 +239,7 @@ if [ "$(whoami)" != "apt-mirror" ]; then
 
   if [ ! $SELECTION ]; then
     echo -e "\n"
-    echo "No selection made, or no reponse within $WAIT seconds. Assuming response of 1"
+    echo "No selection made, or no response within $WAIT seconds. Assuming response of 1"
     echo "The $PostMirrorScript2 script was not called. Script completed."
     exit 0
   fi
