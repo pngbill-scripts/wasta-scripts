@@ -782,6 +782,13 @@ copy_mirror_base_dir_files ()
     # The rsync command's options in $RSYNC_OPTIONS below become: '-rvh --size-only'
     # if destination USB drive is not Linux ext4 (ntfs), otherwise they are '-avh --update'
   rsync $RSYNC_OPTIONS_2 -q "$1"/ReadMe "$2"
+  #echo "Synchronizing the .pdf documents"
+  echo -n "."
+    # For these "base" level files we use --update option instead of the --delete option
+    # which updates the destination only if the source file is newer.
+    # The rsync command's options in $RSYNC_OPTIONS below become: '-rvh --size-only'
+    # if destination USB drive is not Linux ext4 (ntfs), otherwise they are '-avh --update'
+  rsync $RSYNC_OPTIONS_2 -q "$1"/*.pdf "$2"
   #echo "Synchronizing the .git and .gitignore files to $2..."
   echo -n "."
     # For these "base" level files we use --update option instead of the --delete option
