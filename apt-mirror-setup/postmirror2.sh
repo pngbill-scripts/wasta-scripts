@@ -112,6 +112,7 @@
 POSTMIRROR2SCRIPT="postmirror2.sh"
 UkarumpaURLPrefix="http://linuxrepo.sil.org.pg/mirror"
 InternetURLPrefix="http://"
+APTMIRROR="apt-mirror"
 UKA="ukarumpa"
 
 START_FOLDER=""

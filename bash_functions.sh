@@ -1244,18 +1244,10 @@ deb-src $1ppa.launchpad.net/wasta-linux/wasta-apps/ubuntu trusty main
 deb-amd64 $1ppa.launchpad.net/wasta-linux/wasta/ubuntu trusty main
 deb-i386 $1ppa.launchpad.net/wasta-linux/wasta/ubuntu trusty main
 deb-src $1ppa.launchpad.net/wasta-linux/wasta/ubuntu trusty main
-deb-amd64 $1ppa.launchpad.net/libreoffice/libreoffice-4-2/ubuntu trusty main
-deb-i386 $1ppa.launchpad.net/libreoffice/libreoffice-4-2/ubuntu trusty main
-deb-amd64 $1ppa.launchpad.net/libreoffice/libreoffice-4-4/ubuntu trusty main
-deb-i386 $1ppa.launchpad.net/libreoffice/libreoffice-4-4/ubuntu trusty main
 deb-amd64 $1ppa.launchpad.net/libreoffice/libreoffice-5-0/ubuntu trusty main
 deb-i386 $1ppa.launchpad.net/libreoffice/libreoffice-5-0/ubuntu trusty main
 deb-amd64 $1ppa.launchpad.net/libreoffice/libreoffice-5-1/ubuntu trusty main
 deb-i386 $1ppa.launchpad.net/libreoffice/libreoffice-5-1/ubuntu trusty main
-deb-amd64 $1ppa.launchpad.net/libreoffice/libreoffice-5-2/ubuntu trusty main
-deb-i386 $1ppa.launchpad.net/libreoffice/libreoffice-5-2/ubuntu trusty main
-deb-amd64 $1ppa.launchpad.net/libreoffice/libreoffice-5-3/ubuntu trusty main
-deb-i386 $1ppa.launchpad.net/libreoffice/libreoffice-5-3/ubuntu trusty main
 deb-amd64 $1ppa.launchpad.net/libreoffice/libreoffice-5-4/ubuntu trusty main
 deb-i386 $1ppa.launchpad.net/libreoffice/libreoffice-5-4/ubuntu trusty main
 deb-amd64 $1ppa.launchpad.net/libreoffice/libreoffice-6-0/ubuntu trusty main
@@ -1334,15 +1326,9 @@ deb-amd64 $1ppa.launchpad.net/wasta-linux/wasta/ubuntu xenial main
 deb-i386 $1ppa.launchpad.net/wasta-linux/wasta/ubuntu xenial main
 deb-src $1ppa.launchpad.net/wasta-linux/wasta/ubuntu xenial main
 
-# libreoffice version 5-0 is earliest version available in xenial
-deb-amd64 $1ppa.launchpad.net/libreoffice/libreoffice-5-0/ubuntu xenial main
-deb-i386 $1ppa.launchpad.net/libreoffice/libreoffice-5-0/ubuntu xenial main
+# libreoffice version 5-1 is earliest version available in xenial
 deb-amd64 $1ppa.launchpad.net/libreoffice/libreoffice-5-1/ubuntu xenial main
 deb-i386 $1ppa.launchpad.net/libreoffice/libreoffice-5-1/ubuntu xenial main
-deb-amd64 $1ppa.launchpad.net/libreoffice/libreoffice-5-2/ubuntu xenial main
-deb-i386 $1ppa.launchpad.net/libreoffice/libreoffice-5-2/ubuntu xenial main
-deb-amd64 $1ppa.launchpad.net/libreoffice/libreoffice-5-3/ubuntu xenial main
-deb-i386 $1ppa.launchpad.net/libreoffice/libreoffice-5-3/ubuntu xenial main
 deb-amd64 $1ppa.launchpad.net/libreoffice/libreoffice-5-4/ubuntu xenial main
 deb-i386 $1ppa.launchpad.net/libreoffice/libreoffice-5-4/ubuntu xenial main
 deb-amd64 $1ppa.launchpad.net/libreoffice/libreoffice-6-0/ubuntu xenial main
@@ -1399,12 +1385,8 @@ clean $SKYPEPREFIX
 #clean $1download.virtualbox.org/virtualbox/debian
 clean $1ppa.launchpad.net/wasta-linux/wasta-apps/ubuntu
 clean $1ppa.launchpad.net/wasta-linux/wasta/ubuntu
-clean $1ppa.launchpad.net/libreoffice/libreoffice-4-2/ubuntu
-clean $1ppa.launchpad.net/libreoffice/libreoffice-4-4/ubuntu
 clean $1ppa.launchpad.net/libreoffice/libreoffice-5-0/ubuntu
 clean $1ppa.launchpad.net/libreoffice/libreoffice-5-1/ubuntu
-clean $1ppa.launchpad.net/libreoffice/libreoffice-5-2/ubuntu
-clean $1ppa.launchpad.net/libreoffice/libreoffice-5-3/ubuntu
 clean $1ppa.launchpad.net/libreoffice/libreoffice-5-4/ubuntu
 clean $1ppa.launchpad.net/libreoffice/libreoffice-6-0/ubuntu
 
