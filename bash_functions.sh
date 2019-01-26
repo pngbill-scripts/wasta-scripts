@@ -1136,6 +1136,8 @@ generate_mirror_list_file ()
   #   Added the LibreOffice libreoffice-5-4 and libreoffice-6-0 repos 
   #   Added the Linux Mint Sylvia 18.3 Tara 19 and Tessa 19.1 repos to the list
   #   Added special https protocol for Skype repo
+  # Revised 25 January 2019 by Bill Martin:
+  #   Removed the security.ubuntu.com repository which only duplicates the <dist>-security repos in archive.ubuntu.com
 
   # If this is the first generation of mirror.list, first back up the user's existing mirror.list
   # to mirror.list.save. The existing mirror.list file won't have the $GENERATEDSIGNATURE in the
@@ -1157,10 +1159,9 @@ generate_mirror_list_file ()
   # to archive.ubuntu.com/ubuntu for security updates (trusty-security, xenial-security,
   # and bionic-security). The reality is that these *-security update repos are currently
   # located in both security.ubuntu.com/ubuntu and archive.ubuntu.com/ubuntu. Hence,
-  # below we will use the "security" string for the $ARCHIVESECURITY variable. This
-  # results is some duplication in the mirror so that *-security is contained in two
-  # different places, but having a separate security.ubuntu.com/ubuntu might avoid some
-  # "file not found" problems on some machines using the wasta-offline mirror. 
+  # below we will only use the "archive" string for the $ARCHIVESECURITY variable. 
+  # As of 25 January 2019 I've removed the security.ubuntu.com source from mirror.list, 
+  # since it takes up an additional 165GB of space of duplicated data.
   # Note: According to Cambell Prince the packages.palaso.org repo no longer exists, so 
   # that all future palaso software will be released via the packages.sil.org repository.
   #if [ $1 = $FTPUkarumpaURLPrefix ]; then
@@ -1220,9 +1221,9 @@ deb-amd64 $1packages.linuxmint.com/ qiana main upstream import backport
 deb-i386 $1packages.linuxmint.com/ qiana main upstream import backport
 deb-amd64 $1archive.ubuntu.com/ubuntu trusty main restricted universe multiverse
 deb-i386 $1archive.ubuntu.com/ubuntu trusty main restricted universe multiverse
-# Note: Our external mirror points to the security.ubuntu.com/ubuntu trusty-security repository.
-# The old Ukarumpa FTP mirrors point to archive.ubuntu.com/ubuntu trusty-security.  
-# Presumably, both remote mirrors contain the same packages and updates.
+# The Ukarumpa mirrors point to archive.ubuntu.com/ubuntu <dist>-security.  
+# Note: The remote mirrors at archive.ubuntu.com/ubuntu <dist>-security and 
+# security.ubuntu.com/ubuntu <dist>-security contain the same packages and updates.
 deb-amd64 $1$ARCHIVESECURITY.ubuntu.com/ubuntu trusty-security main restricted universe multiverse
 deb-i386 $1$ARCHIVESECURITY.ubuntu.com/ubuntu trusty-security main restricted universe multiverse
 deb-amd64 $1archive.ubuntu.com/ubuntu trusty-updates main restricted universe multiverse
@@ -1304,6 +1305,9 @@ deb-i386 $1archive.ubuntu.com/ubuntu xenial-updates main restricted universe mul
 deb-amd64 $1archive.ubuntu.com/ubuntu xenial-backports main restricted universe multiverse
 deb-i386 $1archive.ubuntu.com/ubuntu xenial-backports main restricted universe multiverse
 
+# The Ukarumpa mirrors point to archive.ubuntu.com/ubuntu <dist>-security.  
+# Note: The remote mirrors at archive.ubuntu.com/ubuntu <dist>-security and 
+# security.ubuntu.com/ubuntu <dist>-security contain the same packages and updates.
 deb-amd64 $1$ARCHIVESECURITY.ubuntu.com/ubuntu xenial-security main restricted universe multiverse
 deb-i386 $1$ARCHIVESECURITY.ubuntu.com/ubuntu xenial-security main restricted universe multiverse
 
@@ -1342,6 +1346,9 @@ deb-i386 $1archive.ubuntu.com/ubuntu bionic-updates main restricted universe mul
 deb-amd64 $1archive.ubuntu.com/ubuntu bionic-backports main restricted universe multiverse
 deb-i386 $1archive.ubuntu.com/ubuntu bionic-backports main restricted universe multiverse
 
+# The Ukarumpa mirrors point to archive.ubuntu.com/ubuntu <dist>-security.  
+# Note: The remote mirrors at archive.ubuntu.com/ubuntu <dist>-security and 
+# security.ubuntu.com/ubuntu <dist>-security contain the same packages and updates.
 deb-amd64 $1$ARCHIVESECURITY.ubuntu.com/ubuntu bionic-security main restricted universe multiverse
 deb-i386 $1$ARCHIVESECURITY.ubuntu.com/ubuntu bionic-security main restricted universe multiverse
 
@@ -1377,7 +1384,6 @@ deb-i386 $1ppa.launchpad.net/libreoffice/libreoffice-6-0/ubuntu bionic main
 clean $1packages.linuxmint.com/
 clean $1extra.linuxmint.com/
 clean $1archive.ubuntu.com/ubuntu
-clean $1$ARCHIVESECURITY.ubuntu.com/ubuntu
 clean $1extras.ubuntu.com/ubuntu
 clean $1archive.canonical.com/ubuntu
 clean $1packages.sil.org/ubuntu
@@ -1405,7 +1411,7 @@ EOF
 # /data/master/wasta-offline or /media/$USER/<DISK_LABEL>/wasta-offline.
 # A "full" wasta-offline mirror should have the following mirrors:
 # List of Mirrors and Repos:
-# As of September 2018 these are the mirrors and the repositories that we use in the
+# As of January 2019 these are the mirrors and the repositories that we use in the
 # full Wasta-Linux Mirror as supplied by Bill Martin
 #   Mirror                                        Repos
 #   --------------------------------------------------------------------------------
@@ -1414,17 +1420,12 @@ EOF
 #   extras.ubuntu.com                              main
 #   packages.linuxmint.com                         backport import main upstream
 #   packages.sil.org                               main
-#   *ppa.launchpad.net/libreoffice/libreoffice-4-2 main
-#   *ppa.launchpad.net/libreoffice/libreoffice-4-4 main
 #   *ppa.launchpad.net/libreoffice/libreoffice-5-0 main
 #   *ppa.launchpad.net/libreoffice/libreoffice-5-1 main
-#   *ppa.launchpad.net/libreoffice/libreoffice-5-2 main
-#   *ppa.launchpad.net/libreoffice/libreoffice-5-3 main
 #   *ppa.launchpad.net/libreoffice/libreoffice-5-4 main
 #   *ppa.launchpad.net/libreoffice/libreoffice-6-0 main
 #   ppa.launchpad.net/wasta-linux/wasta            main
 #   ppa.launchpad.net/wasta-linux/wasta-apps       main
-#   security.ubuntu.com                            main multiverse restricted universe
 # 
 # Note: the libreoffice mirrors above marked with * are not included in our test for presence of a wasta-offline mirror.
 # For each of the above Repos we include both binary-i386 and binary-amd64 architecture packages. 
@@ -1514,21 +1515,23 @@ is_there_a_wasta_offline_mirror_at ()
     done
   done
 
+  # whm 25Jan2019 removed the security.ubuntu.com tests, since security.ubuntu.com duplicates the <dist>-security
+  # mirrors, and has been removed from the full Wasta-Offline Mirror.
   # Group 4 use two embedded for loops: outer loop for dist in $UBUNTUSECUREDISTS; inner loop for arch in $ARCHS
   # Path: $PATHTOMIRROR/apt-mirror/mirror/security.ubuntu.com/ubuntu/dists/$dist/main/$arch
   # Number of tests to be made: 4
-  for dist in "${UBUNTUSECUREDISTS[@]}"
-  do
-    for arch in "${ARCHS[@]}"
-    do
-      if [ ! -d "$PATHTOMIRROR/apt-mirror/mirror/security.ubuntu.com/ubuntu/dists/$dist/main/$arch" ]; then
-        full_mirror_exists="FALSE"
-        break
-      else
-        echo -n "." #"Found: $PATHTOMIRROR/apt-mirror/mirror/security.ubuntu.com/ubuntu/dists/$dist/main/$arch"
-      fi
-    done
-  done
+  #for dist in "${UBUNTUSECUREDISTS[@]}"
+  #do
+  #  for arch in "${ARCHS[@]}"
+  #  do
+  #    if [ ! -d "$PATHTOMIRROR/apt-mirror/mirror/security.ubuntu.com/ubuntu/dists/$dist/main/$arch" ]; then
+  #      full_mirror_exists="FALSE"
+  #      break
+  #    else
+  #      echo -n "." #"Found: $PATHTOMIRROR/apt-mirror/mirror/security.ubuntu.com/ubuntu/dists/$dist/main/$arch"
+  #    fi
+  #  done
+  #done
 
   if [ "$full_mirror_exists" = "TRUE" ]; then
     return 0
