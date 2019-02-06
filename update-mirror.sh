@@ -473,26 +473,28 @@ fi
 # These postmirror scripts should exist in a subfolder called apt-mirror-setup in the
 # $LOCALBASEDIR. Warn user if the scripts are not found.
 # Check for existence of postmirror.sh in $LOCALBASEDIR$APTMIRRORSETUPDIR
-if [ ! -f "$LOCALBASEDIR$APTMIRRORSETUPDIR/$POSTMIRRORSCRIPT" ]; then
-  echo -e "\n****** WARNING ******"
-  echo "The $POSTMIRRORSCRIPT file was not found. It should be at:"
-  echo "  $LOCALBASEDIR$APTMIRRORSETUPDIR/$POSTMIRRORSCRIPT"
-  echo "  in the $APTMIRRORSETUPDIR subfolder of the $LOCALBASEDIR directory."
-  echo "Cannot continue $UPDATEMIRRORSCRIPT processing! Please try again..."
-  echo "****** WARNING ******"
-  echo "Aborting..."
-  exit 1
-fi
-# Check for existence of postmirror2.sh in $LOCALBASEDIR$/APTMIRRORSETUPDIR
-if [ ! -f "$LOCALBASEDIR$APTMIRRORSETUPDIR/$POSTMIRROR2SCRIPT" ]; then
-  echo -e "\n****** WARNING ******"
-  echo "The $POSTMIRROR2SCRIPT file was not found. It should be at:"
-  echo "  $LOCALBASEDIR$APTMIRRORSETUPDIR/$POSTMIRROR2SCRIPT"
-  echo "  in the $APTMIRRORSETUPDIR subfolder of the $LOCALBASEDIR directory."
-  echo "Cannot continue $UPDATEMIRRORSCRIPT processing! Please try again..."
-  echo "****** WARNING ******"
-  echo "Aborting..."
-  exit 1
+if [[ "$UPDATINGLOCALDATA" == "YES" ]]; then
+  if [ ! -f "$LOCALBASEDIR$APTMIRRORSETUPDIR/$POSTMIRRORSCRIPT" ]; then
+    echo -e "\n****** WARNING ******"
+    echo "The $POSTMIRRORSCRIPT file was not found. It should be at:"
+    echo "  $LOCALBASEDIR$APTMIRRORSETUPDIR/$POSTMIRRORSCRIPT"
+    echo "  in the $APTMIRRORSETUPDIR subfolder of the $LOCALBASEDIR directory."
+    echo "Cannot continue $UPDATEMIRRORSCRIPT processing! Please try again..."
+    echo "****** WARNING ******"
+    echo "Aborting..."
+    exit 1
+  fi
+  # Check for existence of postmirror2.sh in $LOCALBASEDIR$/APTMIRRORSETUPDIR
+  if [ ! -f "$LOCALBASEDIR$APTMIRRORSETUPDIR/$POSTMIRROR2SCRIPT" ]; then
+    echo -e "\n****** WARNING ******"
+    echo "The $POSTMIRROR2SCRIPT file was not found. It should be at:"
+    echo "  $LOCALBASEDIR$APTMIRRORSETUPDIR/$POSTMIRROR2SCRIPT"
+    echo "  in the $APTMIRRORSETUPDIR subfolder of the $LOCALBASEDIR directory."
+    echo "Cannot continue $UPDATEMIRRORSCRIPT processing! Please try again..."
+    echo "****** WARNING ******"
+    echo "Aborting..."
+    exit 1
+  fi
 fi
 
 #echo "Debug: Mirror to receive updates is: $LOCALMIRRORSPATH"
