@@ -1403,7 +1403,7 @@ EOF
 
 # A bash function that determines if a full wasta-offline mirror exists at the given
 # path passed in as a single parameter. Parameter will be either $COPYFROMDIR or $COPYTODIR
-# whern the is_there_a_wasta_offline_mirror_at () function is called.
+# when the is_there_a_wasta_offline_mirror_at () function is called.
 # Returns 0 if a full wasta-offline mirror exists at $1, otherwise returns 1.
 # Revised: 17 April 2016 to correct logic and remove libreoffice repo tests
 # A single optional parameter must be used which should be the absolute path to the

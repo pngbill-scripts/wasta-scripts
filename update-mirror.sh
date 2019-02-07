@@ -271,6 +271,7 @@ MASTERDIR="/master"
 APTMIRRORDIR="/$APTMIRROR" # /apt-mirror
 WASTAOFFLINE="wasta-offline"
 WASTAOFFLINEDIR="/wasta-offline"
+WASTAOFFLINELOCALDIR=$DATADIR$MASTERDIR$WASTAOFFLINEDIR # /data/master/wasta-offline
 WASTAOFFLINELOCALAPTMIRRORPATH=$DATADIR$MASTERDIR$WASTAOFFLINEDIR$APTMIRRORDIR # default to /data/master/wasta-offline/apt-mirror
 LOCALMIRRORSPATH=$WASTAOFFLINELOCALAPTMIRRORPATH # default to $WASTAOFFLINELOCALAPTMIRRORPATH above [may be changed below]
 ROOT_DIRECTORY_OF_MASTER=$DATADIR # default to /data
@@ -317,96 +318,129 @@ sleep 3s
 # Ext4 (or possibly Ext3 or Ext2), but we want to verify that in order to use the
 # appropriate -avh or -rvh rsync options when copying the postmirror.sh and 
 # postmirror2.sh scripts to the .../var directory where apt-mirror will look for them.
-#
-# Get the BASEPATH_TO_MIRROR and ROOT_DIRECTORY_OF_MASTER if a mirror.list file exists.
-# The base_path would most likely be:
-#   /data/master/wasta-offline/apt-mirror, if mirror.list it exists, or possibly
-#   /media/<User-Name>/<DISK_LABEL>/wasta-offline/apt-mirror (see below), or
-#   an empty string if the mirror.list file doesn't exist.
-MASTER_MIRROR_FOUND="FALSE"
-BASEPATH_FROM_MIRROR_LIST=`get_base_path_of_mirror_list_file` # expect default of /data/master/wasta-offline/apt-mirror
-if [ "x$BASEPATH_FROM_MIRROR_LIST" = "x" ]; then
-  # No base_path exists, probably because no mirror.list exists
-  MASTER_MIRROR_FOUND="FALSE"
+
+# See if there is a full master mirror at the default location /data/master/wasta-offline
+if is_there_a_wasta_offline_mirror_at $WASTAOFFLINELOCALDIR ; then
+  # We found a full wasta-offline mirror at the default location
+  MASTER_MIRROR_FOUND="TRUE"
+  UPDATINGLOCALDATA="YES"
+  # This variable remains set to its initial default (set above): $WASTAOFFLINELOCALAPTMIRRORPATH
+  # This variable remains set to its initial default (set above): $LOCALMIRRORSPATH
+  # This variable remains set to its initial default (set above): $LOCALBASEDIR
 else
-  # Found a mirror.list set base_path, which most likely will be either:
-  # /data/master/wasta-offline/apt-mirror or possibly /media/<User-Name>/<DISK_LABEL>/wasta-offline/apt-mirror.
-  # A base path at /data/master/wasta-offline/apt-mirror is the default location if
-  # an administrator set up the master mirror using the make_Master_for_Wasta-Offline.sh
-  # script, so if we extract a "root" directory ($ROOT_DIRECTORY_OF_MASTER) from
-  # the BASEPATH_FROM_MIRROR_LIST, and its "root" directory is NOT "/media"
-  # then we proceed with confidence that we've found the master mirror.
-  BASEPATH_TO_APT_MIRROR=${BASEPATH_FROM_MIRROR_LIST%/wasta-offline/apt-mirror/*} # /data/master/wasta-offline
-  BASEPATH_TO_MIRROR=${BASEPATH_FROM_MIRROR_LIST%/wasta-offline/*} # /data/master
-  ROOT_DIRECTORY_OF_MASTER="/"$(echo "$BASEPATH_TO_MIRROR" | cut -d "/" -f2)
-  
-  if [[ "x$ROOT_DIRECTORY_OF_MASTER" != "x" ]]; then
-    if [[ "$ROOT_DIRECTORY_OF_MASTER" != "/media" ]]; then
-      MASTER_MIRROR_FOUND="TRUE"
-      # Set some variables that point to the master mirror
-      WASTAOFFLINELOCALAPTMIRRORPATH=$BASEPATH_FROM_MIRROR_LIST
-      if [ -d "$WASTAOFFLINELOCALAPTMIRRORPATH" ]; then
-        LOCALMIRRORSPATH=$WASTAOFFLINELOCALAPTMIRRORPATH # /data/master/wasta-offline/apt-mirror
-        LOCALBASEDIR="$BASEPATH_TO_MIRROR"
-      fi
-      echo -e "\nWasta-Offline data found in a master mirror at: $BASEPATH_TO_APT_MIRROR"
-      #echo "Debug: The root directory of the master mirror is: $ROOT_DIRECTORY_OF_MASTER"
-    else
-      # The "root" directly from the base_path is /media
-      # A base_path at /media/... might be the case if an administrator had been using
-      # the update-mirror.sh script to have apt-mirror directly update a USB drive's 
-      # mirror (at /media/...) without having a master mirror present where this script 
-      # is being called from. An administrator, of course, could have set up a master 
-      # mirror apart from using the make_Master_for_Wasta-Offline.sh script to do so,
-      # and in the process of doing so didn't reconfigure the mirror.list to have its 
-      # base_path updated to the current master mirror (the make_Master... script
-      # would have ensured that the base_path in mirror.list points to the actual master
-      # mirror). While unlikely, we attempt to determine if a master mirror is actually
-      # present at a different path on a fixed drive even while the mirror.list file 
-      # says the base_path is at a /media/... location.
-      # Use find to search from root / for a master mirror tree of the form 
-      # /.../wasta-offline/apt-mirror/mirror/archive.ubuntu.com
-      # find options:
-      #   /  <-- start finding from root /
-      #   -not -path "/media/*" ... <--this will exclude looking in dirs at /media/*, /bin/* ... etc (to speed up find)
-      #   2>/dev/null <-- don't echo any error output
-      #   -name "archive.ubuntu.com" <-- find this directory name
-      # The pipe to grep ensures that any path returned has the form .../wasta-offline/apt-mirror/mirror/archive.ubuntu.com
-      echo "Searching for a master mirror on this computer. This may take a while..."
-      TEMP_PATH=$(find / -not -path "/media/*" -not -path "/bin/*" -not -path "/usr/*" -not -path "/tmp/*" \
-      -not -path "/sys/*" -not -path "/proc/*" -not -path "/etc/*" -not -path "/lib*/*" \
-      -not -path "/opt/*" -not -path "/run/*" -not -path "/root/*" -not -path "/dev/*" \
-      -not -path "/var/*" -not -path "/sbin/*" -not -path "/boot/*" -not -path "/lost+found/*" \
-      2>/dev/null -name "archive.ubuntu.com" | grep "/wasta-offline/apt-mirror/mirror/archive.ubuntu.com")
-      #TEMP_PATH=$(find / -not -path "/media/*" 2>/dev/null -name "archive.ubuntu.com" | grep "/wasta-offline/apt-mirror/mirror/archive.ubuntu.com")
-      if [ "x$TEMP_PATH" = "x" ]; then
-        echo "No master mirror found."
-      else
-        # TODO: Need to test scenario below
-        # Get the $BASEPATH_TO_MIRROR from TEMP_PATH, i.e., the first part of the path 
-        # up to "/wasta-offline/apt-mirror/mirror/archive.ubuntu.com"
-        # if TEMP_PATH is: /mydata/master/wasta-offline/apt-mirror/mirror/archive.canonical.com
-        # the BASEPATH_TO_MIRROR would be /mydata/master, and the $ROOT_DIRECTORY_OF_MASTER would be /mydata
-        # Also get the BASE_PATH_TO_APT_MIRROR from TEMP_PATH, i.e., the path up to the .../mirror/ dir
-        BASE_PATH_TO_APT_MIRROR=${TEMP_PATH%/mirror/*} # /data/master/wasta-offline/apt-mirror
-        echo "Debug: Base path up to /mirror/ dir is: $BASE_PATH_TO_APT_MIRROR"
-        BASEPATH_TO_MIRROR=${TEMP_PATH%/wasta-offline/*} # /data/master
-        echo "Debug: Base path to mirror dir is: $BASEPATH_TO_MIRROR"
-        ROOT_DIRECTORY_OF_MASTER="/"$(echo "$BASEPATH_TO_MIRROR" | cut -d "/" -f2) # /data
-        echo "Debug: The root directory of the master mirror is: $ROOT_DIRECTORY_OF_MASTER"
-        MASTER_MIRROR_FOUND="TRUE"
-        WASTAOFFLINELOCALAPTMIRRORPATH=$BASEPATH_FROM_MIRROR_LIST
-        if [ -d "$WASTAOFFLINELOCALAPTMIRRORPATH" ]; then
-          LOCALMIRRORSPATH=$WASTAOFFLINELOCALAPTMIRRORPATH # /data/master/wasta-offline/apt-mirror
-          LOCALBASEDIR="$BASEPATH_TO_MIRROR"
-        fi
-        echo "Found master mirror at: $BASEPATH_TO_MIRROR"
-      fi
-    
-    fi
+  MASTER_MIRROR_FOUND="FALSE" # may be changed below
+  UPDATINGLOCALDATA="NO" # may be changed below
+  # It is possible that an apt-mirror maintained wasta-offline mirror exists elsewhere
+  # on the local computer other than at the default location /data/master/wasta-offline.
+  # If one exists, it should be set by the base_path variable of a mirror.list file.
+  # Get the BASEPATH_TO_MIRROR and ROOT_DIRECTORY_OF_MASTER if a mirror.list file exists.
+  # The base_path would most likely be:
+  #   /data/master/wasta-offline/apt-mirror, if mirror.list it exists, or possibly
+  #   /media/<User-Name>/<DISK_LABEL>/wasta-offline/apt-mirror (see below), or
+  #   an empty string if the mirror.list file doesn't exist.
+  BASEPATH_FROM_MIRROR_LIST=`get_base_path_of_mirror_list_file` # expect default of /data/master/wasta-offline/apt-mirror
+  if [[ "x$BASEPATH_FROM_MIRROR_LIST" = "x" ]]; then
+    # No base_path exists, probably because no mirror.list exists, but check for a mirror
+    # at the default location of /data/master/wasta-offline
+    MASTER_MIRROR_FOUND="FALSE" # may be changed below
+    UPDATINGLOCALDATA="NO" # may be changed below
   else
-    # The $ROOT_DIRECTORY_OF_MASTER is a blank string
-    MASTER_MIRROR_FOUND="FALSE"
+    # Found a mirror.list set base_path, which most likely will be either:
+    # /data/master/wasta-offline/apt-mirror or possibly /media/<User-Name>/<DISK_LABEL>/wasta-offline/apt-mirror.
+    # A base path at /data/master/wasta-offline/apt-mirror is the default location if
+    # an administrator set up the master mirror using the make_Master_for_Wasta-Offline.sh
+    # script.
+    # The presence of a mirror.list file containing a base_path setting, doesn't mean
+    # that an actual mirror exists at the location of the base_path.
+    # So we need to check if there is an actual full mirror at the specified location.
+    # Get some paths based on the extracted base_path value:
+    # Extract a base path up to the apt-mirror directory (BASEPATH_TO_APT_MIRROR):
+    BASEPATH_TO_APT_MIRROR=${BASEPATH_FROM_MIRROR_LIST%/wasta-offline/apt-mirror/*} # /data/master/wasta-offline
+    # Use $BASEPATH_TO_APT_MIRROR to see if there is an actual full mirror at that location:
+    if is_there_a_wasta_offline_mirror_at $BASEPATH_TO_APT_MIRROR ; then
+      # Extract a base path up to the wasta-offline directory (BASEPATH_TO_MIRROR):
+      BASEPATH_TO_MIRROR=${BASEPATH_FROM_MIRROR_LIST%/wasta-offline/*} # /data/master
+      # Extract a "root" directory ($ROOT_DIRECTORY_OF_MASTER) from the BASEPATH_FROM_MIRROR_LIST. 
+      ROOT_DIRECTORY_OF_MASTER="/"$(echo "$BASEPATH_TO_MIRROR" | cut -d "/" -f2)
+    
+      # If the full mirror exists and its "root" directory is NOT "/media"
+      # then we proceed with confidence that we've found the master mirror.
+  
+      if [[ "x$ROOT_DIRECTORY_OF_MASTER" != "x" ]]; then
+        if [[ "$ROOT_DIRECTORY_OF_MASTER" != "/media" ]]; then
+          MASTER_MIRROR_FOUND="TRUE"
+          UPDATINGLOCALDATA="YES"
+          # Set some variables that point to the master mirror
+          WASTAOFFLINELOCALAPTMIRRORPATH=$BASEPATH_FROM_MIRROR_LIST
+          if [ -d "$WASTAOFFLINELOCALAPTMIRRORPATH" ]; then
+            LOCALMIRRORSPATH=$WASTAOFFLINELOCALAPTMIRRORPATH # /data/master/wasta-offline/apt-mirror
+            LOCALBASEDIR="$BASEPATH_TO_MIRROR"
+          fi
+          echo -e "\nFound a full wasta-offline mirror at: $BASEPATH_TO_APT_MIRROR"
+          #echo "Debug: The root directory of the master mirror is: $ROOT_DIRECTORY_OF_MASTER"
+        else
+          # The "root" directly from the base_path is /media
+          # A base_path at /media/... might be the case if an administrator had been using
+          # the update-mirror.sh script to have apt-mirror directly update a USB drive's 
+          # mirror (at /media/...) without having a master mirror present where this script 
+          # is being called from. An administrator, of course, could have set up a master 
+          # mirror apart from using the make_Master_for_Wasta-Offline.sh script to do so,
+          # and in the process of doing so didn't reconfigure the mirror.list to have its 
+          # base_path updated to the current master mirror (the make_Master... script
+          # would have ensured that the base_path in mirror.list points to the actual master
+          # mirror). While unlikely, we attempt to determine if a master mirror is actually
+          # present at a different path on a fixed drive even while the mirror.list file 
+          # says the base_path is at a /media/... location.
+          # Use find to search from root / for a master mirror tree of the form 
+          # /.../wasta-offline/apt-mirror/mirror/archive.ubuntu.com
+          # find options:
+          #   /  <-- start finding from root /
+          #   -not -path "/media/*" ... <--this will exclude looking in dirs at /media/*, /bin/* ... etc (to speed up find)
+          #   2>/dev/null <-- don't echo any error output
+          #   -name "archive.ubuntu.com" <-- find this directory name
+          # The pipe to grep ensures that any path returned has the form .../wasta-offline/apt-mirror/mirror/archive.ubuntu.com
+          echo "Searching for a master mirror on this computer. This may take a while..."
+          TEMP_PATH=$(find / -not -path "/media/*" -not -path "/bin/*" -not -path "/usr/*" -not -path "/tmp/*" \
+          -not -path "/sys/*" -not -path "/proc/*" -not -path "/etc/*" -not -path "/lib*/*" \
+          -not -path "/opt/*" -not -path "/run/*" -not -path "/root/*" -not -path "/dev/*" \
+          -not -path "/var/*" -not -path "/sbin/*" -not -path "/boot/*" -not -path "/lost+found/*" \
+          2>/dev/null -name "archive.ubuntu.com" | grep "/wasta-offline/apt-mirror/mirror/archive.ubuntu.com")
+          #TEMP_PATH=$(find / -not -path "/media/*" 2>/dev/null -name "archive.ubuntu.com" | grep "/wasta-offline/apt-mirror/mirror/archive.ubuntu.com")
+          if [ "x$TEMP_PATH" = "x" ]; then
+            echo "No master mirror found."
+          else
+            # TODO: Need to test scenario below
+            # Get the $BASEPATH_TO_MIRROR from TEMP_PATH, i.e., the first part of the path 
+            # up to "/wasta-offline/apt-mirror/mirror/archive.ubuntu.com"
+            # if TEMP_PATH is: /mydata/master/wasta-offline/apt-mirror/mirror/archive.canonical.com
+            # the BASEPATH_TO_MIRROR would be /mydata/master, and the $ROOT_DIRECTORY_OF_MASTER would be /mydata
+            # Also get the BASE_PATH_TO_APT_MIRROR from TEMP_PATH, i.e., the path up to the .../mirror/ dir
+            BASE_PATH_TO_APT_MIRROR=${TEMP_PATH%/mirror/*} # /mydata/master/wasta-offline/apt-mirror
+            echo "Debug: Base path up to /mirror/ dir is: $BASE_PATH_TO_APT_MIRROR"
+            BASEPATH_TO_MIRROR=${TEMP_PATH%/wasta-offline/*} # /mydata/master
+            echo "Debug: Base path to mirror dir is: $BASEPATH_TO_MIRROR"
+            ROOT_DIRECTORY_OF_MASTER="/"$(echo "$BASEPATH_TO_MIRROR" | cut -d "/" -f2) # /mydata
+            echo "Debug: The root directory of the master mirror is: $ROOT_DIRECTORY_OF_MASTER"
+            MASTER_MIRROR_FOUND="TRUE"
+            UPDATINGLOCALDATA="YES"
+            echo "Found master mirror at: $BASEPATH_TO_MIRROR"
+            WASTAOFFLINELOCALAPTMIRRORPATH=$BASEPATH_FROM_MIRROR_LIST
+            if [ -d "$WASTAOFFLINELOCALAPTMIRRORPATH" ]; then
+              LOCALMIRRORSPATH=$WASTAOFFLINELOCALAPTMIRRORPATH # /data/master/wasta-offline/apt-mirror
+              LOCALBASEDIR="$BASEPATH_TO_MIRROR"
+            fi
+          fi
+        fi
+      else
+        # The $ROOT_DIRECTORY_OF_MASTER is a blank string
+        MASTER_MIRROR_FOUND="FALSE"
+        UPDATINGLOCALDATA="NO"
+      fi
+    else
+      # There is no full wasta-offline mirror at the base_path location; it may be a different mirror.
+      MASTER_MIRROR_FOUND="FALSE"
+      UPDATINGLOCALDATA="NO"
+    fi
   fi
 fi
 
@@ -445,20 +479,15 @@ sleep 3s
 
 # If neither a local master mirror nor a USB drive with the full mirror is found notify
 # the user of the problem and abort, otherwise continue.
-if [ -d "$WASTAOFFLINELOCALAPTMIRRORPATH" ]; then
-  UPDATINGLOCALDATA="YES"
-else
-  # The $WASTAOFFLINELOCALAPTMIRRORPATH doesn't exist. Check if $WASTAOFFLINEEXTERNALAPTMIRRORPATH
-  # is also empty, if so, warn and abort.
-  if [ "x$WASTAOFFLINEEXTERNALAPTMIRRORPATH" = "x" ]; then
-    echo -e "\n****** WARNING ******"
-    echo "A USB drive with wasta-offline data was not found."
-    echo "Cannot update Wasta-Offline Mirror."
-    echo "****** WARNING ******"
-    echo "Aborting..."
-    exit 1
-  fi
-  UPDATINGLOCALDATA="NO"
+if [[ "$UPDATINGLOCALDATA" == "NO" ]] && [[ "$UPDATINGEXTUSBDATA" == "NO" ]]; then
+  echo -e "\n****** WARNING ******"
+  echo "Could not find a local master mirror, nor a USB drive with a mirror to update."
+  echo "You can plug in an existing full mirror on USB drive to be updated,"
+  echo "or, if you want to create a master mirror, run the make_Master_for_Wasta-Offline.sh"
+  echo "script instead of this script."
+  echo "****** WARNING ******"
+  echo "Aborting..."
+  exit 1
 fi
 
 #echo "Debug: Some calculated variable values (useful for debugging):"
@@ -604,6 +633,10 @@ else
     if [[ "$FSTYPE_USB" != "ntfs" ]] && [[ "$FSTYPE_USB" != "vfat" ]]; then
       chmod ugo+rwx "$USBMOUNTDIR$WASTAOFFLINEDIR$APTMIRRORDIR$VARDIR/"*.sh
     fi
+    # When usb is YES and local is NO, the mirror.list needs to point to the
+    # mirror on the USB drive. The $LOCALMIRRORSPATH variable becomes the
+    # base_path in this situation.
+    LOCALMIRRORSPATH=$USBMOUNTDIR$WASTAOFFLINEDIR$APTMIRRORDIR
   fi
 fi
 
@@ -1037,18 +1070,20 @@ EOF
   ;;
 esac
 
-# Ensure that ownership of the mirror tree is apt-mirror:apt-mirror (otherwise cron won't run) 
-# The $LOCALMIRRORSPATH is determined near the main beginning of this script
-echo "Make $LOCALMIRRORSPATH owner be $APTMIRROR:$APTMIRROR"
-chown -R $APTMIRROR:$APTMIRROR "$LOCALMIRRORSPATH" # chown -R apt-mirror:apt-mirror /media/$USER/<DISK_LABEL>/wasta-offline/apt-mirror
-# If apt-mirror updated the master local mirror (at /data/master/wasta-offline/...), then sync 
-# it to the external USB mirror, if it was plugged in.
+# The apt-mirror has finished updating the local master mirror (at /data/master/wasta-offline/...), 
+# now sync the master mirror to the external USB mirror, if it is plugged in.
 if [ "$UPDATINGEXTUSBDATA" = "YES" ]; then
   # Call sync_Wasta_Offline_to_Ext_Drive.sh without any parameters: 
   #   the $COPYFROMDIR will be /data/master/wasta-offline/
   #   the $COPYTODIR will be /media/$USER/<DISK_LABEL>/wasta-offline
   echo "[*** End of apt-mirror post-processing ***]"
   bash "$DIR/$SYNCWASTAOFFLINESCRIPT"
+else
+  # Only updating a local master mirror
+  # Ensure that ownership of the mirror tree is apt-mirror:apt-mirror (otherwise cron won't run) 
+  # The $LOCALMIRRORSPATH is determined near the main beginning of this script
+  echo "Make $LOCALMIRRORSPATH owner be $APTMIRROR:$APTMIRROR"
+  chown -R $APTMIRROR:$APTMIRROR "$LOCALMIRRORSPATH" # chown -R apt-mirror:apt-mirror /media/$USER/<DISK_LABEL>/wasta-offline/apt-mirror
 fi
         
 echo -e "\nThe $UPDATEMIRRORSCRIPT script has finished."
