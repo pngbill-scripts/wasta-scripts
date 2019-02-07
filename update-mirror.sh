@@ -453,7 +453,7 @@ if [ "x$USBMOUNTPOINT" = "x" ]; then
   WASTAOFFLINEEXTERNALAPTMIRRORPATH=""
   UPDATINGEXTUSBDATA="NO"
   # The $USBMOUNTPOINT variable is empty, i.e., a wasta-offline subdirectory on /media/... was not found
-  echo "Wasta-Offline data was NOT found on a USB drive."
+  echo -e "\nWasta-Offline data was NOT found on a USB drive."
 else
   # The USBMOUNTDIR value should be the path up to, but not including /wasta-offline of $USBMOUNTPOINT
   USBMOUNTDIR=$USBMOUNTPOINT # normally USBMOUNTDIR is /media/$USER/<DISK_LABEL>
@@ -462,7 +462,7 @@ else
   fi
   WASTAOFFLINEEXTERNALAPTMIRRORPATH=$USBMOUNTPOINT$APTMIRRORDIR # /media/$USER/<DISK_LABEL>/wasta-offline/apt-mirror
   UPDATINGEXTUSBDATA="YES"
-  echo "Wasta-Offline data found on USB drive at: $USBMOUNTPOINT"
+  echo -e "\nWasta-Offline data found on USB drive at: $USBMOUNTPOINT"
   USBDEVICENAME=`get_device_name_of_usb_mount_point "$USBMOUNTDIR"`
   #echo "Debug: Device Name of USB at $USBMOUNTDIR: $USBDEVICENAME"
   USBFILESYSTEMTYPE=`get_file_system_type_of_partition "$USBMOUNTDIR"`
@@ -713,8 +713,13 @@ else
   echo -e "\nCodename is: $CODENAME LTS Version is: $LTSVERNUM"
 
   # Use dpkg to install the wasta-offline package
-  echo "Find string: $LOCALBASEDIR/$WASTAOFFLINE*$LTSVERNUM*.deb"
-  DEB=`find "$LOCALBASEDIR"/$WASTAOFFLINE*$LTSVERNUM*.deb`
+  if [[ "$UPDATINGLOCALDATA" == "YES" ]]; then
+    BASEDIR=$LOCALBASEDIR
+  else
+    BASEDIR=$USBMOUNTDIR
+  fi
+  echo "Find string: $BASEDIR/$WASTAOFFLINE*$LTSVERNUM*.deb"
+  DEB=`find "$BASEDIR"/$WASTAOFFLINE*$LTSVERNUM*.deb`
   if [ "x$DEB" = "x" ]; then
     echo "Cannot install wasta-offline. A local deb package was not found."
     echo "You will need to install wasta-offline before you can use the mirror."
@@ -932,30 +937,32 @@ case $SELECTION in
         exit $LASTERRORLEVEL
       fi
       # Update latest git repos for wasta-scripts and bills-wasta-docs
-      #echo -e "\n"
-      #echo "The LOCALBASEDIR is: $LOCALBASEDIR"
-      cd "$LOCALBASEDIR"
-      if [ -d ".git" ]; then
-        echo "The local wasta-scripts repo .git file exists"
-        echo "Pull in any updates"
-        git pull
-        chown $SUDO_USER:$SUDO_USER *.sh
-        chown $SUDO_USER:$SUDO_USER ReadMe
-      else
-        echo "No local wasta-scripts repo .git file exists"
-        echo "Clone the wasta-scripts repo to tmp"
-        git clone https://github.com/pngbill-scripts/wasta-scripts.git tmp
-        echo "Move the .git folder to current folder"
-        mv tmp/.git .
-        echo "Remove the tmp folder"
-        rm -rf tmp
-        echo "Get wasta-scripts repo updates"
-        git reset --hard
-        chown $SUDO_USER:$SUDO_USER *.sh
-        chown $SUDO_USER:$SUDO_USER ReadMe
-      fi
-      echo "Create a .gitignore file for wasta-scripts"
-      # User heredoc to create a .gitignore file with content below
+      if [[ "$UPDATINGLOCALDATA" == "YES" ]]; then
+        BASEDIR=$LOCALBASEDIR
+        #echo -e "\n"
+        #echo "The BASEDIR is: $BASEDIR"
+        cd "$BASEDIR"
+        if [ -d ".git" ]; then
+          echo "The local wasta-scripts repo .git file exists"
+          echo "Pull in any updates"
+          git pull
+          chown $SUDO_USER:$SUDO_USER *.sh
+          chown $SUDO_USER:$SUDO_USER ReadMe
+        else
+          echo "No local wasta-scripts repo .git file exists"
+          echo "Clone the wasta-scripts repo to tmp"
+          git clone https://github.com/pngbill-scripts/wasta-scripts.git tmp
+          echo "Move the .git folder to current folder"
+          mv tmp/.git .
+          echo "Remove the tmp folder"
+          rm -rf tmp
+          echo "Get wasta-scripts repo updates"
+          git reset --hard
+          chown $SUDO_USER:$SUDO_USER *.sh
+          chown $SUDO_USER:$SUDO_USER ReadMe
+        fi
+        echo "Create a .gitignore file for wasta-scripts"
+        # User heredoc to create a .gitignore file with content below
 cat > $GITIGNORE <<EOF
 .Trash-1000/
 bills-wasta-docs/
@@ -966,21 +973,74 @@ wasta-offline-setup_1.*.deb
 docs-index
 .gitignore
 EOF
-      chown $SUDO_USER:$SUDO_USER $GITIGNORE
-      echo "The bills-wasta-docs path is: $LOCALBASEDIR$BILLSWASTADOCSDIR"
-      if [ -d "$LOCALBASEDIR$BILLSWASTADOCSDIR" ]; then
-        #echo "The BILLSWASTADOCS dir exists"
-        cd "$LOCALBASEDIR$BILLSWASTADOCSDIR"
-        git pull
-        chown -R $SUDO_USER:$SUDO_USER "$LOCALBASEDIR$BILLSWASTADOCSDIR"
-      else
-        git clone https://github.com/pngbill-scripts/bills-wasta-docs.git
-        chown -R $SUDO_USER:$SUDO_USER "$LOCALBASEDIR$BILLSWASTADOCSDIR"
-      fi
-      # No need for a .gitignore file in bills-wasta-docs repo
+        chown $SUDO_USER:$SUDO_USER $GITIGNORE
+        echo "The bills-wasta-docs path is: $BASEDIR$BILLSWASTADOCSDIR"
+        if [ -d "$BASEDIR$BILLSWASTADOCSDIR" ]; then
+          #echo "The BILLSWASTADOCS dir exists"
+          cd "$BASEDIR$BILLSWASTADOCSDIR"
+          git pull
+          chown -R $SUDO_USER:$SUDO_USER "$BASEDIR$BILLSWASTADOCSDIR"
+        else
+          git clone https://github.com/pngbill-scripts/bills-wasta-docs.git
+          chown -R $SUDO_USER:$SUDO_USER "$BASEDIR$BILLSWASTADOCSDIR"
+        fi
+        # No need for a .gitignore file in bills-wasta-docs repo
       
-      #echo "Change back to $LOCALBASEDIR"
-      cd "$LOCALBASEDIR"
+        #echo "Change back to $BASEDIR"
+        cd "$BASEDIR"
+      fi
+      if [[ "$UPDATINGEXTUSBDATA" == "YES" ]]; then
+        BASEDIR=$USBMOUNTDIR
+        #echo -e "\n"
+        #echo "The BASEDIR is: $BASEDIR"
+        cd "$BASEDIR"
+        if [ -d ".git" ]; then
+          echo "The local wasta-scripts repo .git file exists"
+          echo "Pull in any updates"
+          git pull
+          chown $SUDO_USER:$SUDO_USER *.sh
+          chown $SUDO_USER:$SUDO_USER ReadMe
+        else
+          echo "No local wasta-scripts repo .git file exists"
+          echo "Clone the wasta-scripts repo to tmp"
+          git clone https://github.com/pngbill-scripts/wasta-scripts.git tmp
+          echo "Move the .git folder to current folder"
+          mv tmp/.git .
+          echo "Remove the tmp folder"
+          rm -rf tmp
+          echo "Get wasta-scripts repo updates"
+          git reset --hard
+          chown $SUDO_USER:$SUDO_USER *.sh
+          chown $SUDO_USER:$SUDO_USER ReadMe
+        fi
+        echo "Create a .gitignore file for wasta-scripts"
+        # User heredoc to create a .gitignore file with content below
+cat > $GITIGNORE <<EOF
+.Trash-1000/
+bills-wasta-docs/
+wasta-offline/
+wasta-offline_1.*.deb
+wasta-offline_2.*.deb
+wasta-offline-setup_1.*.deb
+docs-index
+.gitignore
+EOF
+        chown $SUDO_USER:$SUDO_USER $GITIGNORE
+        echo "The bills-wasta-docs path is: $BASEDIR$BILLSWASTADOCSDIR"
+        if [ -d "$BASEDIR$BILLSWASTADOCSDIR" ]; then
+          #echo "The BILLSWASTADOCS dir exists"
+          cd "$BASEDIR$BILLSWASTADOCSDIR"
+          git pull
+          chown -R $SUDO_USER:$SUDO_USER "$BASEDIR$BILLSWASTADOCSDIR"
+        else
+          git clone https://github.com/pngbill-scripts/bills-wasta-docs.git
+          chown -R $SUDO_USER:$SUDO_USER "$BASEDIR$BILLSWASTADOCSDIR"
+        fi
+        # No need for a .gitignore file in bills-wasta-docs repo
+      
+        #echo "Change back to $BASEDIR"
+        cd "$BASEDIR"
+      fi
     fi
    ;;
   "3")
@@ -1070,21 +1130,15 @@ EOF
   ;;
 esac
 
-# The apt-mirror has finished updating the local master mirror (at /data/master/wasta-offline/...), 
-# now sync the master mirror to the external USB mirror, if it is plugged in.
-if [ "$UPDATINGEXTUSBDATA" = "YES" ]; then
+# If the apt-mirror has just updating the local master mirror (at /data/master/wasta-offline/...), 
+# now sync the master mirror to the external USB mirror too, if it is plugged in.
+if [[ "$UPDATINGLOCALDATA" == "YES" ]] && [[ "$UPDATINGEXTUSBDATA" == "YES" ]]; then
   # Call sync_Wasta_Offline_to_Ext_Drive.sh without any parameters: 
   #   the $COPYFROMDIR will be /data/master/wasta-offline/
   #   the $COPYTODIR will be /media/$USER/<DISK_LABEL>/wasta-offline
   echo "[*** End of apt-mirror post-processing ***]"
   bash "$DIR/$SYNCWASTAOFFLINESCRIPT"
-else
-  # Only updating a local master mirror
-  # Ensure that ownership of the mirror tree is apt-mirror:apt-mirror (otherwise cron won't run) 
-  # The $LOCALMIRRORSPATH is determined near the main beginning of this script
-  echo "Make $LOCALMIRRORSPATH owner be $APTMIRROR:$APTMIRROR"
-  chown -R $APTMIRROR:$APTMIRROR "$LOCALMIRRORSPATH" # chown -R apt-mirror:apt-mirror /media/$USER/<DISK_LABEL>/wasta-offline/apt-mirror
 fi
-        
+
 echo -e "\nThe $UPDATEMIRRORSCRIPT script has finished."
 
