@@ -21,7 +21,7 @@
 #      output from the new get_wasta_offline_usb_mount_point () function.
 #      Used a new get_device_name_of_usb_mount_point () function to determine
 #      the device name of the USB drive's mount point.
-#      Used a new get_file_system_type_of_usb_partition () function to determine
+#      Used a new get_file_system_type_of_partition () function to determine
 #      the file system type of the USB drive at the mount point.
 #      Added sleep statements to paus output for better monitoring of progress.
 #      Made Abort warnings more visible in console output.
@@ -535,7 +535,7 @@ if [[ "$USBMOUNTPOINT" == *"wasta-offline"* ]]; then
 fi
 USBDEVICENAME=`get_device_name_of_usb_mount_point "$USBMOUNTDIR"`
 echo "   Device NAME of USB Drive: $USBDEVICENAME"
-USBFILESYSTEMTYPE=`get_file_system_type_of_usb_partition "$USBMOUNTDIR"`
+USBFILESYSTEMTYPE=`get_file_system_type_of_partition "$USBMOUNTDIR"`
 echo "   File system TYPE of USB Drive: $USBFILESYSTEMTYPE"
   
 # Get more information about the destination's master mirror taking into account any
