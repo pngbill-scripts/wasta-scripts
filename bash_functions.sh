@@ -1225,7 +1225,7 @@ set _tilde 0
 # ######### trusty #############
 # whm 17Jun2020 NOTE: The trusty repo below ended "standard support" April 2019, and 
 # will be at its "End of Life" in April 2022. Comment out after April 2022.
-# In order to fix all distros on a 1TB external drive, I've removed trusty repo
+# In order to fit all distros on a 1TB external drive, I've removed trusty repo
 # and the Linux Mint distros (those before sarah) that are aliases for trusty.
 
 # whm added 21Sep2014 trusty repos below:
