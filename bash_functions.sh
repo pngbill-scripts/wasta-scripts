@@ -867,43 +867,94 @@ set_mirror_ownership_and_permissions ()
     # Set ownership of the mirror tree starting at the wasta-offline directory
     #echo "SUDO_USER is: $SUDO_USER"
     #echo "Setting $1$WASTAOFFLINEDIR owner: $APTMIRROR:$APTMIRROR"
-    echo -n "." 
+    #echo -n "."
+    errorExit=0
     chown -R $APTMIRROR:$APTMIRROR "$1"$WASTAOFFLINEDIR
+    result=$?
+    if [ $result -ne 0 ]; then
+      echo "ERROR $?: chown -R $APTMIRROR:$APTMIRROR $1$WASTAOFFLINEDIR"
+      errorExit=1
+    fi
     # Set ownership of the mirror tree at the apt-mirror-setup directory
     #echo "Setting $1$APTMIRRORSETUPDIR owner: $APTMIRROR:$APTMIRROR"
-    echo -n "." 
+    #echo -n "." 
     chown -R $APTMIRROR:$APTMIRROR "$1"$APTMIRRORSETUPDIR
+    result=$?
+    if [ $result -ne 0 ]; then
+      echo "ERROR $?: chown -R $APTMIRROR:$APTMIRROR $1$APTMIRRORSETUPDIR"
+      errorExit=1
+    fi
     # Set ownership of scripts, ReadMe file, and bills-wasta-docs directory to $SUDO_USER
-    #echo "Setting $1/*.sh owner: $SUDO_USER:$SUDO_USER"
-    echo -n "." 
+    echo "Setting $1/*.sh owner: $SUDO_USER:$SUDO_USER and permissions: a+rwx"
+    #echo -n "." 
     chown $SUDO_USER:$SUDO_USER "$1"/*.sh
+    result=$?
+    if [ $result -ne 0 ]; then
+      echo "ERROR $?: chown $SUDO_USER:$SUDO_USER $1/*.sh"
+      errorExit=1
+    fi
+    chmod a+rwx "$1"/*.sh
+    result=$?
+    if [ $result -ne 0 ]; then
+      echo "ERROR $?: chmod a+rwx $1/*.sh"
+      errorExit=1
+    fi
     #echo "Setting $1/ReadMe owner: $SUDO_USER:$SUDO_USER"
-    echo -n "." 
+    #echo -n "." 
     chown $SUDO_USER:$SUDO_USER "$1"/ReadMe
+    result=$?
+    if [ $result -ne 0 ]; then
+      echo "ERROR $?: chown $SUDO_USER:$SUDO_USER $1/ReadMe"
+      errorExit=1
+    fi
     #echo "Setting $1$BILLSWASTADOCSDIR owner: $SUDO_USER:$SUDO_USER"
-    echo -n "." 
+    #echo -n "." 
     chown -R $SUDO_USER:$SUDO_USER "$1"$BILLSWASTADOCSDIR
-    #echo "Setting content at $1 read-write for everyone"
-    echo -n "." 
-    chmod -R ugo+rw "$1"
+    result=$?
+    if [ $result -ne 0 ]; then
+      echo "ERROR $?: chown -R $SUDO_USER:$SUDO_USER $1$BILLSWASTADOCSDIR"
+    fi
+    echo "Setting content at $1 read-write for all: chmod -R a+rwX"
+    #echo "   ... please wait"
+    # whm 9Dec2021 revision - Set all files at $1 using chmod -R a+rwX $1, to 
+    # give full permissions to everyone (-a, or 'a'll), but only set the 
+    # executable bit (ie: use +X, NOT +x) if it is either a directory, OR 
+    # already set for one or more of "user", "group", or "other".
+    # With this approach, we don't need the find loops below for special
+    # treatment of the *.sh script files, since they should have been made
+    # executable already.
+    #echo -n "." 
+    #chmod -R ugo+rw "$1"
+    chmod -R a+rwX "$1"
+    result=$?
+    if [ $result -ne 0 ]; then
+      echo "ERROR $?: chmod -R a+rwX $1"
+      errorExit=1
+    fi
+    if [ $errorExit -ne 0 ]; then
+      # Error message is echo'ed in caller
+      #echo "ERROR: NOT ALL OWNERSHIP/PERMISSIONS COULD BE SET"
+      return 1
+    fi 
+    # The following find loops should no longer be needed
     # Find all Script files at $1 and set them read-write-executable
     # Note: The for loops with find command below should echo those in the last half of the 
     # copy_mirror_base_dir_files () function above.
-    for script in `find "$1" -maxdepth 1 -name '*.sh'` ; do 
-      #echo "Setting $script executable"
-      echo -n "." 
-      chmod ugo+rwx "$script"
-    done
-    for script in `find "$1"$APTMIRRORSETUPDIR -maxdepth 1 -name '*.sh'` ; do 
-      #echo "Setting $script executable"
-      echo -n "." 
-      chmod ugo+rwx "$script"
-    done
-    for script in `find "$1"$WASTAOFFLINEDIR$APTMIRRORDIR$VARDIR -maxdepth 1 -name '*.sh'` ; do 
-      #echo "Setting $script executable"
-      echo -n "." 
-      chmod ugo+rwx "$script"
-    done
+    # for script in `find "$1" -maxdepth 1 -name '*.sh'` ; do 
+    #   #echo "Setting $script executable"
+    #   echo -n "." 
+    #   chmod ugo+rwx "$script"
+    # done
+    # for script in `find "$1"$APTMIRRORSETUPDIR -maxdepth 1 -name '*.sh'` ; do 
+    #   #echo "Setting $script executable"
+    #   echo -n "." 
+    #   chmod ugo+rwx "$script"
+    # done
+    # for script in `find "$1"$WASTAOFFLINEDIR$APTMIRRORDIR$VARDIR -maxdepth 1 -name '*.sh'` ; do 
+    #   #echo "Setting $script executable"
+    #   echo -n "." 
+    #   chmod ugo+rwx "$script"
+    # done
   fi
   #echo "Exiting set_mirror_ownership_and_permissions function."
   return 0
@@ -1224,88 +1275,27 @@ set _tilde 0
 
 # ######### trusty #############
 # whm 17Jun2020 NOTE: The trusty repo below ended "standard support" April 2019, and 
-# will be at its "End of Life" in April 2022. Comment out after April 2022.
-# In order to fit all distros on a 1TB external drive, I've removed trusty repo
-# and the Linux Mint distros (those before sarah) that are aliases for trusty.
-
-# whm added 21Sep2014 trusty repos below:
-# Note: the following are referenced in /etc/apt/sources.list
-#deb-amd64 $1packages.linuxmint.com/ qiana main upstream import backport
-#deb-i386 $1packages.linuxmint.com/ qiana main upstream import backport
-#deb-amd64 $1archive.ubuntu.com/ubuntu trusty main restricted universe multiverse
-#deb-i386 $1archive.ubuntu.com/ubuntu trusty main restricted universe multiverse
-# The Ukarumpa mirrors point to archive.ubuntu.com/ubuntu <dist>-security.  
-# Note: The remote mirrors at archive.ubuntu.com/ubuntu <dist>-security and 
-# security.ubuntu.com/ubuntu <dist>-security contain the same packages and updates.
-#deb-amd64 $1$ARCHIVESECURITY.ubuntu.com/ubuntu trusty-security main restricted universe multiverse
-#deb-i386 $1$ARCHIVESECURITY.ubuntu.com/ubuntu trusty-security main restricted universe multiverse
-#deb-amd64 $1archive.ubuntu.com/ubuntu trusty-updates main restricted universe multiverse
-#deb-i386 $1archive.ubuntu.com/ubuntu trusty-updates main restricted universe multiverse
-# Note: The extras.ubuntu.com/ubuntu only went up through utopic 14.10
-#deb-amd64 $1extras.ubuntu.com/ubuntu trusty main
-#deb-i386 $1extras.ubuntu.com/ubuntu trusty main
-#deb-amd64 $1archive.canonical.com/ubuntu trusty partner
-#deb-i386 $1archive.canonical.com/ubuntu trusty partner
-#deb-amd64 $1packages.sil.org/ubuntu trusty main
-#deb-i386 $1packages.sil.org/ubuntu trusty main
-#deb-amd64 $1packages.sil.org/ubuntu trusty-experimental main
-#deb-i386 $1packages.sil.org/ubuntu trusty-experimental main
-# Note: the following are referenced in separate .list files in /etc/apt/sources.list.d/
-# Note: the wasta-linux repos need the source code packages also included
-#deb-amd64 $1ppa.launchpad.net/wasta-linux/wasta-apps/ubuntu trusty main
-#deb-i386 $1ppa.launchpad.net/wasta-linux/wasta-apps/ubuntu trusty main
-#deb-src $1ppa.launchpad.net/wasta-linux/wasta-apps/ubuntu trusty main
-#deb-amd64 $1ppa.launchpad.net/wasta-linux/wasta/ubuntu trusty main
-#deb-i386 $1ppa.launchpad.net/wasta-linux/wasta/ubuntu trusty main
-#deb-src $1ppa.launchpad.net/wasta-linux/wasta/ubuntu trusty main
-#deb-amd64 $1ppa.launchpad.net/libreoffice/libreoffice-5-0/ubuntu trusty main
-#deb-i386 $1ppa.launchpad.net/libreoffice/libreoffice-5-0/ubuntu trusty main
-#deb-amd64 $1ppa.launchpad.net/libreoffice/libreoffice-5-1/ubuntu trusty main
-#deb-i386 $1ppa.launchpad.net/libreoffice/libreoffice-5-1/ubuntu trusty main
-#deb-amd64 $1ppa.launchpad.net/libreoffice/libreoffice-5-4/ubuntu trusty main
-#deb-i386 $1ppa.launchpad.net/libreoffice/libreoffice-5-4/ubuntu trusty main
-#deb-amd64 $1ppa.launchpad.net/libreoffice/libreoffice-6-0/ubuntu trusty main
-#deb-i386 $1ppa.launchpad.net/libreoffice/libreoffice-6-0/ubuntu trusty main
+# will be at its "End of Life" in April 2022. In order to fit all distros on a 
+# 1TB external drive, I've removed trusty repo and the Linux Mint distros (those 
+# before sarah) that are aliases for trusty.
 # ######### trusty #############
 
 # ######### Linux Mint packages repo ###############################
 # Note: the following are for wasta 14.04.2 / Linux Mint 17.1 Rebecca
 # whm 17Jun2020 Removed Linux Mint 17.1 Rebecca
-#deb-amd64 $1packages.linuxmint.com/ rebecca main upstream import
-#deb-i386 $1packages.linuxmint.com/ rebecca main upstream import
-#deb-amd64 $1extra.linuxmint.com/ rebecca main
-#deb-i386 $1extra.linuxmint.com/ rebecca main
-
 # Note: the following are for wasta 14.04.3 / Linux Mint 17.2 Rafaela
 # whm 17Jun2020 Removed Linux Mint 17.2 Rafaela
-#deb-amd64 $1packages.linuxmint.com/ rafaela main upstream import
-#deb-i386 $1packages.linuxmint.com/ rafaela main upstream import
-#deb-amd64 $1extra.linuxmint.com/ rafaela main
-#deb-i386 $1extra.linuxmint.com/ rafaela main
-
 # Note: the following are for Linux Mint 17.3 Rosa
 # whm 17Jun2020 Removed Linux Mint 17.3 Rosa
-#deb-amd64 $1packages.linuxmint.com/ rosa main upstream import
-#deb-i386 $1packages.linuxmint.com/ rosa main upstream import
-# The extra.linuxmint.com repo doesn't go beyond 17.3
-#deb-amd64 $1extra.linuxmint.com/ rosa main
-#deb-i386 $1extra.linuxmint.com/ rosa main
-
+# whm 29Nov2021 Removed Linux Mint 17.3 Rosa
 # whm added 3 May 2016 Linux Mint 18.0 Sarah
-deb-amd64 $1packages.linuxmint.com/ sarah main upstream import backport
-deb-i386 $1packages.linuxmint.com/ sarah main upstream import backport
-
+# whm 29Nov2021 Removed Linux Mint 18.0 Sarah
 # whm added 16 June 2017 Linux Mint 18.1 Serena
-deb-amd64 $1packages.linuxmint.com/ serena main upstream import backport
-deb-i386 $1packages.linuxmint.com/ serena main upstream import backport
-
+# whm 29Nov2021 Removed  Linux Mint 18.1 Serena
 # whm added 16 June 2017 Linux Mint 18.2 Sonya
-deb-amd64 $1packages.linuxmint.com/ sonya main upstream import backport
-deb-i386 $1packages.linuxmint.com/ sonya main upstream import backport
-
+# whm 29Nov2021 Removed Linux Mint 18.2 Sonya
 # whm added 30 September 2018 Linux Mint 18.3 Sylvia
-deb-amd64 $1packages.linuxmint.com/ sylvia main upstream import backport
-deb-i386 $1packages.linuxmint.com/ sylvia main upstream import backport
+# whm added 29Nov2021 Removed 2018 Linux Mint 18.3 Sylvia
 
 # whm added 30 September 2018 Linux Mint 19 Tara
 deb-amd64 $1packages.linuxmint.com/ tara main upstream import backport
@@ -1326,6 +1316,18 @@ deb-i386 $1packages.linuxmint.com/ tricia main upstream import backport
 # whm added 17 June 2020 Linux Mint 20.0 Ulyana
 deb-amd64 $1packages.linuxmint.com/ ulyana main upstream import backport
 deb-i386 $1packages.linuxmint.com/ ulyana main upstream import backport
+
+# whm added 29Nov2021 Linux Mint 20.1 Ulyssa
+deb-amd64 $1packages.linuxmint.com/ ulyssa main upstream import backport
+deb-i386 $1packages.linuxmint.com/ ulyssa main upstream import backport
+
+# whm added 29Nov2021 Linux Mint 20.2 Uma
+deb-amd64 $1packages.linuxmint.com/ uma main upstream import backport
+deb-i386 $1packages.linuxmint.com/ uma main upstream import backport
+
+# whm added 29Nov2021 Linux Mint 20.3 Una
+deb-amd64 $1packages.linuxmint.com/ una main upstream import backport
+deb-i386 $1packages.linuxmint.com/ una main upstream import backport
 # ######### Linux Mint packages repo ###############################
 
 # ######### xenial #############
@@ -1334,8 +1336,9 @@ deb-amd64 $1archive.ubuntu.com/ubuntu xenial main restricted universe multiverse
 deb-i386 $1archive.ubuntu.com/ubuntu xenial main restricted universe multiverse
 deb-amd64 $1archive.ubuntu.com/ubuntu xenial-updates main restricted universe multiverse
 deb-i386 $1archive.ubuntu.com/ubuntu xenial-updates main restricted universe multiverse
-deb-amd64 $1archive.ubuntu.com/ubuntu xenial-backports main restricted universe multiverse
-deb-i386 $1archive.ubuntu.com/ubuntu xenial-backports main restricted universe multiverse
+# whm 29Nov2021 removed xenial-backports
+#deb-amd64 $1archive.ubuntu.com/ubuntu xenial-backports main restricted universe multiverse
+#deb-i386 $1archive.ubuntu.com/ubuntu xenial-backports main restricted universe multiverse
 
 # The Ukarumpa mirrors point to archive.ubuntu.com/ubuntu <dist>-security.  
 # Note: The remote mirrors at archive.ubuntu.com/ubuntu <dist>-security and 
@@ -1354,19 +1357,18 @@ deb-i386 $1packages.sil.org/ubuntu xenial-experimental main
 #deb-i386 $1download.virtualbox.org/virtualbox/debian xenial contrib
 
 # Note: the following are referenced in separate .list files in /etc/apt/sources.list.d/
-# Note: the wasta-linux repos need the source code packages also included
+deb-amd64 $1ppa.launchpad.net/keymanapp/keyman/ubuntu xenial main
+deb-i386 $1ppa.launchpad.net/keymanapp/keyman/ubuntu xenial main
+deb-amd64 $1ppa.launchpad.net/wasta-linux/cinnamon-3-6/ubuntu xenial main
+deb-i386 $1ppa.launchpad.net/wasta-linux/cinnamon-3-6/ubuntu xenial main
 deb-amd64 $1ppa.launchpad.net/wasta-linux/wasta-apps/ubuntu xenial main
 deb-i386 $1ppa.launchpad.net/wasta-linux/wasta-apps/ubuntu xenial main
-deb-src $1ppa.launchpad.net/wasta-linux/wasta-apps/ubuntu xenial main
 deb-amd64 $1ppa.launchpad.net/wasta-linux/wasta/ubuntu xenial main
 deb-i386 $1ppa.launchpad.net/wasta-linux/wasta/ubuntu xenial main
-deb-src $1ppa.launchpad.net/wasta-linux/wasta/ubuntu xenial main
 
-# libreoffice version 5-1 is earliest version available in xenial
+# libreoffice versions 5-1 and 6-0 are only versions available in xenial as of 29Nov2021
 deb-amd64 $1ppa.launchpad.net/libreoffice/libreoffice-5-1/ubuntu xenial main
 deb-i386 $1ppa.launchpad.net/libreoffice/libreoffice-5-1/ubuntu xenial main
-deb-amd64 $1ppa.launchpad.net/libreoffice/libreoffice-5-4/ubuntu xenial main
-deb-i386 $1ppa.launchpad.net/libreoffice/libreoffice-5-4/ubuntu xenial main
 deb-amd64 $1ppa.launchpad.net/libreoffice/libreoffice-6-0/ubuntu xenial main
 deb-i386 $1ppa.launchpad.net/libreoffice/libreoffice-6-0/ubuntu xenial main
 # ######### xenial #############
@@ -1389,61 +1391,73 @@ deb-i386 $1$ARCHIVESECURITY.ubuntu.com/ubuntu bionic-security main restricted un
 deb-amd64 $1archive.canonical.com/ubuntu bionic partner
 deb-i386 $1archive.canonical.com/ubuntu bionic partner
 
+# Note: the following are referenced in separate .list files in /etc/apt/sources.list.d/
 deb-amd64 $1packages.sil.org/ubuntu bionic main
 deb-i386 $1packages.sil.org/ubuntu bionic main
 deb-amd64 $1packages.sil.org/ubuntu bionic-experimental main
 deb-i386 $1packages.sil.org/ubuntu bionic-experimental main
-
-# Note: the following are referenced in separate .list files in /etc/apt/sources.list.d/
-# Note: the wasta-linux repos need the source code packages also included
+deb-amd64 $1ppa.launchpad.net/keymanapp/keyman/ubuntu bionic main
+deb-i386 $1ppa.launchpad.net/keymanapp/keyman/ubuntu bionic main
+deb-amd64 $1ppa.launchpad.net/wasta-linux/cinnamon-3-8/ubuntu bionic main
+deb-i386 $1ppa.launchpad.net/wasta-linux/cinnamon-3-8/ubuntu bionic main
 deb-amd64 $1ppa.launchpad.net/wasta-linux/wasta-apps/ubuntu bionic main
 deb-i386 $1ppa.launchpad.net/wasta-linux/wasta-apps/ubuntu bionic main
-deb-src $1ppa.launchpad.net/wasta-linux/wasta-apps/ubuntu bionic main
 deb-amd64 $1ppa.launchpad.net/wasta-linux/wasta/ubuntu bionic main
 deb-i386 $1ppa.launchpad.net/wasta-linux/wasta/ubuntu bionic main
-deb-src $1ppa.launchpad.net/wasta-linux/wasta/ubuntu bionic main
 
-# libreoffice version 6-0 is earliest version available in bionic
-# whm 17Jun2020 added 6-1 through 6-4 bionic packages
+# libreoffice versions 6-0 6-4 and 7-0 are the only versions available in bionic as of 29Nov2021
 deb-amd64 $1ppa.launchpad.net/libreoffice/libreoffice-6-0/ubuntu bionic main
 deb-i386 $1ppa.launchpad.net/libreoffice/libreoffice-6-0/ubuntu bionic main
-deb-amd64 $1ppa.launchpad.net/libreoffice/libreoffice-6-1/ubuntu bionic main
-deb-i386 $1ppa.launchpad.net/libreoffice/libreoffice-6-1/ubuntu bionic main
-deb-amd64 $1ppa.launchpad.net/libreoffice/libreoffice-6-2/ubuntu bionic main
-deb-i386 $1ppa.launchpad.net/libreoffice/libreoffice-6-2/ubuntu bionic main
-deb-amd64 $1ppa.launchpad.net/libreoffice/libreoffice-6-3/ubuntu bionic main
-deb-i386 $1ppa.launchpad.net/libreoffice/libreoffice-6-3/ubuntu bionic main
 deb-amd64 $1ppa.launchpad.net/libreoffice/libreoffice-6-4/ubuntu bionic main
 deb-i386 $1ppa.launchpad.net/libreoffice/libreoffice-6-4/ubuntu bionic main
+deb-amd64 $1ppa.launchpad.net/libreoffice/libreoffice-7-0/ubuntu bionic main
+deb-i386 $1ppa.launchpad.net/libreoffice/libreoffice-7-0/ubuntu bionic main
 # ######### bionic #############
 
 # ######### focal #############
-# whm added 17Jun2020 focal repos below: (With focal Ubuntu no longer supports the i386 architecture)
-deb-amd64 $1archive.ubuntu.com/ubuntu focal main restricted universe multiverse
-deb-amd64 $1archive.ubuntu.com/ubuntu focal-updates main restricted universe multiverse
+# whm modified 3Dec2021 focal repos below: (to include packages for i386 architecture)
+deb-amd64 $1archive.ubuntu.com/ubuntu focal main restricted
+deb-i386 $1archive.ubuntu.com/ubuntu focal main restricted
+deb-amd64 $1archive.ubuntu.com/ubuntu focal-updates main restricted
+deb-i386 $1archive.ubuntu.com/ubuntu focal-updates main restricted
+deb-amd64 $1archive.ubuntu.com/ubuntu focal universe
+deb-i386 $1archive.ubuntu.com/ubuntu focal universe
+deb-amd64 $1archive.ubuntu.com/ubuntu focal-updates universe
+deb-i386 $1archive.ubuntu.com/ubuntu focal-updates universe
+deb-amd64 $1archive.ubuntu.com/ubuntu focal multiverse
+deb-i386 $1archive.ubuntu.com/ubuntu focal multiverse
+deb-amd64 $1archive.ubuntu.com/ubuntu focal-updates multiverse
+deb-i386 $1archive.ubuntu.com/ubuntu focal-updates multiverse
 deb-amd64 $1archive.ubuntu.com/ubuntu focal-backports main restricted universe multiverse
-
-# The Ukarumpa mirrors point to archive.ubuntu.com/ubuntu <dist>-security.  
-# Note: The remote mirrors at archive.ubuntu.com/ubuntu <dist>-security and 
-# security.ubuntu.com/ubuntu <dist>-security contain the same packages and updates.
-deb-amd64 $1$ARCHIVESECURITY.ubuntu.com/ubuntu focal-security main restricted universe multiverse
-
+deb-i386 $1archive.ubuntu.com/ubuntu focal-backports main restricted universe multiverse
 deb-amd64 $1archive.canonical.com/ubuntu focal partner
+deb-i386 $1archive.canonical.com/ubuntu focal partner
+deb-amd64 $1archive.ubuntu.com/ubuntu focal-security main restricted
+deb-i386 $1archive.ubuntu.com/ubuntu focal-security main restricted
+deb-amd64 $1archive.ubuntu.com/ubuntu focal-security universe
+deb-i386 $1archive.ubuntu.com/ubuntu focal-security universe
+deb-amd64 $1archive.ubuntu.com/ubuntu focal-security multiverse
+deb-i386 $1archive.ubuntu.com/ubuntu focal-security multiverse
 
-# Note: the following are referenced in separate .list files in /etc/apt/sources.list.d/
+# The following are referenced in separate .list files in /etc/apt/sources.list.d/:
 deb-amd64 $1packages.sil.org/ubuntu focal main
+deb-i386 $1packages.sil.org/ubuntu focal main
 deb-amd64 $1packages.sil.org/ubuntu focal-experimental main
-
-# Note: the following are referenced in separate .list files in /etc/apt/sources.list.d/
-# Note: the wasta-linux repos need the source code packages also included
-deb-amd64 $1ppa.launchpad.net/wasta-linux/wasta-apps/ubuntu focal main
-deb-src $1ppa.launchpad.net/wasta-linux/wasta-apps/ubuntu focal main
+deb-i386 $1packages.sil.org/ubuntu focal-experimental main
+deb-amd64 $1ppa.launchpad.net/keymanapp/keyman/ubuntu focal main
+deb-i386 $1ppa.launchpad.net/keymanapp/keyman/ubuntu focal main
+deb-amd64 $1ppa.launchpad.net/wasta-linux/cinnamon-4-8/ubuntu focal main
+deb-i386 $1ppa.launchpad.net/wasta-linux/cinnamon-4-8/ubuntu focal main
 deb-amd64 $1ppa.launchpad.net/wasta-linux/wasta/ubuntu focal main
-deb-src $1ppa.launchpad.net/wasta-linux/wasta/ubuntu focal main
+deb-i386 $1ppa.launchpad.net/wasta-linux/wasta/ubuntu focal main
+deb-amd64 $1ppa.launchpad.net/wasta-linux/wasta-apps/ubuntu focal main
+deb-i386 $1ppa.launchpad.net/wasta-linux/wasta-apps/ubuntu focal main
 
-# libreoffice version 6-3 is earliest version available in focal
-deb-amd64 $1ppa.launchpad.net/libreoffice/libreoffice-6-3/ubuntu focal main
+# libreoffice versions 6-4 and 7-0 are the only versions available in focal as of 29Nov2021
 deb-amd64 $1ppa.launchpad.net/libreoffice/libreoffice-6-4/ubuntu focal main
+deb-i386 $1ppa.launchpad.net/libreoffice/libreoffice-6-4/ubuntu focal main
+deb-amd64 $1ppa.launchpad.net/libreoffice/libreoffice-7-0/ubuntu focal main
+deb-i386 $1ppa.launchpad.net/libreoffice/libreoffice-7-0/ubuntu focal main
 # ######### focal #############
 
 # Note: the following are referenced in separate .list files in /etc/apt/sources.list.d/
@@ -1456,6 +1470,7 @@ deb-i386 $SKYPEPREFIX stable main
 deb-amd64 $SKYPEPREFIX unstable main
 deb-i386 $SKYPEPREFIX unstable main
 
+# calling clean for obsolete repo items doesn't cause any error
 clean $1packages.linuxmint.com/
 clean $1extra.linuxmint.com/
 clean $1archive.ubuntu.com/ubuntu
@@ -1474,6 +1489,7 @@ clean $1ppa.launchpad.net/libreoffice/libreoffice-6-1/ubuntu
 clean $1ppa.launchpad.net/libreoffice/libreoffice-6-2/ubuntu
 clean $1ppa.launchpad.net/libreoffice/libreoffice-6-3/ubuntu
 clean $1ppa.launchpad.net/libreoffice/libreoffice-6-4/ubuntu
+clean $1ppa.launchpad.net/libreoffice/libreoffice-7-0/ubuntu
 
 EOF
   LASTERRORLEVEL=$?

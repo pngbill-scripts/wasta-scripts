@@ -120,9 +120,9 @@
 #      function with "$COPYFROMBASEDIR" "$COPYTOBASEDIR" parameters.
 #      The "root" directory here refers to the 
 #      directory of the device or drive where the mirror begins. For example, the
-#      "root" directory of Bill's master copy is on a partition mounted at /data,
+#      "root" directory of Bill's master copy is on a partition mounted at /data/master,
 #      and the "root" directory of an attached USB Wasta-Offline Mirror - as 
-#      supplied by Bill Martin - is at /media/<DISK_LABEL> or /media/$USER/<DISK_LABEL>. 
+#      supplied by Bill Martin - is at /media/$USER/<DISK_LABEL>. 
 #      Those files include:
 #        a. bash_functions.sh
 #        b. make_Master_for_Wasta-Offline.sh
@@ -133,7 +133,7 @@
 #        g. postmirror.sh (in apt-mirror-setup and wasta-offline/apt-mirror/var subdirectories)
 #        h. postmirror2.sh (in apt-mirror-setup and wasta-offline/apt-mirror/var subdirectories)
 #  12. Sets the destination mirror's ownergroup properties to apt-mirror:apt-mirror
-#      and sets the destination mirror's content permissions to ugo+rw (read-write 
+#      and sets the destination mirror's content permissions to a+rwX (read-write 
 #      for everyone) by calling the set_mirror_ownership_and_permissions () function
 #      on the $COPYTOBASEDIR.
 #  13. Ensures the source mirror directory path to be used with rsync ends with slash, 
@@ -845,6 +845,7 @@ else
   # function does nothing - no ownership/permissions are set.
   sleep 3s
   echo -e "\nSetting destination mirror ownership and permissions at $COPYTOBASEDIR..."
+  echo "... Please wait"
   if set_mirror_ownership_and_permissions "$COPYTOBASEDIR" "$USBFSTYPE_2" ; then
     # All chown and chmod operations were successful, or skipped if "ntfs" or "vfat"
     if [[ "$USBFSTYPE_2" == "ntfs" ]] || [[ "$USBFSTYPE_2" == "vfat" ]]; then
@@ -853,7 +854,8 @@ else
       echo -e "\n  Mirror ownership and permissions set successfully at: $COPYTOBASEDIR."
     fi
   else
-    echo -e "\nNot all mirror ownership and permissions could be set at: $COPYTOBASEDIR."
+    # Notify user of ERROR but don't halt the rest of the script for this error
+    echo -e "\nERROR: NOT ALL OWNERSHIP/PERMISSIONS WERE SET AT: $COPYTOBASEDIR."
   fi
 fi
 
