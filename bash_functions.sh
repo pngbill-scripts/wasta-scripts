@@ -1458,6 +1458,9 @@ deb-amd64 $1ppa.launchpad.net/libreoffice/libreoffice-6-4/ubuntu focal main
 deb-i386 $1ppa.launchpad.net/libreoffice/libreoffice-6-4/ubuntu focal main
 deb-amd64 $1ppa.launchpad.net/libreoffice/libreoffice-7-0/ubuntu focal main
 deb-i386 $1ppa.launchpad.net/libreoffice/libreoffice-7-0/ubuntu focal main
+# Libreoffice "Fresh" version 7-1 is available for focal as of 25Nov2021
+deb-amd64 $1ppa.launchpad.net/libreoffice/ppa/ubuntu focal main
+deb-i386 $1ppa.launchpad.net/libreoffice/ppa/ubuntu focal main
 # ######### focal #############
 
 # Note: the following are referenced in separate .list files in /etc/apt/sources.list.d/
@@ -1490,6 +1493,7 @@ clean $1ppa.launchpad.net/libreoffice/libreoffice-6-2/ubuntu
 clean $1ppa.launchpad.net/libreoffice/libreoffice-6-3/ubuntu
 clean $1ppa.launchpad.net/libreoffice/libreoffice-6-4/ubuntu
 clean $1ppa.launchpad.net/libreoffice/libreoffice-7-0/ubuntu
+clean $1ppa.launchpad.net/libreoffice/ppa/ubuntu
 
 EOF
   LASTERRORLEVEL=$?
